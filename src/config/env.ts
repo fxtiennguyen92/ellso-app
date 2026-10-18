@@ -1,15 +1,18 @@
-const ENVS = {
+/**
+ * Chọn môi trường qua EXPO_PUBLIC_APP_ENV (local / production).
+ * `npm start` = local, `npm run start:prod` = production.
+ * Hiện màn Home dùng data tạm (src/data/home.ts) nên chưa gọi API.
+ */
+const ENV = process.env.EXPO_PUBLIC_APP_ENV === 'production' ? 'production' : 'local';
+
+const config = {
   local: {
-    API_URL:
-      process.env.EXPO_PUBLIC_LOCAL_API_URL ?? "http://192.168.1.10:8000/v1",
+    // Đổi thành IP LAN của máy chạy `php artisan serve --host=0.0.0.0 --port=8000`
+    apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://192.168.1.10:8000/v1',
   },
   production: {
-    API_URL: "https://api.ellso.edu.vn/v1",
+    apiUrl: 'https://api.ellso.edu.vn/v1',
   },
 } as const;
 
-export type AppEnv = keyof typeof ENVS;
-
-const APP_ENV = (process.env.EXPO_PUBLIC_APP_ENV ?? "local") as AppEnv;
-
-export const ENV = { APP_ENV, ...ENVS[APP_ENV] };
+export const env = { name: ENV, ...config[ENV] };
