@@ -132,4 +132,4 @@ export const illo = {
 };
 
 /** Chiều rộng tối đa của khung app trên web (~ iPhone Pro Max, 440pt). */
-export const WEB_MAX_WIDTH = 440;
+export const WEB_MAX_WIDTH = 480;
