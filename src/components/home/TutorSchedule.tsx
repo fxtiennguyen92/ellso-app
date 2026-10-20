@@ -11,6 +11,8 @@ import { SectionTitle } from './SectionTitle';
 
 /** Cách gọi "tutor" trên app — đổi một chỗ này nếu chốt từ khác. */
 export const TUTOR_LABEL = 'gia sư';
+/** Bề rộng cột ngày — dùng chung cho thẻ vé và các dòng bên dưới để thẳng hàng. */
+const DATE_COL_WIDTH = 84;
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export function TutorSchedule({ sessions }: { sessions: TutorSession[] }) {
@@ -88,8 +90,8 @@ function TicketCard({ session }: { session: TutorSession }) {
       </View>
 
       {/* Badge đếm ngày: đè lên mép trên, góc phải */}
-      <View style={[styles.countdown, { backgroundColor: colors.amberChip, borderColor: colors.bg }]}>
-        <Text style={[type.chip, { color: colors.amberChipText }]}>{f.countdown}</Text>
+      <View style={[styles.countdown, { backgroundColor: colors.amberChip, borderColor: colors.amberChipLine }]}>
+        <Text style={[styles.countdownText, { color: colors.amberChipText }]}>{f.countdown}</Text>
       </View>
     </View>
   );
@@ -121,7 +123,9 @@ function SessionRow({ session }: { session: TutorSession }) {
           {f.startTime} – {f.endTime} · {capitalize(TUTOR_LABEL)} {session.tutor.name}
         </Text>
       </View>
-      <Icon name="chevronRight" size={18} color={colors.ink400} />
+      <View style={styles.rowChevron}>
+        <Icon name="chevronRight" size={18} color={colors.ink400} />
+      </View>
     </Pressable>
   );
 }
@@ -130,7 +134,7 @@ const styles = StyleSheet.create({
   section: { paddingTop: 28, paddingHorizontal: 16, gap: 12 },
   ticket: { flexDirection: 'row', borderRadius: 22, borderWidth: 1, marginTop: 4 },
   dateCol: {
-    width: 84,
+    width: DATE_COL_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 18,
@@ -146,13 +150,14 @@ const styles = StyleSheet.create({
   time: { fontFamily: fonts.display600, fontSize: 15, lineHeight: 22 },
   countdown: {
     position: 'absolute',
-    top: -12,
+    top: -11,
     right: 14,
     paddingHorizontal: 10,
     paddingVertical: 2,
     borderRadius: 9999,
-    borderWidth: 3,
+    borderWidth: 1,
   },
+  countdownText: { fontFamily: fonts.sans400, fontSize: 12, lineHeight: 16 },
   sessionTitle: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
   place: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tutor: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 2 },
@@ -169,14 +174,12 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
     borderRadius: 18,
     borderWidth: 1,
   },
-  rowDate: { width: 40, alignItems: 'center' },
+  rowDate: { width: DATE_COL_WIDTH, alignItems: 'center', paddingVertical: 12 },
   rowDay: { fontFamily: fonts.display600, fontSize: 18, lineHeight: 24 },
   rowDivider: { width: 1, alignSelf: 'stretch' },
-  rowText: { flex: 1, minWidth: 0 },
+  rowText: { flex: 1, minWidth: 0, paddingVertical: 12, paddingLeft: 16, paddingRight: 8 },
+  rowChevron: { paddingRight: 14 },
 });

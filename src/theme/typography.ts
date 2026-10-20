@@ -16,6 +16,8 @@ export const fonts = {
 
 /** Các kiểu chữ dùng trên màn Home (cỡ / dòng theo design). */
 export const type = {
+  screenTitle: { fontFamily: fonts.display600, fontSize: 28, lineHeight: 36 },
+  h2: { fontFamily: fonts.display600, fontSize: 20, lineHeight: 28 },
   greetingName: { fontFamily: fonts.display600, fontSize: 22, lineHeight: 30 },
   sectionTitle: { fontFamily: fonts.display600, fontSize: 22, lineHeight: 30 },
   cardTitle: { fontFamily: fonts.display600, fontSize: 17, lineHeight: 24 },

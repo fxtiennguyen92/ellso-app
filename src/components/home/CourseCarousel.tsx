@@ -1,4 +1,5 @@
-import { useRef } from 'react';
+import { router } from 'expo-router';
+import { useMemo, useRef, useState } from 'react';
 import { Animated, Platform, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
@@ -33,6 +34,13 @@ export function CourseCarousel({ courses }: { courses: Course[] }) {
   const reveal = useRevealStyle(1);
   const scrollRef = useRef<ScrollViewInstance>(null);
   useDragScroll(scrollRef, CARD_WIDTH + GAP);
+
+  // Vị trí cuộn (px) — dùng cho hàng chấm chỉ báo
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const [viewportW, setViewportW] = useState(0);
+  const [contentW, setContentW] = useState(0);
+  const maxScroll = Math.max(0, contentW - viewportW);
+
   return (
     <Animated.View style={[styles.section, reveal]}>
       <View style={styles.titleWrap}>
@@ -48,6 +56,10 @@ export function CourseCarousel({ courses }: { courses: Course[] }) {
         snapToEnd
         decelerationRate="fast"
         contentContainerStyle={styles.list}
+        scrollEventThrottle={16}
+        onScroll={(e) => scrollX.setValue(e.nativeEvent.contentOffset.x)}
+        onLayout={(e) => setViewportW(e.nativeEvent.layout.width)}
+        onContentSizeChange={(w) => setContentW(w)}
         // Trên web dùng CSS scroll-snap (snapToInterval chỉ có ở native)
         style={isWeb ? ({ scrollSnapType: 'x mandatory', scrollPaddingInline: 16 } as object) : undefined}
       >
@@ -55,7 +67,90 @@ export function CourseCarousel({ courses }: { courses: Course[] }) {
           <CourseCard key={course.id} course={course} primary={index === 0} last={index === courses.length - 1} />
         ))}
       </ScrollView>
+
+      {maxScroll > 0 && (
+        <PageDots
+          count={courses.length}
+          scrollX={scrollX}
+          maxScroll={maxScroll}
+          onSelect={(x) => scrollRef.current?.scrollTo({ x, animated: true })}
+        />
+      )}
     </Animated.View>
+  );
+}
+
+const DOT = 6;
+const DOT_ACTIVE = 22;
+
+/**
+ * Hàng chấm dưới danh sách khóa học: số chấm = số thẻ, chấm của thẻ đang ở đầu dài ra.
+ * Chấm co giãn liên tục theo vị trí cuộn (không đợi thả tay). Bấm vào chấm để tới thẻ đó.
+ */
+function PageDots({
+  count,
+  scrollX,
+  maxScroll,
+  onSelect,
+}: {
+  count: number;
+  scrollX: Animated.Value;
+  maxScroll: number;
+  onSelect: (x: number) => void;
+}) {
+  const { colors } = useTheme();
+
+  // Điểm dừng của từng thẻ (giống useDragScroll): đầu thẻ, riêng các thẻ cuối dừng ở mép phải.
+  // Ép tăng dần để nội suy hợp lệ khi nhiều thẻ cuối cùng dừng ở mép phải.
+  const stops = useMemo(() => {
+    const step = CARD_WIDTH + GAP;
+    const s = Array.from({ length: count }, (_, k) => Math.min(k * step, maxScroll));
+    s[count - 1] = maxScroll;
+    for (let k = count - 2; k >= 0; k--) s[k] = Math.min(s[k], s[k + 1] - 1);
+    return s;
+  }, [count, maxScroll]);
+
+  // Chỉ số thẻ đang ở đầu, dạng số thực (0 → count-1)
+  const progress = useMemo(
+    () =>
+      scrollX.interpolate({
+        inputRange: count > 1 ? stops : [0, 1],
+        outputRange: count > 1 ? stops.map((_, k) => k) : [0, 0],
+        extrapolate: 'clamp',
+      }),
+    [scrollX, stops, count],
+  );
+
+  return (
+    <View style={styles.dots}>
+      {stops.map((x, i) => {
+        const near = (a: number, b: number) =>
+          progress.interpolate({ inputRange: [i - 1, i, i + 1], outputRange: [a, b, a], extrapolate: 'clamp' });
+        return (
+          <Pressable
+            key={i}
+            hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
+            accessibilityRole="button"
+            accessibilityLabel={`Tới khóa học ${i + 1} trên ${count}`}
+            onPress={() => onSelect(Math.max(0, x))}
+          >
+            <Animated.View
+              style={[
+                styles.dot,
+                {
+                  width: near(DOT, DOT_ACTIVE),
+                  backgroundColor: progress.interpolate({
+                    inputRange: [i - 1, i, i + 1],
+                    outputRange: [colors.line, colors.emerald500, colors.line],
+                    extrapolate: 'clamp',
+                  }),
+                },
+              ]}
+            />
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 
@@ -103,6 +198,7 @@ function CourseCard({ course, primary, last }: { course: Course; primary: boolea
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Học tiếp ${course.title}`}
+          onPress={() => router.push(`/courses/${course.id}`)}
           style={({ pressed }) => [
             styles.cta,
             primary
@@ -121,7 +217,9 @@ function CourseCard({ course, primary, last }: { course: Course; primary: boolea
 const styles = StyleSheet.create({
   section: { paddingTop: 16, gap: 12 },
   titleWrap: { paddingHorizontal: 16 },
-  list: { gap: GAP, paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  list: { gap: GAP, paddingHorizontal: 16, paddingTop: 4, paddingBottom: 4 },
+  dots: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingTop: 2 },
+  dot: { height: DOT, borderRadius: 9999 },
   card: { width: CARD_WIDTH, borderRadius: 22, borderWidth: 1, overflow: 'hidden' },
   cover: { height: 104, alignItems: 'center', justifyContent: 'center' },
   chip: { position: 'absolute', left: 12, top: 12, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9999 },

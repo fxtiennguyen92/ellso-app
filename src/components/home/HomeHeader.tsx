@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 28,
     gap: 24,
     borderBottomWidth: 1,
   },

@@ -18,8 +18,8 @@ export default function HomeScreen() {
   const [headerHeight, setHeaderHeight] = useState(200);
   const [scrolled, setScrolled] = useState(false);
 
-  // Spec: top 56px trên khung 390 (đã gồm status bar). Native: status bar thật + 12px; web: 24px.
-  const topInset = Platform.OS === 'web' ? 24 : insets.top + 12;
+  // Khoảng trống phía trên header. Native: dưới status bar thật 28px; web (không có status bar): 44px.
+  const topInset = Platform.OS === 'web' ? 44 : insets.top + 28;
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>

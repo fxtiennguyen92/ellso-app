@@ -3,10 +3,11 @@ import { Platform, type ScrollViewInstance } from 'react-native';
 
 /**
  * Web: cho phép kéo chuột để cuộn ngang một ScrollView (trên mobile vuốt tay sẵn có).
- * Thả chuột → trượt tới thẻ gần nhất theo bước `step` (px).
+ * Có `step` (px): thả chuột → trượt tới thẻ gần nhất theo bước đó (danh sách thẻ).
+ * Không có `step`: kéo tự do, không bắt dính (hàng chip, nút lọc…).
  * Sau khi kéo, cú click kết thúc bị chặn để không vô tình bấm nút trong thẻ.
  */
-export function useDragScroll(ref: RefObject<ScrollViewInstance | null>, step: number) {
+export function useDragScroll(ref: RefObject<ScrollViewInstance | null>, step?: number) {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     // Trên web (react-native-web) getScrollableNode trả về thẻ DOM của vùng cuộn
@@ -51,6 +52,10 @@ export function useDragScroll(ref: RefObject<ScrollViewInstance | null>, step: n
       node.style.cursor = 'grab';
       node.style.userSelect = '';
       if (!moved) return;
+      if (!step) {
+        node.style.scrollSnapType = '';
+        return;
+      }
 
       // Các điểm dừng: đầu mỗi thẻ (bội số của step) + điểm cuối cùng (thẻ cuối sát lề phải).
       // Không làm vậy thì thẻ cuối bị kéo ngược về thẻ trước vì đầu thẻ cuối không cuộn tới được.

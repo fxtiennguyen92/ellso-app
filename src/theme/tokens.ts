@@ -37,6 +37,14 @@ export const lightColors = {
   sunText: '#92400e',
   amberChip: '#fef3c7',
   amberChipText: '#92400e',
+  amberChipLine: '#fcd34d',
+  /** Bài gặp gia sư / bài kiểm tra trên lộ trình (trạng thái chưa xong). */
+  meetInk: '#c2410c',
+  meetTint: '#fff7ed',
+  meetLine: '#fed7aa',
+  testInk: '#6d28d9',
+  testTint: '#f5f3ff',
+  testLine: '#ddd6fe',
   /** Tab đang chọn ở thanh điều hướng (khối 3D): sáng trên → đậm dưới, mép đáy, quầng bóng. */
   pillTop: '#078c64',
   pillBottom: '#047857',
@@ -84,6 +92,13 @@ export const darkColors: ColorTokens = {
   sunText: '#fcd34d',
   amberChip: '#3a2c0b',
   amberChipText: '#fcd34d',
+  amberChipLine: '#6b5214',
+  meetInk: '#fdba74',
+  meetTint: '#26190f',
+  meetLine: '#4a2e1a',
+  testInk: '#c4b5fd',
+  testTint: '#1b1733',
+  testLine: '#3b3266',
   pillTop: '#6ee7b7',
   pillBottom: '#34d399',
   pillEdge: '#0f9e74',
@@ -129,7 +144,53 @@ export const illo = {
   micBaseLo: '#ea580c',
   micEdge: '#9a3412',
   micGlow: 'rgba(194,65,12,0.18)',
+  // Minh hoạ thẻ khoá học (màn Khoá học)
+  chatHi: '#fdba74',
+  chatLo: '#ea580c',
+  chatEdge: '#9a3412',
+  clockHi: '#6ee7b7',
+  clockLo: '#059669',
+  clockEdge: '#065f46',
+  clockHand: '#0f172a',
+  bar1: '#7dd3fc',
+  bar2: '#38bdf8',
+  bar3: '#0284c7',
+  barEdge: '#075985',
+  globeHi: '#c4b5fd',
+  globeLo: '#6d28d9',
+  globeLine: 'rgba(255,255,255,0.55)',
+  globeEdge: '#4c1d95',
+  // Nút bài trên lộ trình
+  meetHi: '#fdba74',
+  meetLo: '#ea580c',
+  meetEdge: '#9a3412',
+  testHi: '#a78bfa',
+  testLo: '#6d28d9',
+  testEdge: '#4c1d95',
+  onChapter: '#ffffff',
+  onChapterSoft: 'rgba(255,255,255,0.2)',
+  onChapterMuted: 'rgba(255,255,255,0.85)',
 };
 
-/** Chiều rộng tối đa của khung app trên web (~ iPhone Pro Max, 440pt). */
-export const WEB_MAX_WIDTH = 480;
+/**
+ * Bảng màu chương (elearning-spec §3.5). Nền chương giữ nguyên ở cả hai chế độ (icon trắng ≥ 4.5:1).
+ * `edge`: mép đáy khối 3D · `inkDark`: chữ/icon màu chương trên nền tối · `ring`: vòng sáng bài kế tiếp.
+ * Chương mới tự lấy màu kế tiếp theo thứ tự này.
+ */
+export const chapterPalette = {
+  sage: { base: '#4e7a5c', edge: '#375540', inkDark: '#a6bcae', ring: 'rgba(78,122,92,0.22)' },
+  teal: { base: '#2e6e70', edge: '#204d4e', inkDark: '#96b6b8', ring: 'rgba(46,110,112,0.22)' },
+  steel: { base: '#3d6896', edge: '#2b4969', inkDark: '#9eb4ca', ring: 'rgba(61,104,150,0.22)' },
+  indigo: { base: '#4a56a0', edge: '#343c70', inkDark: '#a4aad0', ring: 'rgba(74,86,160,0.22)' },
+  plum: { base: '#76508a', edge: '#533861', inkDark: '#baa8c4', ring: 'rgba(118,80,138,0.22)' },
+  rose: { base: '#a04d66', edge: '#703647', inkDark: '#d0a6b2', ring: 'rgba(160,77,102,0.22)' },
+  terracotta: { base: '#a9553a', edge: '#763b29', inkDark: '#d4aa9c', ring: 'rgba(169,85,58,0.22)' },
+  ochre: { base: '#94661e', edge: '#684715', inkDark: '#cab28e', ring: 'rgba(148,102,30,0.22)' },
+  graphite: { base: '#3e4651', edge: '#2b3139', inkDark: '#9ea2a8', ring: 'rgba(62,70,81,0.22)' },
+} as const;
+
+export type ChapterColor = keyof typeof chapterPalette;
+export const CHAPTER_COLOR_ORDER = Object.keys(chapterPalette) as ChapterColor[];
+
+/** Chiều rộng tối đa của khung app trên web. 440 = iPhone Pro Max · 480 = điện thoại lớn/gập · 600 = tablet nhỏ dọc. */
+export const WEB_MAX_WIDTH = 600;
