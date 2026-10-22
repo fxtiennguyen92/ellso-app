@@ -45,6 +45,19 @@ export const lightColors = {
   testInk: '#6d28d9',
   testTint: '#f5f3ff',
   testLine: '#ddd6fe',
+  /** Hồ sơ: khối Giới thiệu bạn bè (nền emerald700) + nền phụ, chữ nguy hiểm. */
+  emeraldEdge: '#064e3b',
+  onEmeraldMuted: '#d1fae5',
+  heroDeco: 'rgba(52,211,153,0.28)',
+  surfaceAlt: '#f1f5f4',
+  danger: '#dc2626',
+  trackOff: '#cbd5e1',
+  /** Tài liệu: nút lưu đã bật (vàng), chip trung tính (giá mua riêng), trang giấy PDF, bóng sách. */
+  fav: '#f59e0b',
+  chipNeutral: '#f1f5f9',
+  page: '#ffffff',
+  pageLine: '#e2e8f0',
+  shadowBook: '3px 6px 14px rgba(15,23,42,0.18)',
   /** Tab đang chọn ở thanh điều hướng (khối 3D): sáng trên → đậm dưới, mép đáy, quầng bóng. */
   pillTop: '#078c64',
   pillBottom: '#047857',
@@ -99,6 +112,17 @@ export const darkColors: ColorTokens = {
   testInk: '#c4b5fd',
   testTint: '#1b1733',
   testLine: '#3b3266',
+  emeraldEdge: '#059669',
+  onEmeraldMuted: '#065f46',
+  heroDeco: 'rgba(4,36,26,0.18)',
+  surfaceAlt: '#0f1828',
+  danger: '#f87171',
+  trackOff: '#334155',
+  fav: '#fbbf24',
+  chipNeutral: '#1f2a3d',
+  page: '#e8eef5',
+  pageLine: '#94a3b8',
+  shadowBook: '3px 6px 14px rgba(0,0,0,0.5)',
   pillTop: '#6ee7b7',
   pillBottom: '#34d399',
   pillEdge: '#0f9e74',
@@ -110,6 +134,28 @@ export const darkColors: ColorTokens = {
 
 /** Màu minh hoạ 3D — giữ nguyên ở cả hai chế độ. */
 export const illo = {
+  // Banner "Bài test đầu vào" ở tab Khoá học (màu tươi cố định cho cả 2 chế độ)
+  ptTop: '#fde047',
+  ptBottom: '#fb923c',
+  ptEdge: '#d9692a',
+  ptDeco: 'rgba(255,255,255,0.28)',
+  ptInk: '#431407',
+  ptInkMuted: 'rgba(67,20,7,0.78)',
+  ptChip: 'rgba(255,255,255,0.5)',
+  ptLine: '#fed7aa',
+  ptCheck: '#16a34a',
+  // Thẻ chiến dịch Giáng Sinh trên Home (màu minh hoạ cố định cho cả 2 chế độ)
+  xmasTop: '#c2262b',
+  xmasBottom: '#8f1419',
+  xmasEdge: '#5e0d10',
+  xmasGold: '#fcd34d',
+  xmasGoldDeep: '#f59e0b',
+  xmasGift: '#16a34a',
+  xmasGiftDark: '#15803d',
+  xmasSnow: 'rgba(255,255,255,0.85)',
+  xmasMuted: 'rgba(255,255,255,0.82)',
+  xmasChip: 'rgba(0,0,0,0.22)',
+  xmasInk: '#7f1d1d',
   bulbHi: '#fffbeb',
   bulbMid: '#fde68a',
   bulbLo: '#f59e0b',
@@ -170,6 +216,31 @@ export const illo = {
   onChapter: '#ffffff',
   onChapterSoft: 'rgba(255,255,255,0.2)',
   onChapterMuted: 'rgba(255,255,255,0.85)',
+  // Hồ sơ: đồng xu / vương miện vàng
+  goldHi: '#fde68a',
+  goldMid: '#fbbf24',
+  goldLo: '#f59e0b',
+  goldEdge: '#b45309',
+  goldInk: '#78350f',
+  onCoverSoft: 'rgba(255,255,255,0.16)',
+  onCoverLine: 'rgba(255,255,255,0.35)',
+  // Tài liệu: lớp phủ bìa
+  onCoverFaint: 'rgba(255,255,255,0.4)',
+  onCoverDeco: 'rgba(255,255,255,0.18)',
+  scrim: 'rgba(15,23,42,0.55)',
+  durBg: 'rgba(15,23,42,0.7)',
+  saveBg: 'rgba(15,23,42,0.45)',
+  typeVideo: '#3d6896',
+  typePdf: '#a9553a',
+  typeBook: '#76508a',
+  lockInk: '#3e4651',
+  // Tài liệu: thư mục 3D trên banner "Tài liệu của tôi"
+  folderBack: '#a7f3d0',
+  folderHi: '#6ee7b7',
+  folderLo: '#10b981',
+  folderEdge: '#065f46',
+  sheet1: '#ffffff',
+  sheet2: '#fef3c7',
 };
 
 /**
@@ -193,4 +264,4 @@ export type ChapterColor = keyof typeof chapterPalette;
 export const CHAPTER_COLOR_ORDER = Object.keys(chapterPalette) as ChapterColor[];
 
 /** Chiều rộng tối đa của khung app trên web. 440 = iPhone Pro Max · 480 = điện thoại lớn/gập · 600 = tablet nhỏ dọc. */
-export const WEB_MAX_WIDTH = 600;
+export const WEB_MAX_WIDTH = 480;

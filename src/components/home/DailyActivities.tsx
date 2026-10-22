@@ -12,7 +12,7 @@ import { SectionTitle } from './SectionTitle';
 
 export function DailyActivities({ daily }: { daily: HomeData['daily'] }) {
   const { colors } = useTheme();
-  const reveal = useRevealStyle(2);
+  const reveal = useRevealStyle(5);
   const { quiz, podcast } = daily;
 
   return (
@@ -125,7 +125,7 @@ function CountBadge({ value, bg, fg, ring, delay }: { value: number; bg: string;
 }
 
 const styles = StyleSheet.create({
-  section: { paddingTop: 24, paddingHorizontal: 16, gap: 12 },
+  section: { paddingTop: 28, paddingHorizontal: 16, gap: 12 },
   grid: { flexDirection: 'row', gap: 12, paddingTop: 30 },
   card: {
     flex: 1,

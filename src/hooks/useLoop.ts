@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { Animated, Easing, Platform } from 'react-native';
 
+import { LoopActiveContext } from './LoopScope';
 import { useReducedMotion } from './useReducedMotion';
 
 export const NATIVE_DRIVER = Platform.OS !== 'web';
@@ -15,14 +16,20 @@ type LoopKind =
 
 /**
  * Trả về một Animated.Value chạy lặp vô hạn trong khoảng [0, 1].
- * Tự dừng (giá trị 0) khi hệ thống bật giảm chuyển động.
+ * Tự dừng (giá trị 0) khi hệ thống bật giảm chuyển động, khi `active` = false,
+ * hoặc khi màn chứa nó không được focus (xem <LoopScope> bọc ở các file route).
  */
-export function useLoop(duration: number, { kind = 'pingpong', delay = 0 }: { kind?: LoopKind; delay?: number } = {}) {
+export function useLoop(
+  duration: number,
+  { kind = 'pingpong', delay = 0, active = true }: { kind?: LoopKind; delay?: number; active?: boolean } = {},
+) {
   const value = useRef(new Animated.Value(0)).current;
   const reduced = useReducedMotion();
+  const scopeActive = useContext(LoopActiveContext);
+  const running = active && scopeActive;
 
   useEffect(() => {
-    if (reduced) {
+    if (reduced || !running) {
       value.setValue(0);
       return;
     }
@@ -56,7 +63,7 @@ export function useLoop(duration: number, { kind = 'pingpong', delay = 0 }: { ki
       clearTimeout(timer);
       loop.stop();
     };
-  }, [duration, kind, delay, reduced, value]);
+  }, [duration, kind, delay, reduced, running, value]);
 
   return value;
 }

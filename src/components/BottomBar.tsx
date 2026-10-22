@@ -165,8 +165,6 @@ export function BottomBar({ state, navigateToTab, insets }: BottomTabBarProps) {
                   </Defs>
                   <Rect x="0" y="0" width="10" height="10" fill="url(#pillFace)" />
                 </Svg>
-                {/* vệt sáng mép trên */}
-                <View style={styles.pillShine} />
               </View>
             </Animated.View>
           )}
@@ -255,15 +253,6 @@ const styles = StyleSheet.create({
   trackStatic: { flexDirection: 'row', gap: GAP },
   pill: { position: 'absolute', top: 0, height: TAB_H, borderRadius: 9999 },
   pillFace: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 9999, overflow: 'hidden' },
-  pillShine: {
-    position: 'absolute',
-    top: 1,
-    left: 14,
-    right: 14,
-    height: 1,
-    borderRadius: 1,
-    backgroundColor: 'rgba(255,255,255,0.35)',
-  },
   tabAbs: { position: 'absolute', top: 0, height: TAB_H, overflow: 'hidden', borderRadius: 9999 },
   tabStatic: { width: TAB_W, height: TAB_H, overflow: 'hidden' },
   tabPress: { flex: 1 },

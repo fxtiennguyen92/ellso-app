@@ -30,8 +30,25 @@ export type TutorSession = {
   tutor: { name: string; initials: string };
 };
 
+/** Chiến dịch marketing hiển thị ở thẻ lớn dưới ô tìm kiếm. */
+export type Campaign = {
+  id: string;
+  /** Dòng nhỏ phía trên (tên dịp). */
+  eyebrow: string;
+  title: string;
+  /** Số to nổi bật, vd "-10%". */
+  highlight: string;
+  description: string;
+  /** ISO — ngày kết thúc ưu đãi. */
+  endsAt: string;
+  cta: string;
+};
+
 export type HomeData = {
   student: { name: string; initials: string; unreadNotifications: number };
+  campaign: Campaign | null;
+  /** Lịch huấn luyện: các buổi huấn luyện nhóm sắp tới (hiển thị 3 buổi gần nhất). */
+  trainings: TutorSession[];
   courses: Course[];
   daily: {
     quiz: { total: number; remaining: number };
@@ -42,6 +59,44 @@ export type HomeData = {
 
 const data: HomeData = {
   student: { name: 'Nguyễn Tiến', initials: 'NT', unreadNotifications: 2 },
+  campaign: {
+    id: 'giang-sinh-2026',
+    eyebrow: 'Ưu đãi Giáng Sinh',
+    title: 'Giảm 10% khoá học Tư duy phản biện',
+    highlight: '-10%',
+    description: 'Quà cuối năm cho bạn — áp dụng khi đăng ký trước Giáng Sinh.',
+    endsAt: '2026-12-25T23:59:00',
+    cta: 'Xem ưu đãi',
+  },
+  trainings: [
+    {
+      id: 't1',
+      title: 'Huấn luyện nhóm: Thuyết trình tự tin',
+      start: '2026-10-23T18:30:00',
+      end: '2026-10-23T20:30:00',
+      location: '[Địa điểm]',
+      room: 'Phòng 201',
+      tutor: { name: 'Minh Khoa', initials: 'MK' },
+    },
+    {
+      id: 't2',
+      title: 'Huấn luyện: Phản hồi 1-1 hiệu quả',
+      start: '2026-10-27T19:00:00',
+      end: '2026-10-27T21:00:00',
+      location: '[Địa điểm]',
+      room: 'Phòng 105',
+      tutor: { name: 'Thuỳ Vân', initials: 'TV' },
+    },
+    {
+      id: 't3',
+      title: 'Huấn luyện: Tư duy phản biện ứng dụng',
+      start: '2026-10-31T09:00:00',
+      end: '2026-10-31T11:30:00',
+      location: '[Địa điểm]',
+      room: 'Hội trường A',
+      tutor: { name: 'Quốc Bảo', initials: 'QB' },
+    },
+  ],
   courses: [
     {
       id: 'tu-duy-phan-bien',

@@ -1,8 +1,13 @@
 import { useLocalSearchParams } from 'expo-router';
 
 import { CourseMapScreen } from '@/components/courses/CourseMapScreen';
+import { LoopScope } from '@/hooks/LoopScope';
 
 export default function CourseMapRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <CourseMapScreen courseId={id} />;
+  return (
+    <LoopScope>
+      <CourseMapScreen courseId={id} />
+    </LoopScope>
+  );
 }

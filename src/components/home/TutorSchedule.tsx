@@ -16,12 +16,12 @@ const DATE_COL_WIDTH = 84;
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export function TutorSchedule({ sessions }: { sessions: TutorSession[] }) {
-  const reveal = useRevealStyle(3);
+  const reveal = useRevealStyle(4);
   const [next, ...later] = sessions;
 
   return (
     <Animated.View style={[styles.section, reveal]}>
-      <SectionTitle title={`Lịch gặp ${TUTOR_LABEL}`} subtitle="Buổi gặp trực tiếp sắp tới" action={{ label: 'Xem lịch' }} />
+      <SectionTitle title="Lịch hẹn của tôi" subtitle={`Buổi gặp ${TUTOR_LABEL} sắp tới`} action={{ label: 'Xem lịch' }} />
       {next && <TicketCard session={next} />}
       {later.map((s) => (
         <SessionRow key={s.id} session={s} />
@@ -30,8 +30,8 @@ export function TutorSchedule({ sessions }: { sessions: TutorSession[] }) {
   );
 }
 
-/** Buổi gần nhất: thẻ dạng vé. */
-function TicketCard({ session }: { session: TutorSession }) {
+/** Thẻ dạng vé (buổi gần nhất của Lịch hẹn · mỗi buổi của Lịch huấn luyện). */
+export function TicketCard({ session }: { session: TutorSession }) {
   const { colors } = useTheme();
   const f = formatSession(session);
 

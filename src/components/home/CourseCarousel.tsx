@@ -31,7 +31,7 @@ const illustrations = {
 };
 
 export function CourseCarousel({ courses }: { courses: Course[] }) {
-  const reveal = useRevealStyle(1);
+  const reveal = useRevealStyle(3);
   const scrollRef = useRef<ScrollViewInstance>(null);
   useDragScroll(scrollRef, CARD_WIDTH + GAP);
 
@@ -215,7 +215,7 @@ function CourseCard({ course, primary, last }: { course: Course; primary: boolea
 }
 
 const styles = StyleSheet.create({
-  section: { paddingTop: 16, gap: 12 },
+  section: { paddingTop: 28, gap: 12 },
   titleWrap: { paddingHorizontal: 16 },
   list: { gap: GAP, paddingHorizontal: 16, paddingTop: 4, paddingBottom: 4 },
   dots: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingTop: 2 },

@@ -35,7 +35,30 @@ export type IconName =
   | 'clipboard'
   | 'grid'
   | 'branch'
-  | 'target';
+  | 'target'
+  // hồ sơ
+  | 'qr'
+  | 'crown'
+  | 'copy'
+  | 'link'
+  | 'share'
+  | 'lock'
+  | 'receipt'
+  | 'ticket'
+  | 'sun'
+  | 'moon'
+  | 'phone'
+  | 'shield'
+  | 'logout'
+  | 'close'
+  | 'user'
+  // tài liệu
+  | 'bookmark'
+  | 'bookmarkFilled'
+  | 'tag'
+  | 'video'
+  | 'image'
+  | 'chevronDown';
 
 type Props = {
   name: IconName;
@@ -219,6 +242,114 @@ export function Icon({ name, size = 22, color, strokeWidth = 2, duotone = false,
           <Circle cx="12" cy="12" r="1" {...stroke} />
         </>
       )}
+
+      {/* ---------- hồ sơ ---------- */}
+      {name === 'qr' && (
+        <>
+          <Rect x="3.75" y="3.75" width="6.5" height="6.5" rx="1.25" {...stroke} />
+          <Rect x="13.75" y="3.75" width="6.5" height="6.5" rx="1.25" {...stroke} />
+          <Rect x="3.75" y="13.75" width="6.5" height="6.5" rx="1.25" {...stroke} />
+          <Path d="M13.75 13.75h2.5v2.5h-2.5ZM19.25 13.75h1M13.75 19.25v1M16.75 19.25h3.5v1M19.75 16.25v1.5" {...stroke} />
+        </>
+      )}
+      {name === 'crown' && <Path d="M3 18h18M4 8l4 4 4-7 4 7 4-4-1.5 10h-13Z" {...stroke} />}
+      {name === 'copy' && (
+        <>
+          <Rect x="8.75" y="8.75" width="11.5" height="11.5" rx="2.25" {...stroke} />
+          <Path d="M15.25 8.75V5.75a2 2 0 0 0-2-2h-7.5a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h3" {...stroke} />
+        </>
+      )}
+      {name === 'link' && (
+        <>
+          <Path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" {...stroke} />
+          <Path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" {...stroke} />
+        </>
+      )}
+      {name === 'share' && (
+        <>
+          <Path d="M12 15V3.5M7.5 8 12 3.5 16.5 8" {...stroke} />
+          <Path d="M5 12.5v5.75A2.25 2.25 0 0 0 7.25 20.5h9.5A2.25 2.25 0 0 0 19 18.25V12.5" {...stroke} />
+        </>
+      )}
+      {name === 'lock' && (
+        <>
+          <Rect x="4.75" y="10.75" width="14.5" height="9.5" rx="2.25" {...stroke} />
+          <Path d="M8.25 10.75V7.5a3.75 3.75 0 0 1 7.5 0v3.25" {...stroke} />
+        </>
+      )}
+      {name === 'receipt' && (
+        <>
+          <Path d="M6 3.75h12v16.5l-2.5-1.5-2 1.5-1.5-1.5-1.5 1.5-2-1.5-2.5 1.5Z" {...stroke} />
+          <Path d="M9 8.5h6M9 12h6" {...stroke} />
+        </>
+      )}
+      {name === 'ticket' && (
+        <>
+          <Path d="M3.75 8.5V6.75a1 1 0 0 1 1-1h14.5a1 1 0 0 1 1 1V8.5a2.5 2.5 0 0 0 0 5v1.75a1 1 0 0 1-1 1H4.75a1 1 0 0 1-1-1V13.5a2.5 2.5 0 0 0 0-5Z" {...stroke} />
+          <Path d="M10 6v12" {...stroke} strokeDasharray="2 2" />
+        </>
+      )}
+      {name === 'sun' && (
+        <>
+          <Circle cx="12" cy="12" r="4" {...stroke} />
+          <Path d="M12 2.75v2M12 19.25v2M2.75 12h2M19.25 12h2M5.5 5.5l1.4 1.4M17.1 17.1l1.4 1.4M5.5 18.5l1.4-1.4M17.1 6.9l1.4-1.4" {...stroke} />
+        </>
+      )}
+      {name === 'moon' && <Path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z" {...stroke} />}
+      {name === 'phone' && (
+        <>
+          <Rect x="6.75" y="2.75" width="10.5" height="18.5" rx="2.25" {...stroke} />
+          <Path d="M11 18h2" {...stroke} />
+        </>
+      )}
+      {name === 'shield' && (
+        <>
+          <Path d="M12 3.25 4.75 6v5.5c0 4.4 3 7.9 7.25 9.25 4.25-1.35 7.25-4.85 7.25-9.25V6Z" {...stroke} />
+          <Path d="m9.25 12 2 2 3.5-3.75" {...stroke} />
+        </>
+      )}
+      {name === 'logout' && (
+        <>
+          <Path d="M14.5 4.75H17a2.25 2.25 0 0 1 2.25 2.25v10A2.25 2.25 0 0 1 17 19.25h-2.5" {...stroke} />
+          <Path d="M10 16.5 5.5 12 10 7.5M5.5 12h9.25" {...stroke} />
+        </>
+      )}
+      {name === 'close' && <Path d="M6 6l12 12M18 6 6 18" {...stroke} />}
+      {name === 'user' && (
+        <>
+          <Circle cx="12" cy="8" r="3.75" {...stroke} />
+          <Path d="M4.75 20a7.25 7.25 0 0 1 14.5 0" {...stroke} />
+        </>
+      )}
+
+      {/* ---------- tài liệu ---------- */}
+      {(name === 'bookmark' || name === 'bookmarkFilled') && (
+        <Path
+          d="M7 3.75h10A1.25 1.25 0 0 1 18.25 5v15.25L12 16.5l-6.25 3.75V5A1.25 1.25 0 0 1 7 3.75Z"
+          {...stroke}
+          fill={name === 'bookmarkFilled' ? color : 'none'}
+        />
+      )}
+      {name === 'tag' && (
+        <>
+          <Path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z" {...stroke} />
+          <Circle cx="7.5" cy="7.5" r="1.5" {...stroke} />
+        </>
+      )}
+      {name === 'video' && (
+        <>
+          <Rect x="2.75" y="5.75" width="18.5" height="12.5" rx="3" {...stroke} />
+          <Path d="M10.25 9.5v5l4.25-2.5Z" fill={color} stroke={color} strokeWidth={strokeWidth} strokeLinejoin="round" />
+        </>
+      )}
+      {name === 'image' && (
+        <>
+          <Rect x="3" y="3" width="18" height="18" rx="2" {...stroke} />
+          <Circle cx="9" cy="9" r="2" {...stroke} />
+          <Path d="m21 15-5-5L5 21" {...stroke} />
+        </>
+      )}
+      {name === 'chevronDown' && <Path d="m6 9 6 6 6-6" {...stroke} />}
     </Svg>
   );
 }

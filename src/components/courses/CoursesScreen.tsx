@@ -26,6 +26,8 @@ import { useTheme } from '@/theme/ThemeProvider';
 import type { ColorTokens } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
 
+import { PlacementTestCard } from './PlacementTestCard';
+
 const enrolledTint = (t: CourseTint, c: ColorTokens) => ({ mint: c.mint50, sky: c.skyTint, sun: c.sunTint })[t];
 
 const exploreTint = (t: ExploreTint, c: ColorTokens) =>
@@ -85,6 +87,11 @@ export function CoursesScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + SCROLL_TOP_SPACE + 8 }}
       >
+        {/* BÀI TEST ĐẦU VÀO */}
+        <View style={styles.banner}>
+          <PlacementTestCard />
+        </View>
+
         {/* ĐANG HỌC */}
         <View style={styles.section}>
           <View style={styles.sectionHead}>
@@ -332,6 +339,7 @@ const styles = StyleSheet.create({
   },
   cartBadgeText: { fontFamily: fonts.sans700, fontSize: 11, lineHeight: 14 },
 
+  banner: { paddingTop: 8, paddingHorizontal: 16 },
   section: { paddingTop: 16, paddingHorizontal: 16, gap: 12 },
   sectionHead: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
 

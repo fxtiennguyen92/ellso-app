@@ -42,6 +42,9 @@ export type ExploreCourse = {
   tint: ExploreTint;
 };
 
+/** Bài test đầu vào (banner đầu tab Khoá học). */
+export const placementTest = { minutes: 15, questions: 20 };
+
 export const categories: Category[] = [
   { id: 'soft-skills', name: 'Kỹ năng mềm' },
   { id: 'leadership', name: 'Lãnh đạo' },
