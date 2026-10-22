@@ -5,6 +5,8 @@
 
 export const lightColors = {
   bg: '#f6f8f7',
+  /** Dải nền nhạt kéo hết bề ngang — tạo khoảng nghỉ giữa trang (Home: Hoạt động hằng ngày). Tối đa 1 dải mỗi màn. */
+  band: '#e8f2ed',
   card: '#ffffff',
   line: '#e2e8f0',
   ink900: '#0f172a',
@@ -73,6 +75,7 @@ export type ColorTokens = typeof lightColors;
 
 export const darkColors: ColorTokens = {
   bg: '#0b1220',
+  band: '#0f1a2b',
   card: '#131c2e',
   line: '#1f2a3d',
   ink900: '#e8eef5',

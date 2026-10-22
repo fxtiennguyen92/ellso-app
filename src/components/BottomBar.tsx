@@ -41,7 +41,7 @@ const BAR_BORDER = 1;
  * Với mỗi trạng thái nguyên k, tính sẵn vị trí/độ rộng của từng tab và của khối 3D;
  * giữa hai trạng thái thì nội suy tuyến tính → mọi thứ chuyển động đồng bộ.
  */
-export function BottomBar({ state, navigateToTab, insets }: BottomTabBarProps) {
+export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBarProps) {
   const { colors } = useTheme();
   const reduced = useReducedMotion();
   const reveal = useRevealStyle(4, 40);
@@ -191,7 +191,13 @@ export function BottomBar({ state, navigateToTab, insets }: BottomTabBarProps) {
                   accessibilityLabel={tab.label}
                   onPressIn={() => setPressedKey(route.key)}
                   onPressOut={() => setPressedKey(null)}
-                  onPress={() => !active && navigateToTab(route.key)}
+                  onPress={() => {
+                    // Phát sự kiện tabPress như tab bar mặc định: Stack lồng bên trong tự lắng nghe —
+                    // bấm lại tab ĐANG mở thì Stack về màn đầu (popToTop).
+                    // Chuyển sang tab khác thì giữ nguyên màn con đang xem của tab cũ.
+                    const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+                    if (!active && !event.defaultPrevented) navigateToTab(route.key);
+                  }}
                   style={({ pressed }) => [styles.tabPress, pressed && !active && { transform: [{ scale: 0.9 }] }]}
                 >
                   <Animated.View

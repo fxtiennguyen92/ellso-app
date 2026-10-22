@@ -5,6 +5,7 @@ import { Icon } from '@/components/Icon';
 import { useRevealStyle } from '@/components/splash/RevealContext';
 import { formatSession, type TutorSession } from '@/data/home';
 import { useTheme } from '@/theme/ThemeProvider';
+import type { ColorTokens } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
 
 import { SectionTitle } from './SectionTitle';
@@ -14,6 +15,14 @@ export const TUTOR_LABEL = 'gia sư';
 /** Bề rộng cột ngày — dùng chung cho thẻ vé và các dòng bên dưới để thẳng hàng. */
 const DATE_COL_WIDTH = 84;
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/**
+ * Màu nhấn theo loại lịch, để nhìn lướt là phân biệt:
+ * emerald = Lịch hẹn của tôi (gặp gia sư) · violet = Lịch huấn luyện.
+ */
+export type SessionAccent = 'emerald' | 'violet';
+const accentColors = (a: SessionAccent, c: ColorTokens) =>
+  a === 'violet' ? { tint: c.violetTint, strong: c.violetText, deep: c.violetText } : { tint: c.mint50, strong: c.emerald700, deep: c.emerald800 };
 
 export function TutorSchedule({ sessions }: { sessions: TutorSession[] }) {
   const reveal = useRevealStyle(4);
@@ -30,10 +39,11 @@ export function TutorSchedule({ sessions }: { sessions: TutorSession[] }) {
   );
 }
 
-/** Thẻ dạng vé (buổi gần nhất của Lịch hẹn · mỗi buổi của Lịch huấn luyện). */
-export function TicketCard({ session }: { session: TutorSession }) {
+/** Thẻ dạng vé cho buổi gần nhất (Lịch hẹn · Lịch huấn luyện). */
+export function TicketCard({ session, accent = 'emerald' }: { session: TutorSession; accent?: SessionAccent }) {
   const { colors } = useTheme();
   const f = formatSession(session);
+  const a = accentColors(accent, colors);
 
   return (
     <View
@@ -41,10 +51,10 @@ export function TicketCard({ session }: { session: TutorSession }) {
       accessibilityLabel={`${session.title}. ${f.weekday} ngày ${f.day} ${f.month}, ${f.startTime} đến ${f.endTime}. ${f.countdown}. ${capitalize(TUTOR_LABEL)} ${session.tutor.name}`}
       style={[styles.ticket, { backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.shadowCard }]}
     >
-      <View style={[styles.dateCol, { backgroundColor: colors.mint50 }]}>
-        <Text style={[type.eyebrow, { color: colors.emerald700 }]}>{f.weekday}</Text>
-        <Text style={[styles.bigDay, { color: colors.emerald800 }]}>{f.day}</Text>
-        <Text style={[type.caption, { color: colors.emerald800 }]}>{f.month}</Text>
+      <View style={[styles.dateCol, { backgroundColor: a.tint }]}>
+        <Text style={[type.eyebrow, { color: a.strong }]}>{f.weekday}</Text>
+        <Text style={[styles.bigDay, { color: a.deep }]}>{f.day}</Text>
+        <Text style={[type.caption, { color: a.deep }]}>{f.month}</Text>
       </View>
 
       {/* Đường xé vé: nét đứt + 2 khía bán nguyệt */}
@@ -62,7 +72,7 @@ export function TicketCard({ session }: { session: TutorSession }) {
 
       <View style={styles.ticketBody}>
         <View style={styles.timeRow}>
-          <Icon name="clock" size={16} color={colors.emerald700} />
+          <Icon name="clock" size={16} color={a.strong} />
           <Text style={[styles.time, { color: colors.ink900 }]}>
             {f.startTime} – {f.endTime}
           </Text>
@@ -97,30 +107,35 @@ export function TicketCard({ session }: { session: TutorSession }) {
   );
 }
 
-/** Các buổi sau: dòng gọn. */
-function SessionRow({ session }: { session: TutorSession }) {
+/** Các buổi sau: dòng gọn (cột ngày cùng bề rộng và màu nhấn với thẻ vé). */
+export function SessionRow({
+  session,
+  accent = 'emerald',
+  personLabel = capitalize(TUTOR_LABEL),
+}: {
+  session: TutorSession;
+  accent?: SessionAccent;
+  personLabel?: string;
+}) {
   const { colors } = useTheme();
   const f = formatSession(session);
+  const a = accentColors(accent, colors);
   return (
     <Pressable
       accessibilityRole="link"
-      accessibilityLabel={`${session.title}, ${f.weekday} ngày ${f.day}, ${f.startTime} đến ${f.endTime}, ${TUTOR_LABEL} ${session.tutor.name}`}
-      style={({ pressed }) => [
-        styles.row,
-        { backgroundColor: colors.card, borderColor: colors.line, opacity: pressed ? 0.8 : 1 },
-      ]}
+      accessibilityLabel={`${session.title}, ${f.weekday} ngày ${f.day}, ${f.startTime} đến ${f.endTime}, ${personLabel} ${session.tutor.name}`}
+      style={({ pressed }) => [styles.row, { backgroundColor: colors.card, borderColor: colors.line, opacity: pressed ? 0.8 : 1 }]}
     >
-      <View style={styles.rowDate}>
-        <Text style={[type.chip, { color: colors.ink600 }]}>{f.weekdayShort}</Text>
-        <Text style={[styles.rowDay, { color: colors.ink900 }]}>{f.day}</Text>
+      <View style={[styles.rowDate, { backgroundColor: a.tint }]}>
+        <Text style={[type.chip, { color: a.strong }]}>{f.weekdayShort}</Text>
+        <Text style={[styles.rowDay, { color: a.deep }]}>{f.day}</Text>
       </View>
-      <View style={[styles.rowDivider, { backgroundColor: colors.line }]} />
       <View style={styles.rowText}>
         <Text style={[type.label, { color: colors.ink900 }]} numberOfLines={1}>
           {session.title}
         </Text>
         <Text style={[type.caption, { color: colors.ink600 }]} numberOfLines={1}>
-          {f.startTime} – {f.endTime} · {capitalize(TUTOR_LABEL)} {session.tutor.name}
+          {f.startTime} – {f.endTime} · {personLabel} {session.tutor.name}
         </Text>
       </View>
       <View style={styles.rowChevron}>
@@ -177,9 +192,16 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
   },
-  rowDate: { width: DATE_COL_WIDTH, alignItems: 'center', paddingVertical: 12 },
+  rowDate: {
+    width: DATE_COL_WIDTH,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderTopLeftRadius: 17,
+    borderBottomLeftRadius: 17,
+  },
   rowDay: { fontFamily: fonts.display600, fontSize: 18, lineHeight: 24 },
-  rowDivider: { width: 1, alignSelf: 'stretch' },
   rowText: { flex: 1, minWidth: 0, paddingVertical: 12, paddingLeft: 16, paddingRight: 8 },
   rowChevron: { paddingRight: 14 },
 });

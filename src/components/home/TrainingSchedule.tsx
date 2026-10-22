@@ -1,31 +1,31 @@
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet } from 'react-native';
 
 import { useRevealStyle } from '@/components/splash/RevealContext';
 import type { TutorSession } from '@/data/home';
 
 import { SectionTitle } from './SectionTitle';
-import { TicketCard } from './TutorSchedule';
+import { SessionRow, TicketCard } from './TutorSchedule';
 
-/** Lịch huấn luyện: 3 buổi gần nhất, mỗi buổi một thẻ vé giống Lịch hẹn. */
+/**
+ * Lịch huấn luyện: buổi gần nhất là thẻ vé, 2 buổi sau là dòng gọn.
+ * Màu nhấn violet để phân biệt với "Lịch hẹn của tôi" (emerald).
+ */
 export function TrainingSchedule({ sessions }: { sessions: TutorSession[] }) {
   const reveal = useRevealStyle(2);
-  const list = [...sessions].sort((a, b) => a.start.localeCompare(b.start)).slice(0, 3);
-  if (list.length === 0) return null;
+  const [next, ...later] = [...sessions].sort((a, b) => a.start.localeCompare(b.start)).slice(0, 3);
+  if (!next) return null;
 
   return (
     <Animated.View style={[styles.section, reveal]}>
-      <SectionTitle title="Lịch huấn luyện" subtitle={`${list.length} buổi huấn luyện sắp tới`} action={{ label: 'Xem lịch' }} />
-      {/* gap đủ lớn để badge đếm ngày (đè mép trên thẻ) không chạm thẻ trước */}
-      <View style={styles.list}>
-        {list.map((s) => (
-          <TicketCard key={s.id} session={s} />
-        ))}
-      </View>
+      <SectionTitle title="Lịch huấn luyện" subtitle={`${later.length + 1} buổi huấn luyện sắp tới`} action={{ label: 'Xem lịch' }} />
+      <TicketCard session={next} accent="violet" />
+      {later.map((s) => (
+        <SessionRow key={s.id} session={s} accent="violet" personLabel="HLV" />
+      ))}
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   section: { paddingTop: 28, paddingHorizontal: 16, gap: 12 },
-  list: { gap: 20 },
 });

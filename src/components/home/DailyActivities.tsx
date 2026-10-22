@@ -16,7 +16,8 @@ export function DailyActivities({ daily }: { daily: HomeData['daily'] }) {
   const { quiz, podcast } = daily;
 
   return (
-    <Animated.View style={[styles.section, reveal]}>
+    // Dải nền nhạt kéo hết bề ngang: khoảng nghỉ giữa trang (duy nhất trên Home)
+    <Animated.View style={[styles.section, { backgroundColor: colors.band }, reveal]}>
       <SectionTitle title="Hoạt động hằng ngày" subtitle="Nội dung mới trong tuần này" />
 
       <View style={styles.grid}>
@@ -98,7 +99,7 @@ function ActivityCard(p: CardProps) {
         {p.illustration}
       </View>
 
-      {p.badge.value > 0 && <CountBadge {...p.badge} ring={colors.bg} />}
+      {p.badge.value > 0 && <CountBadge {...p.badge} ring={colors.band} />}
 
       <Text style={[type.eyebrow, { color: p.eyebrowColor }]}>{p.eyebrow}</Text>
       <Text style={[type.cardTitle, { color: colors.ink900 }]}>{p.title}</Text>
@@ -125,7 +126,7 @@ function CountBadge({ value, bg, fg, ring, delay }: { value: number; bg: string;
 }
 
 const styles = StyleSheet.create({
-  section: { paddingTop: 28, paddingHorizontal: 16, gap: 12 },
+  section: { marginTop: 32, paddingTop: 28, paddingBottom: 32, paddingHorizontal: 16, gap: 12 },
   grid: { flexDirection: 'row', gap: 12, paddingTop: 30 },
   card: {
     flex: 1,
