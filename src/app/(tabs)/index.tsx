@@ -10,6 +10,7 @@ import { HomeBooks } from '@/components/home/HomeBooks';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import { TrainingSchedule } from '@/components/home/TrainingSchedule';
 import { TutorSchedule } from '@/components/home/TutorSchedule';
+import { useAuth } from '@/auth/AuthProvider';
 import { getHomeDataSync } from '@/data/home';
 import { LoopScope } from '@/hooks/LoopScope';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -18,6 +19,9 @@ export default function HomeScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const data = getHomeDataSync();
+  const { user } = useAuth();
+  // Lời chào theo tài khoản đang đăng nhập
+  const student = user ? { ...data.student, name: user.name, initials: user.initials } : data.student;
 
   const [headerHeight, setHeaderHeight] = useState(200);
   const [scrolled, setScrolled] = useState(false);
@@ -43,7 +47,7 @@ export default function HomeScreen() {
           <HomeBooks />
         </ScrollView>
 
-        <HomeHeader student={data.student} scrolled={scrolled} topInset={topInset} onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)} />
+        <HomeHeader student={student} scrolled={scrolled} topInset={topInset} onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)} />
       </View>
     </LoopScope>
   );

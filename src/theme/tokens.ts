@@ -7,6 +7,12 @@ export const lightColors = {
   bg: '#f6f8f7',
   /** Dải nền nhạt kéo hết bề ngang — tạo khoảng nghỉ giữa trang (Home: Hoạt động hằng ngày). Tối đa 1 dải mỗi màn. */
   band: '#e8f2ed',
+  /** Vòng sáng quanh ô nhập đang focus (màn tài khoản). */
+  focusRing: 'rgba(16,185,129,0.18)',
+  /** Vòng nét đứt trang trí header Đăng nhập. */
+  authRing: '#a7f3d0',
+  /** Bóng mềm dưới vật thể 3D đang nhún. */
+  shadowBlob: 'rgba(15,23,42,0.12)',
   card: '#ffffff',
   line: '#e2e8f0',
   ink900: '#0f172a',
@@ -76,6 +82,9 @@ export type ColorTokens = typeof lightColors;
 export const darkColors: ColorTokens = {
   bg: '#0b1220',
   band: '#0f1a2b',
+  focusRing: 'rgba(52,211,153,0.2)',
+  authRing: '#065f46',
+  shadowBlob: 'rgba(0,0,0,0.4)',
   card: '#131c2e',
   line: '#1f2a3d',
   ink900: '#e8eef5',
@@ -137,6 +146,29 @@ export const darkColors: ColorTokens = {
 
 /** Màu minh hoạ 3D — giữ nguyên ở cả hai chế độ. */
 export const illo = {
+  // Minh hoạ các màn tài khoản (đăng nhập / đăng ký / quên mật khẩu)
+  authBookHi: '#c4b5fd',
+  authBookLo: '#7c3aed',
+  authBookEdge: '#4c1d95',
+  authPageLine: '#ddd6fe',
+  authIdHi: '#6ee7b7',
+  authIdLo: '#059669',
+  authIdEdge: '#065f46',
+  authLockHi: '#c4b5fd',
+  authLockLo: '#7c3aed',
+  authLockEdge: '#4c1d95',
+  authShackle: '#94a3b8',
+  authEnvMintHi: '#6ee7b7',
+  authEnvMintLo: '#10b981',
+  authEnvMintDark: '#059669',
+  authEnvMintEdge: '#065f46',
+  authEnvMintLine: '#d1fae5',
+  authEnvVioletHi: '#c4b5fd',
+  authEnvVioletLo: '#8b5cf6',
+  authEnvVioletDark: '#6d28d9',
+  authEnvVioletEdge: '#4c1d95',
+  authEnvVioletLine: '#ede9fe',
+  authLetterShadow: 'rgba(15,23,42,0.12)',
   // Banner "Bài test đầu vào" ở tab Khoá học (màu tươi cố định cho cả 2 chế độ)
   ptTop: '#fde047',
   ptBottom: '#fb923c',

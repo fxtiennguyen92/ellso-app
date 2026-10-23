@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
@@ -43,7 +43,8 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
 
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose} statusBarTranslucent>
-      <View style={styles.root}>
+      {/* iOS: đẩy bảng lên khi bàn phím mở (bảng có ô nhập, vd mã giới thiệu) */}
+      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: v }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Đóng" />
         </Animated.View>
@@ -77,7 +78,7 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
           </View>
           {children}
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

@@ -5,6 +5,7 @@ import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
+import { useAuth } from '@/auth/AuthProvider';
 import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Icon } from '@/components/Icon';
@@ -26,7 +27,9 @@ export function ProfileScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const topInset = useScreenTopInset();
-  const profile = getProfile();
+  const { user, logout } = useAuth();
+  // Tên / email / chữ viết tắt lấy từ tài khoản đang đăng nhập; phần còn lại vẫn là data tạm
+  const profile = { ...getProfile(), ...(user ? { name: user.name, email: user.email, initials: user.initials } : null) };
   const { referral } = profile;
 
   const [scrollY, setScrollY] = useState(0);
@@ -247,8 +250,8 @@ export function ProfileScreen() {
             accessibilityRole="button"
             onPress={() => {
               setLogoutOpen(false);
-              // TODO: khi có đăng nhập — xoá token + chuyển về màn đăng nhập
-              showToast('Chưa có màn đăng nhập');
+              // Xoá phiên → status "signedOut" → router tự về màn đăng nhập
+              logout();
             }}
             style={({ pressed }) => [styles.danger, { backgroundColor: colors.danger, opacity: pressed ? 0.85 : 1 }]}
           >

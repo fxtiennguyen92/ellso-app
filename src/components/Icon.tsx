@@ -58,7 +58,11 @@ export type IconName =
   | 'tag'
   | 'video'
   | 'image'
-  | 'chevronDown';
+  | 'chevronDown'
+  | 'mail'
+  | 'eyeOff'
+  | 'info'
+  | 'scan';
 
 type Props = {
   name: IconName;
@@ -315,6 +319,31 @@ export function Icon({ name, size = 22, color, strokeWidth = 2, duotone = false,
         </>
       )}
       {name === 'close' && <Path d="M6 6l12 12M18 6 6 18" {...stroke} />}
+      {/* ---------- tài khoản ---------- */}
+      {name === 'mail' && (
+        <>
+          <Rect x="3.25" y="5.25" width="17.5" height="13.5" rx="2.5" {...stroke} />
+          <Path d="m4 7 8 6 8-6" {...stroke} />
+        </>
+      )}
+      {name === 'eyeOff' && (
+        <>
+          <Path d="M10.6 5.85A9.7 9.7 0 0 1 12 5.75c5.75 0 9.25 6.25 9.25 6.25a16.6 16.6 0 0 1-2.4 3.2M6.6 7.1C4.2 8.7 2.75 12 2.75 12S6.25 18.25 12 18.25a8.9 8.9 0 0 0 4.4-1.15" {...stroke} />
+          <Path d="M9.9 9.9a3 3 0 0 0 4.2 4.2M3 3l18 18" {...stroke} />
+        </>
+      )}
+      {name === 'info' && (
+        <>
+          <Circle cx="12" cy="12" r="8.25" {...stroke} />
+          <Path d="M12 11v5M12 8h.01" {...stroke} />
+        </>
+      )}
+      {name === 'scan' && (
+        <>
+          <Path d="M3.75 8V5.75a2 2 0 0 1 2-2H8M16 3.75h2.25a2 2 0 0 1 2 2V8M20.25 16v2.25a2 2 0 0 1-2 2H16M8 20.25H5.75a2 2 0 0 1-2-2V16" {...stroke} />
+          <Path d="M3.75 12h16.5" {...stroke} />
+        </>
+      )}
       {name === 'user' && (
         <>
           <Circle cx="12" cy="8" r="3.75" {...stroke} />

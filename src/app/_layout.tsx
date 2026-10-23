@@ -13,6 +13,7 @@ import * as SystemUI from 'expo-system-ui';
 import { useCallback, useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AuthProvider, useAuth } from '@/auth/AuthProvider';
 import { AppFrame } from '@/components/AppFrame';
 import { RevealProvider } from '@/components/splash/RevealContext';
 import { SplashOverlay } from '@/components/splash/SplashOverlay';
@@ -26,7 +27,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <AppShell />
+        <AuthProvider>
+          <AppShell />
+        </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );
@@ -34,6 +37,7 @@ export default function RootLayout() {
 
 function AppShell() {
   const { colors, scheme } = useTheme();
+  const { status } = useAuth();
 
   // 1) Nạp font
   const [fontsLoaded, fontError] = useFonts({
@@ -46,7 +50,7 @@ function AppShell() {
     BeVietnamPro_700Bold,
   });
 
-  // 2) Chuẩn bị dữ liệu (hiện là data tạm; sau này: token đăng nhập, gọi API /v1…)
+  // 2) Chuẩn bị dữ liệu (hiện là data tạm; sau này gọi API /v1…). Phiên đăng nhập do AuthProvider đọc song song.
   const [dataReady, setDataReady] = useState(false);
   useEffect(() => {
     getHomeData()
@@ -55,7 +59,8 @@ function AppShell() {
   }, []);
 
   const fontsReady = fontsLoaded || !!fontError;
-  const ready = fontsReady && dataReady;
+  const ready = fontsReady && dataReady && status !== 'loading';
+  const signedIn = status === 'signedIn';
 
   // 3) Splash video → chuyển cảnh sang Home
   const [revealed, setRevealed] = useState(false);
@@ -70,7 +75,29 @@ function AppShell() {
   return (
     <AppFrame>
       <RevealProvider revealed={revealed}>
-        {ready && <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />}
+        {ready && (
+          // Chặn theo trạng thái đăng nhập: đổi status (đăng nhập / đổi mật khẩu / đăng xuất) là router tự chuyển nhóm màn.
+          <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
+            <Stack.Protected guard={signedIn}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="search" />
+              <Stack.Screen name="campaign/[id]" />
+              <Stack.Screen name="placement-test" />
+            </Stack.Protected>
+            {/* Đăng nhập bằng mật khẩu tạm: chỉ còn màn đặt mật khẩu mới (không vuốt lui được) */}
+            <Stack.Protected guard={status === 'mustChangePassword'}>
+              <Stack.Screen name="set-password" options={{ gestureEnabled: false }} />
+            </Stack.Protected>
+            {/* Chưa đăng nhập: màn đầu tiên trong nhóm (login) là nơi router chuyển tới */}
+            <Stack.Protected guard={status === 'signedOut'}>
+              <Stack.Screen name="login" />
+              <Stack.Screen name="register" />
+              <Stack.Screen name="register-sent" options={{ gestureEnabled: false }} />
+              <Stack.Screen name="forgot-password" />
+              <Stack.Screen name="forgot-sent" options={{ gestureEnabled: false }} />
+            </Stack.Protected>
+          </Stack>
+        )}
       </RevealProvider>
       {!splashDone && <SplashOverlay ready={ready} onExitStart={onExitStart} onFinish={onFinish} />}
       <StatusBar style={!splashDone || scheme === 'light' ? 'dark' : 'light'} />
