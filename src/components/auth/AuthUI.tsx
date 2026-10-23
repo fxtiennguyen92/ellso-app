@@ -17,7 +17,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon, type IconName } from '@/components/Icon';
-import { DEMO_TEMP_PASSWORD } from '@/data/auth';
 import { useCountdown } from '@/hooks/useCountdown';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
@@ -266,8 +265,11 @@ export function Note({ children, tone = 'mint', iconColor }: { children: ReactNo
   );
 }
 
-/** "Vui lòng kiểm tra mục Spam hoặc gửi lại sau 0:48" — đếm ngược 60 giây rồi cho bấm gửi lại. */
-export function ResendNote({ seconds, onResend }: { seconds: number; onResend: () => Promise<void> }) {
+/**
+ * "Vui lòng kiểm tra mục Spam hoặc gửi lại sau 1:48" — đếm ngược theo thời gian chờ của server rồi cho bấm gửi lại.
+ * `onResend` trả về số giây chờ cho lần sau (resend_after_seconds).
+ */
+export function ResendNote({ seconds, onResend }: { seconds: number; onResend: () => Promise<number | void> }) {
   const { colors } = useTheme();
   const { done, label, restart } = useCountdown(seconds);
   const [sending, setSending] = useState(false);
@@ -281,8 +283,10 @@ export function ResendNote({ seconds, onResend }: { seconds: number; onResend: (
         onPress={async () => {
           setSending(true);
           try {
-            await onResend();
-            restart();
+            const next = await onResend();
+            restart(typeof next === 'number' ? next : undefined);
+          } catch {
+            // màn gọi tự báo lỗi (toast)
           } finally {
             setSending(false);
           }
@@ -294,13 +298,6 @@ export function ResendNote({ seconds, onResend }: { seconds: number; onResend: (
       </Pressable>
     </View>
   );
-}
-
-/** Gợi ý chỉ hiện khi chạy dev (bản giả lập chưa có email thật). */
-export function DevHint() {
-  const { colors } = useTheme();
-  if (!__DEV__) return null;
-  return <Text style={[styles.dev, { color: colors.ink400, borderColor: colors.line }]}>Bản demo: mật khẩu tạm luôn là {DEMO_TEMP_PASSWORD}</Text>;
 }
 
 const styles = StyleSheet.create({

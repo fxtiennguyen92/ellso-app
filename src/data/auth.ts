@@ -1,19 +1,33 @@
 /**
- * API TÀI KHOẢN — BẢN GIẢ LẬP (chưa nối Laravel).
- * Khi có server (Laravel Sanctum, prefix /v1) chỉ cần thay thân các hàm api* bằng fetch,
- * giữ nguyên kiểu trả về & AuthError → màn hình không phải sửa.
+ * API TÀI KHOẢN — gọi ellso-server (Laravel Sanctum, prefix /v1). Xem routes/api.php + AuthController ở server.
  *
- * Luồng (theo ghi chú trên canvas thiết kế):
- * - Đăng ký chỉ cần Họ tên + Email (+ mã giới thiệu tuỳ chọn) → server tạo MẬT KHẨU TẠM, gửi email.
- * - Đăng nhập bằng mật khẩu tạm → server trả mustChangePassword = true → app bắt đặt mật khẩu mới.
- * - Quên mật khẩu: gửi mật khẩu tạm mới qua email → đăng nhập lại → bắt buộc đổi (chung luồng trên).
+ * Luồng:
+ * - POST /auth/register (họ tên, email, mã giới thiệu tuỳ chọn) → server gửi MẬT KHẨU TẠM qua email.
+ * - POST /auth/login → mật khẩu thật: token đầy đủ + user · mật khẩu tạm: change_token (chỉ dùng được /auth/set-password, hết hạn sau ~15 phút).
+ * - POST /auth/set-password (Bearer change_token) → token đầy đủ + user, vào app luôn.
+ * - POST /auth/forgot-password · POST /auth/resend-temp-password → luôn trả cùng một câu (không lộ email), kèm resend_after_seconds.
+ * - GET /referrals/{code} · GET /me · POST /auth/logout.
  */
+import { ApiError, apiRequest } from '@/lib/api';
 
-export type AuthUser = { id: string; name: string; email: string; initials: string };
-export type Session = { token: string; user: AuthUser; mustChangePassword: boolean };
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  initials: string;
+  avatar?: string | null;
+  referralCode?: string | null;
+};
+export type Session = {
+  token: string;
+  user: AuthUser;
+  mustChangePassword: boolean;
+  /** Hết hạn của change_token (ms epoch) — chỉ có khi mustChangePassword. */
+  expiresAt?: number;
+};
 export type Referrer = { code: string; name: string; initials: string };
 
-export type AuthErrorField = 'name' | 'email' | 'password' | 'code' | 'newPassword' | 'form';
+export type AuthErrorField = 'name' | 'email' | 'password' | 'code' | 'newPassword' | 'session' | 'form';
 export class AuthError extends Error {
   constructor(
     message: string,
@@ -23,27 +37,11 @@ export class AuthError extends Error {
   }
 }
 
-/** Bản demo: mọi mật khẩu tạm đều là giá trị này (thật: server sinh ngẫu nhiên và gửi email). */
-export const DEMO_TEMP_PASSWORD = '123456';
-/** Tài khoản demo đã có sẵn. */
-export const DEMO_ACCOUNT = { email: 'tien.nguyen@example.com', password: 'Ellso2026' };
-/** Thời gian chờ trước khi được gửi lại email (giây). */
-export const RESEND_SECONDS = 60;
-
-type StoredUser = AuthUser & { password: string; temp: boolean; referrer?: string };
-
-const users = new Map<string, StoredUser>([
-  [DEMO_ACCOUNT.email, { id: 'u1', name: 'Nguyễn Tiến', email: DEMO_ACCOUNT.email, initials: 'NT', password: DEMO_ACCOUNT.password, temp: false }],
-]);
-
-const referrers: Record<string, Referrer> = {
-  TIEN2026: { code: 'TIEN2026', name: 'Nguyễn Tiến', initials: 'NT' },
-};
-
-const delay = (ms = 650) => new Promise((r) => setTimeout(r, ms));
-const normEmail = (e: string) => e.trim().toLowerCase();
+/** Mặc định nếu server không gửi resend_after_seconds (khớp config ellso.auth.forgot_password.cooldown_seconds). */
+export const RESEND_SECONDS = 120;
 
 export const isEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e.trim());
+const normEmail = (e: string) => e.trim().toLowerCase();
 
 export function initialsOf(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -52,84 +50,137 @@ export function initialsOf(name: string) {
   return (first + parts[parts.length - 1][0]).toUpperCase();
 }
 
-const toSession = (u: StoredUser): Session => ({
-  token: `demo-${u.id}-${Date.now()}`,
-  user: { id: u.id, name: u.name, email: u.email, initials: u.initials },
-  mustChangePassword: u.temp,
+type ServerUser = { id: number | string; name: string; email: string; avatar?: string | null; referral_code?: string | null };
+const toUser = (u: ServerUser): AuthUser => ({
+  id: String(u.id),
+  name: u.name,
+  email: u.email,
+  initials: initialsOf(u.name),
+  avatar: u.avatar ?? null,
+  referralCode: u.referral_code ?? null,
 });
 
-/** POST /v1/auth/login */
+/** Đổi ApiError của server thành AuthError gắn đúng ô trên form. `fields`: tên trường server → ô trên app. */
+function toAuthError(e: unknown, fields: Record<string, AuthErrorField> = {}): AuthError {
+  if (!(e instanceof ApiError)) return new AuthError('Có lỗi xảy ra, thử lại sau.');
+  if (e.status === 422) {
+    for (const [serverField, appField] of Object.entries(fields)) {
+      const msg = e.field(serverField);
+      if (msg) return new AuthError(msg, appField);
+    }
+  }
+  return new AuthError(e.message, 'form');
+}
+
+type LoginResponse =
+  { requires_password_change: true; change_token: string; expires_in: number } | { requires_password_change: false; token: string; user: ServerUser };
+
+/** POST /auth/login */
 export async function apiLogin(email: string, password: string): Promise<Session> {
-  await delay();
-  const u = users.get(normEmail(email));
-  if (!u || u.password !== password) throw new AuthError('Email hoặc mật khẩu không đúng.', 'password');
-  return toSession(u);
-}
-
-/** POST /v1/auth/register — server tạo mật khẩu tạm và gửi email. */
-export async function apiRegister(input: { name: string; email: string; referralCode?: string }): Promise<{ email: string }> {
-  await delay();
-  const email = normEmail(input.email);
-  if (users.has(email)) throw new AuthError('Email này đã có tài khoản. Hãy đăng nhập hoặc dùng "Quên mật khẩu".', 'email');
-  const name = input.name.trim();
-  users.set(email, {
-    id: `u${users.size + 1}`,
-    name,
-    email,
-    initials: initialsOf(name),
-    password: DEMO_TEMP_PASSWORD,
-    temp: true,
-    referrer: input.referralCode,
-  });
-  return { email };
-}
-
-/** POST /v1/auth/forgot-password — luôn trả thành công (không để lộ email nào đã đăng ký). */
-export async function apiForgotPassword(email: string): Promise<{ email: string }> {
-  await delay();
-  const u = users.get(normEmail(email));
-  if (u) {
-    u.password = DEMO_TEMP_PASSWORD;
-    u.temp = true;
+  try {
+    const r = await apiRequest<LoginResponse>('POST', '/auth/login', { body: { email: normEmail(email), password } });
+    if (r.requires_password_change) {
+      // Server chưa trả thông tin user ở bước này → tạm dùng email vừa nhập
+      const mail = normEmail(email);
+      return {
+        token: r.change_token,
+        mustChangePassword: true,
+        expiresAt: Date.now() + r.expires_in * 1000,
+        user: { id: '', name: '', email: mail, initials: mail.slice(0, 1).toUpperCase() },
+      };
+    }
+    return { token: r.token, user: toUser(r.user), mustChangePassword: false };
+  } catch (e) {
+    // Sai email / mật khẩu: server gắn vào trường email, app hiện dưới ô mật khẩu
+    if (e instanceof ApiError && e.status === 422 && e.field('email') && !e.field('password') && isEmail(email)) {
+      throw new AuthError(e.field('email')!, 'password');
+    }
+    throw toAuthError(e, { email: 'email', password: 'password' });
   }
-  return { email: normEmail(email) };
 }
 
-/** POST /v1/auth/resend — gửi lại email mật khẩu tạm. */
-export async function apiResend(_email: string): Promise<void> {
-  await delay(500);
+/** POST /auth/register — server tạo mật khẩu tạm và gửi email. */
+export async function apiRegister(input: { name: string; email: string; referralCode?: string }): Promise<{ email: string; resendAfter: number }> {
+  try {
+    const r = await apiRequest<{ email: string; resend_after_seconds?: number }>('POST', '/auth/register', {
+      body: { name: input.name.trim(), email: normEmail(input.email), referral_code: input.referralCode ?? null },
+    });
+    return { email: r.email, resendAfter: r.resend_after_seconds ?? RESEND_SECONDS };
+  } catch (e) {
+    throw toAuthError(e, { name: 'name', email: 'email', referral_code: 'code' });
+  }
 }
 
-/** GET /v1/referrals/{code} — kiểm tra mã giới thiệu. */
+/** POST /auth/forgot-password */
+export async function apiForgotPassword(email: string): Promise<{ email: string; resendAfter: number }> {
+  try {
+    const r = await apiRequest<{ resend_after_seconds?: number }>('POST', '/auth/forgot-password', { body: { email: normEmail(email) } });
+    return { email: normEmail(email), resendAfter: r.resend_after_seconds ?? RESEND_SECONDS };
+  } catch (e) {
+    throw toAuthError(e, { email: 'email' });
+  }
+}
+
+/** Gửi lại email mật khẩu tạm: sau đăng ký → /auth/resend-temp-password · quên mật khẩu → /auth/forgot-password. Trả số giây chờ lần sau. */
+export async function apiResend(kind: 'register' | 'forgot', email: string): Promise<number> {
+  try {
+    const r = await apiRequest<{ resend_after_seconds?: number }>(
+      'POST',
+      kind === 'register' ? '/auth/resend-temp-password' : '/auth/forgot-password',
+      {
+        body: { email: normEmail(email) },
+      },
+    );
+    return r.resend_after_seconds ?? RESEND_SECONDS;
+  } catch (e) {
+    throw toAuthError(e);
+  }
+}
+
+/** GET /referrals/{code} — kiểm tra mã giới thiệu. */
 export async function apiCheckReferral(code: string): Promise<Referrer> {
-  await delay(500);
-  const r = referrers[code.trim().toUpperCase()];
-  if (!r) throw new AuthError('Mã không đúng hoặc đã hết hạn.', 'code');
-  return r;
-}
-
-/** POST /v1/auth/change-password — đặt mật khẩu mới sau khi đăng nhập bằng mật khẩu tạm. */
-export async function apiChangePassword(session: Session, newPassword: string): Promise<Session> {
-  await delay();
-  const u = users.get(session.user.email);
-  if (u?.temp && u.password === newPassword) throw new AuthError('Mật khẩu mới phải khác mật khẩu tạm.', 'newPassword');
-  if (u) {
-    u.password = newPassword;
-    u.temp = false;
+  try {
+    const r = await apiRequest<{ referral_code: string; name: string }>('GET', `/referrals/${encodeURIComponent(code.trim().toUpperCase())}`);
+    return { code: r.referral_code, name: r.name, initials: initialsOf(r.name) };
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) throw new AuthError(e.message || 'Mã giới thiệu không hợp lệ.', 'code');
+    throw toAuthError(e);
   }
-  return { ...session, mustChangePassword: false };
 }
 
-/** POST /v1/auth/logout */
-export async function apiLogout(_session: Session | null): Promise<void> {
-  await delay(200);
+/** POST /auth/set-password — đặt mật khẩu mới bằng change_token, server trả luôn token đăng nhập. */
+export async function apiChangePassword(session: Session, newPassword: string): Promise<Session> {
+  try {
+    const r = await apiRequest<{ token: string; user: ServerUser }>('POST', '/auth/set-password', {
+      token: session.token,
+      body: { password: newPassword, password_confirmation: newPassword },
+    });
+    return { token: r.token, user: toUser(r.user), mustChangePassword: false };
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
+      throw new AuthError('Phiên đặt mật khẩu đã hết hạn. Vui lòng đăng nhập lại bằng mật khẩu tạm.', 'session');
+    }
+    throw toAuthError(e, { password: 'newPassword' });
+  }
 }
 
-// ---------- Quy tắc mật khẩu mới ----------
+/** GET /me — làm mới thông tin user. Ném ApiError (401 = token hết hiệu lực). */
+export async function apiMe(token: string): Promise<AuthUser> {
+  const r = await apiRequest<{ data: ServerUser }>('GET', '/me', { token });
+  return toUser(r.data);
+}
+
+/** POST /auth/logout — thu hồi token của thiết bị này (bỏ qua lỗi mạng). */
+export async function apiLogout(session: Session | null): Promise<void> {
+  if (!session || session.mustChangePassword) return;
+  await apiRequest('POST', '/auth/logout', { token: session.token });
+}
+
+// ---------- Quy tắc mật khẩu mới (khớp SetPasswordRequest: min 8, chữ hoa + thường, số, khác mật khẩu tạm) ----------
 
 export type PasswordRule = { key: string; label: string; ok: boolean };
+export const PASSWORD_MAX = 100;
 
-/** ≥ 8 ký tự · có chữ hoa + chữ thường · có số · khác mật khẩu tạm (nếu app còn nhớ mật khẩu tạm). */
 export function passwordRules(pw: string, tempPassword?: string | null): PasswordRule[] {
   return [
     { key: 'len', label: 'Ít nhất 8 ký tự', ok: pw.length >= 8 },

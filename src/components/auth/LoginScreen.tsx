@@ -4,7 +4,7 @@ import { StyleSheet, Text, type TextInputInstance, View } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { EllsoLogo } from '@/components/EllsoLogo';
-import { AuthError, isEmail } from '@/data/auth';
+import { AuthError, isEmail, PASSWORD_MAX } from '@/data/auth';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/typography';
@@ -18,7 +18,7 @@ import { AuthField, AuthScreen, AuthTitle, ErrorText, FooterPrompt, PrimaryButto
  */
 export function LoginScreen() {
   const { colors } = useTheme();
-  const { login } = useAuth();
+  const { login, notice, clearNotice } = useAuth();
   const topInset = useScreenTopInset(4, 16);
   const params = useLocalSearchParams<{ email?: string }>();
 
@@ -27,6 +27,13 @@ export function LoginScreen() {
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
   const [loading, setLoading] = useState(false);
   const passwordRef = useRef<TextInputInstance>(null);
+
+  // Thông báo từ AuthProvider (vd phiên đặt mật khẩu hết hạn) → hiện như lỗi chung của form
+  useEffect(() => {
+    if (!notice) return;
+    setErrors({ form: notice });
+    clearNotice();
+  }, [notice, clearNotice]);
 
   // Quay lại từ màn "đã gửi email" → điền sẵn email, xoá mật khẩu cũ
   useEffect(() => {
@@ -105,6 +112,7 @@ export function LoginScreen() {
           autoCapitalize="none"
           autoComplete="current-password"
           textContentType="password"
+          maxLength={PASSWORD_MAX}
           returnKeyType="go"
           onSubmitEditing={submit}
         />

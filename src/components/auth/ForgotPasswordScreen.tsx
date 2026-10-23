@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { apiForgotPassword, isEmail } from '@/data/auth';
+import { apiForgotPassword, AuthError, isEmail } from '@/data/auth';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 
 import { LockArt } from './AuthArt';
@@ -23,9 +23,10 @@ export function ForgotPasswordScreen() {
     setFormError(null);
     try {
       const res = await apiForgotPassword(email);
-      router.replace({ pathname: '/forgot-sent', params: { email: res.email } });
-    } catch {
-      setFormError('Không kết nối được máy chủ. Kiểm tra mạng và thử lại.');
+      router.replace({ pathname: '/forgot-sent', params: { email: res.email, resend: String(res.resendAfter) } });
+    } catch (e) {
+      if (e instanceof AuthError && e.field === 'email') setError(e.message);
+      else setFormError(e instanceof AuthError ? e.message : 'Không kết nối được máy chủ. Kiểm tra mạng và thử lại.');
       setLoading(false);
     }
   };

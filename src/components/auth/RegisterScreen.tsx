@@ -28,7 +28,7 @@ export function RegisterScreen() {
   const [referrer, setReferrer] = useState<Referrer | null>(null);
   const [agree, setAgree] = useState(false);
   const [sheet, setSheet] = useState(false);
-  const [errors, setErrors] = useState<{ name?: string; email?: string; agree?: string; form?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; email?: string; referral?: string; agree?: string; form?: string }>({});
   const [loading, setLoading] = useState(false);
   const emailRef = useRef<TextInputInstance>(null);
 
@@ -50,10 +50,13 @@ export function RegisterScreen() {
     setLoading(true);
     try {
       const res = await apiRegister({ name, email, referralCode: referrer?.code });
-      router.replace({ pathname: '/register-sent', params: { email: res.email } });
+      router.replace({ pathname: '/register-sent', params: { email: res.email, resend: String(res.resendAfter) } });
     } catch (e) {
-      if (e instanceof AuthError) setErrors(e.field === 'email' || e.field === 'name' ? { [e.field]: e.message } : { form: e.message });
-      else setErrors({ form: 'Không kết nối được máy chủ. Kiểm tra mạng và thử lại.' });
+      if (e instanceof AuthError) {
+        if (e.field === 'email' || e.field === 'name') setErrors({ [e.field]: e.message });
+        else if (e.field === 'code') setErrors({ referral: e.message });
+        else setErrors({ form: e.message });
+      } else setErrors({ form: 'Không kết nối được máy chủ. Kiểm tra mạng và thử lại.' });
       setLoading(false);
     }
   };
@@ -151,6 +154,7 @@ export function RegisterScreen() {
                 <Icon name="scan" size={20} strokeWidth={1.9} color={colors.ink600} />
               </Pressable>
             )}
+            {errors.referral ? <ErrorText text={errors.referral} /> : null}
           </View>
 
           <Note>
@@ -192,6 +196,7 @@ export function RegisterScreen() {
         onClose={() => setSheet(false)}
         onConfirm={(r) => {
           setReferrer(r);
+          setErrors((e) => ({ ...e, referral: undefined }));
           setSheet(false);
         }}
         onScanQr={() => showToast('Quét mã QR sẽ có ở bản sau')}

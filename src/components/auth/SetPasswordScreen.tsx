@@ -4,7 +4,7 @@ import { StyleSheet, Text, type TextInputInstance, View } from 'react-native';
 import { useAuth } from '@/auth/AuthProvider';
 import { EllsoLogo } from '@/components/EllsoLogo';
 import { Icon } from '@/components/Icon';
-import { AuthError, passwordRules, passwordStrength } from '@/data/auth';
+import { AuthError, PASSWORD_MAX, passwordRules, passwordStrength } from '@/data/auth';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/typography';
@@ -44,6 +44,8 @@ export function SetPasswordScreen() {
       await changePassword(pw);
       // thành công: status → signedIn, router tự vào app
     } catch (e) {
+      // field "session": AuthProvider đã đưa về màn đăng nhập kèm thông báo
+      if (e instanceof AuthError && e.field === 'session') return;
       setError(e instanceof AuthError ? e.message : 'Không lưu được mật khẩu, thử lại sau.');
       setLoading(false);
     }
@@ -94,6 +96,7 @@ export function SetPasswordScreen() {
           autoCapitalize="none"
           autoComplete="new-password"
           textContentType="newPassword"
+          maxLength={PASSWORD_MAX}
           returnKeyType="next"
           onSubmitEditing={() => confirmRef.current?.focus()}
           submitBehavior="submit"
@@ -136,6 +139,7 @@ export function SetPasswordScreen() {
           autoCapitalize="none"
           autoComplete="new-password"
           textContentType="newPassword"
+          maxLength={PASSWORD_MAX}
           returnKeyType="done"
           onSubmitEditing={save}
         />

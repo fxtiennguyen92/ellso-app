@@ -2,24 +2,25 @@ import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useToast } from '@/components/Toast';
-import { apiResend, RESEND_SECONDS } from '@/data/auth';
+import { apiResend, AuthError, RESEND_SECONDS } from '@/data/auth';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/typography';
 
 import { EnvelopeArt } from './AuthArt';
-import { AuthScreen, DevHint, goBackToLogin, Note, PrimaryButton, ResendNote } from './AuthUI';
+import { AuthScreen, goBackToLogin, Note, PrimaryButton, ResendNote } from './AuthUI';
 
 /**
  * Màn "đã gửi email" dùng chung:
  * - kind="register": Đăng ký — đã gửi mật khẩu tạm (phong bì xanh + dấu tích)
  * - kind="forgot"  : Quên mật khẩu — đã gửi mật khẩu tạm mới (phong bì tím + chìa khoá)
- * Nút chính về màn đăng nhập và điền sẵn email.
+ * Nút chính về màn đăng nhập và điền sẵn email. Thời gian chờ gửi lại lấy từ server (param `resend`).
  */
 export function SentScreen({ kind }: { kind: 'register' | 'forgot' }) {
   const { colors } = useTheme();
   const topInset = useScreenTopInset(12, 28);
-  const { email = '' } = useLocalSearchParams<{ email?: string }>();
+  const { email = '', resend } = useLocalSearchParams<{ email?: string; resend?: string }>();
+  const waitSeconds = Number(resend) > 0 ? Number(resend) : RESEND_SECONDS;
   const [toast, showToast] = useToast();
   const register = kind === 'register';
 
@@ -43,10 +44,16 @@ export function SentScreen({ kind }: { kind: 'register' | 'forgot' }) {
 
           <View style={styles.resend}>
             <ResendNote
-              seconds={RESEND_SECONDS}
+              seconds={waitSeconds}
               onResend={async () => {
-                await apiResend(email);
-                showToast('Đã gửi lại email');
+                try {
+                  const next = await apiResend(kind, email);
+                  showToast('Đã gửi lại email');
+                  return next;
+                } catch (e) {
+                  showToast(e instanceof AuthError ? e.message : 'Không gửi lại được, thử lại sau.');
+                  throw e;
+                }
               }}
             />
           </View>
@@ -58,9 +65,6 @@ export function SentScreen({ kind }: { kind: 'register' | 'forgot' }) {
               </Note>
             </View>
           )}
-          <View style={styles.dev}>
-            <DevHint />
-          </View>
         </View>
       </AuthScreen>
       {toast}
@@ -75,5 +79,4 @@ const styles = StyleSheet.create({
   email: { fontFamily: fonts.sans700 },
   resend: { marginTop: 14 },
   note: { marginTop: 20, alignSelf: 'stretch' },
-  dev: { marginTop: 16 },
 });
