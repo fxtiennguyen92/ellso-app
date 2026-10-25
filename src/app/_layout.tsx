@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/auth/AuthProvider';
+import { useAppSessionTracking } from '@/auth/useAppSessionTracking';
 import { AppFrame } from '@/components/AppFrame';
 import { RevealProvider } from '@/components/splash/RevealContext';
 import { SplashOverlay } from '@/components/splash/SplashOverlay';
@@ -37,7 +38,10 @@ export default function RootLayout() {
 
 function AppShell() {
   const { colors, scheme } = useTheme();
-  const { status } = useAuth();
+  const { status, token } = useAuth();
+
+  // Lượt mở app cho CMS › Thống kê › Hoạt động học viên (chỉ khi đã đăng nhập)
+  useAppSessionTracking(token);
 
   // 1) Nạp font
   const [fontsLoaded, fontError] = useFonts({
