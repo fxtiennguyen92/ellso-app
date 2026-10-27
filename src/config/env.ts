@@ -11,7 +11,8 @@ const config = {
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://192.168.1.10:8000/v1',
   },
   production: {
-    apiUrl: 'https://api.ellso.edu.vn/v1',
+    // Ghi đè được bằng EXPO_PUBLIC_API_URL (VD trỏ build thử sang server staging)
+    apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'https://api.ellso.edu.vn/v1',
   },
 } as const;
 
