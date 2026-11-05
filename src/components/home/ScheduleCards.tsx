@@ -1,14 +1,12 @@
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 
 import { Icon } from '@/components/Icon';
-import { useRevealStyle } from '@/components/splash/RevealContext';
 import { formatSession, type TutorSession } from '@/data/home';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { ColorTokens } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
 
-import { SectionTitle } from './SectionTitle';
 
 /** Cách gọi "tutor" trên app — đổi một chỗ này nếu chốt từ khác. */
 export const TUTOR_LABEL = 'gia sư';
@@ -17,39 +15,48 @@ const DATE_COL_WIDTH = 84;
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /**
- * Màu nhấn theo loại lịch, để nhìn lướt là phân biệt:
- * emerald = Lịch hẹn của tôi (gặp gia sư) · violet = Lịch huấn luyện.
+ * Thẻ lịch dùng chung (Home: Lịch huấn luyện, Lịch Workshop).
+ * Màu nhấn theo loại lịch, để nhìn lướt là phân biệt: violet = huấn luyện · orange = workshop · emerald = lịch hẹn.
  */
-export type SessionAccent = 'emerald' | 'violet';
+export type SessionAccent = 'emerald' | 'violet' | 'orange';
 const accentColors = (a: SessionAccent, c: ColorTokens) =>
-  a === 'violet' ? { tint: c.violetTint, strong: c.violetText, deep: c.violetText } : { tint: c.mint50, strong: c.emerald700, deep: c.emerald800 };
+  a === 'violet'
+    ? { tint: c.violetTint, strong: c.violetText, deep: c.violetText }
+    : a === 'orange'
+      ? { tint: c.workshopTint, strong: c.workshopText, deep: c.workshopDeep }
+      : { tint: c.mint50, strong: c.emerald700, deep: c.emerald800 };
 
-export function TutorSchedule({ sessions }: { sessions: TutorSession[] }) {
-  const reveal = useRevealStyle(4);
-  const [next, ...later] = sessions;
-
-  return (
-    <Animated.View style={[styles.section, reveal]}>
-      <SectionTitle title="Lịch hẹn của tôi" subtitle={`Buổi gặp ${TUTOR_LABEL} sắp tới`} action={{ label: 'Xem lịch' }} />
-      {next && <TicketCard session={next} />}
-      {later.map((s) => (
-        <SessionRow key={s.id} session={s} />
-      ))}
-    </Animated.View>
-  );
-}
+/** Thông tin phụ của thẻ vé: chip trạng thái (Đã đăng ký, Miễn phí…), biểu tượng địa điểm, nhãn người hướng dẫn. */
+type TicketExtra = {
+  accent?: SessionAccent;
+  placeIcon?: 'pin' | 'video';
+  personLabel?: string;
+  chips?: { label: string; tone?: 'accent' | 'neutral' }[];
+  onPress?: () => void;
+};
 
 /** Thẻ dạng vé cho buổi gần nhất (Lịch hẹn · Lịch huấn luyện). */
-export function TicketCard({ session, accent = 'emerald' }: { session: TutorSession; accent?: SessionAccent }) {
+export function TicketCard({
+  session,
+  accent = 'emerald',
+  placeIcon = 'pin',
+  personLabel = capitalize(TUTOR_LABEL),
+  chips = [],
+  onPress,
+}: { session: TutorSession } & TicketExtra) {
   const { colors } = useTheme();
   const f = formatSession(session);
   const a = accentColors(accent, colors);
 
   return (
-    <View
-      accessible
-      accessibilityLabel={`${session.title}. ${f.weekday} ngày ${f.day} ${f.month}, ${f.startTime} đến ${f.endTime}. ${f.countdown}. ${capitalize(TUTOR_LABEL)} ${session.tutor.name}`}
-      style={[styles.ticket, { backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.shadowCard }]}
+    <Pressable
+      accessibilityRole={onPress ? 'link' : undefined}
+      onPress={onPress}
+      accessibilityLabel={`${session.title}. ${f.weekday} ngày ${f.day} ${f.month}, ${f.startTime} đến ${f.endTime}. ${f.countdown}. ${session.location}. ${personLabel} ${session.tutor.name}. ${chips.map((c) => c.label).join('. ')}`}
+      style={({ pressed }) => [
+        styles.ticket,
+        { backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.shadowCard, opacity: pressed && onPress ? 0.85 : 1 },
+      ]}
     >
       <View style={[styles.dateCol, { backgroundColor: a.tint }]}>
         <Text style={[type.eyebrow, { color: a.strong }]}>{f.weekday}</Text>
@@ -81,14 +88,26 @@ export function TicketCard({ session, accent = 'emerald' }: { session: TutorSess
         <Text style={[styles.sessionTitle, { color: colors.ink900 }]}>{session.title}</Text>
 
         <View style={styles.place}>
-          <Icon name="pin" size={15} color={colors.ink600} />
+          <Icon name={placeIcon} size={15} color={colors.ink600} />
           <Text style={[type.caption, { color: colors.ink600, flexShrink: 1 }]} numberOfLines={1}>
             {session.location}
             {session.room ? ` · ${session.room}` : ''}
           </Text>
         </View>
 
-        {/* Gia sư: canh phải — tên rồi đến avatar */}
+        {chips.length > 0 && (
+          <View style={styles.chips}>
+            {chips.map((c) => (
+              <View key={c.label} style={[styles.chip, { backgroundColor: c.tone === 'accent' ? a.tint : colors.chipNeutral }]}>
+                <Text style={[styles.chipText, { color: c.tone === 'accent' ? a.strong : colors.ink600 }]} numberOfLines={1}>
+                  {c.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Người hướng dẫn: canh phải — tên rồi đến avatar */}
         <View style={styles.tutor}>
           <Text style={[styles.tutorName, { color: colors.ink900 }]} numberOfLines={1}>
             {session.tutor.name}
@@ -103,7 +122,7 @@ export function TicketCard({ session, accent = 'emerald' }: { session: TutorSess
       <View style={[styles.countdown, { backgroundColor: colors.amberChip, borderColor: colors.amberChipLine }]}>
         <Text style={[styles.countdownText, { color: colors.amberChipText }]}>{f.countdown}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -112,10 +131,12 @@ export function SessionRow({
   session,
   accent = 'emerald',
   personLabel = capitalize(TUTOR_LABEL),
+  onPress,
 }: {
   session: TutorSession;
   accent?: SessionAccent;
   personLabel?: string;
+  onPress?: () => void;
 }) {
   const { colors } = useTheme();
   const f = formatSession(session);
@@ -124,6 +145,7 @@ export function SessionRow({
     <Pressable
       accessibilityRole="link"
       accessibilityLabel={`${session.title}, ${f.weekday} ngày ${f.day}, ${f.startTime} đến ${f.endTime}, ${personLabel} ${session.tutor.name}`}
+      onPress={onPress}
       style={({ pressed }) => [styles.row, { backgroundColor: colors.card, borderColor: colors.line, opacity: pressed ? 0.8 : 1 }]}
     >
       <View style={[styles.rowDate, { backgroundColor: a.tint }]}>
@@ -135,7 +157,8 @@ export function SessionRow({
           {session.title}
         </Text>
         <Text style={[type.caption, { color: colors.ink600 }]} numberOfLines={1}>
-          {f.startTime} – {f.endTime} · {personLabel} {session.tutor.name}
+          {f.startTime} – {f.endTime}
+          {session.room ? ` · ${session.room}` : ''} · {session.tutor.name}
         </Text>
       </View>
       <View style={styles.rowChevron}>
@@ -146,7 +169,6 @@ export function SessionRow({
 }
 
 const styles = StyleSheet.create({
-  section: { paddingTop: 28, paddingHorizontal: 16, gap: 12 },
   ticket: { flexDirection: 'row', borderRadius: 22, borderWidth: 1, marginTop: 4 },
   dateCol: {
     width: DATE_COL_WIDTH,
@@ -175,6 +197,9 @@ const styles = StyleSheet.create({
   countdownText: { fontFamily: fonts.sans400, fontSize: 12, lineHeight: 16 },
   sessionTitle: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
   place: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  chip: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 9999 },
+  chipText: { fontFamily: fonts.sans600, fontSize: 11, lineHeight: 16 },
   tutor: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 2 },
   tutorAvatar: {
     width: 28,

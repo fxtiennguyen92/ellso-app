@@ -18,7 +18,7 @@ import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { ComingSoon } from '@/components/ComingSoon';
 import { Icon } from '@/components/Icon';
 import { SCROLL_TOP_SPACE, ScrollTopButton } from '@/components/ScrollTopButton';
-import { TUTOR_LABEL } from '@/components/home/TutorSchedule';
+import { TUTOR_LABEL } from '@/components/home/ScheduleCards';
 import { getCoursePath, type PathChapter, type PathLesson } from '@/data/courses';
 import { NATIVE_DRIVER, useLoop } from '@/hooks/useLoop';
 import { useReducedMotion } from '@/hooks/useReducedMotion';

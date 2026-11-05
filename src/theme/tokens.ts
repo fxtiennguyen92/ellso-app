@@ -71,6 +71,23 @@ export const lightColors = {
   pillBottom: '#047857',
   pillEdge: '#064e3b',
   pillGlow: 'rgba(4,120,87,0.35)',
+  /**
+   * Thanh điều hướng dưới: LUÔN TỐI ở cả hai chế độ (kiểu dock nổi 2026) — tách rõ khỏi nội dung sáng.
+   * Nền ink-900 hơi trong suốt, viền sáng mảnh, icon chưa chọn xám nhạt, tab đang chọn khối emerald.
+   */
+  navBg: 'rgba(15,23,42,0.94)',
+  navLine: 'rgba(255,255,255,0.08)',
+  navIcon: '#94a3b8',
+  navPillTop: '#10b981',
+  navPillBottom: '#047857',
+  navPillEdge: '#064e3b',
+  navPillGlow: 'rgba(16,185,129,0.35)',
+  navOn: '#ffffff',
+  navShadow: '0px 12px 32px rgba(15,23,42,0.28), 0px 2px 6px rgba(15,23,42,0.18)',
+  /** Workshop trên Home (màu nhấn cam, phân biệt với Lịch huấn luyện violet). */
+  workshopTint: '#fff7ed',
+  workshopText: '#c2410c',
+  workshopDeep: '#9a3412',
   /** Nền ngoài khung app trên web (màn hình rộng). */
   webBackdrop: '#e6ebe9',
   shadowCard: '0px 1px 2px rgba(15,23,42,0.04), 0px 8px 24px rgba(15,23,42,0.05)',
@@ -139,6 +156,19 @@ export const darkColors: ColorTokens = {
   pillBottom: '#34d399',
   pillEdge: '#0f9e74',
   pillGlow: 'rgba(52,211,153,0.25)',
+  // Thanh điều hướng: vẫn tối, nhưng sáng hơn nền (#0b1220) một bậc để nổi lên
+  navBg: 'rgba(26,36,54,0.94)',
+  navLine: 'rgba(255,255,255,0.10)',
+  navIcon: '#94a3b8',
+  navPillTop: '#10b981',
+  navPillBottom: '#047857',
+  navPillEdge: '#064e3b',
+  navPillGlow: 'rgba(16,185,129,0.30)',
+  navOn: '#ffffff',
+  navShadow: '0px 12px 32px rgba(0,0,0,0.55)',
+  workshopTint: '#26190f',
+  workshopText: '#fdba74',
+  workshopDeep: '#fed7aa',
   webBackdrop: '#060a12',
   shadowCard: '0px 1px 2px rgba(0,0,0,0.4)',
   shadowNav: '0px 8px 24px rgba(0,0,0,0.5)',

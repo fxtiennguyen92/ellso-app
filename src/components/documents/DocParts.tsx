@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { useRef, type ReactNode } from 'react';
 import { Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
 
@@ -116,10 +117,14 @@ export function BookCover({ doc }: { doc: Doc }) {
   const { colors } = useTheme();
   return (
     <View style={[styles.book, { backgroundColor: coverColor(doc), boxShadow: colors.shadowBook }]}>
-      <View style={styles.bookPlaceholder}>
-        <Icon name="image" size={22} strokeWidth={1.6} color={illo.onCoverFaint} />
-        <Text style={styles.bookPlaceholderText}>Ảnh bìa</Text>
-      </View>
+      {doc.coverUrl ? (
+        <Image source={{ uri: doc.coverUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} accessibilityIgnoresInvertColors />
+      ) : (
+        <View style={styles.bookPlaceholder}>
+          <Icon name="image" size={22} strokeWidth={1.6} color={illo.onCoverFaint} />
+          <Text style={styles.bookPlaceholderText}>Ảnh bìa</Text>
+        </View>
+      )}
       {!doc.unlocked && <LockOverlay size={30} />}
     </View>
   );

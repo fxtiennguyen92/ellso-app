@@ -3,13 +3,12 @@ import { Animated, type LayoutChangeEvent, Pressable, StyleSheet, Text, View } f
 
 import { Icon } from '@/components/Icon';
 import { useRevealStyle } from '@/components/splash/RevealContext';
-import type { HomeData } from '@/data/home';
 import { useLoop } from '@/hooks/useLoop';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
 type Props = {
-  student: HomeData['student'];
+  student: { name: string; initials: string; unreadNotifications: number };
   /** Đã cuộn nội dung → hiện đường kẻ dưới. */
   scrolled: boolean;
   topInset: number;

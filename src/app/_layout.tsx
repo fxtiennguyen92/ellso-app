@@ -18,7 +18,7 @@ import { useAppSessionTracking } from '@/auth/useAppSessionTracking';
 import { AppFrame } from '@/components/AppFrame';
 import { RevealProvider } from '@/components/splash/RevealContext';
 import { SplashOverlay } from '@/components/splash/SplashOverlay';
-import { getHomeData } from '@/data/home';
+import { loadHomeFeed } from '@/data/home';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 // Giữ splash gốc (nền trắng) cho tới khi video splash có khung hình đầu tiên.
@@ -54,13 +54,21 @@ function AppShell() {
     BeVietnamPro_700Bold,
   });
 
-  // 2) Chuẩn bị dữ liệu (hiện là data tạm; sau này gọi API /v1…). Phiên đăng nhập do AuthProvider đọc song song.
+  // 2) Tải trước dữ liệu Home (khuyến mãi, lịch, sách) trong lúc splash — tối đa 4 giây, lỗi/chậm thì Home tự tải tiếp.
   const [dataReady, setDataReady] = useState(false);
   useEffect(() => {
-    getHomeData()
-      .catch(() => null)
-      .finally(() => setDataReady(true));
-  }, []);
+    if (status === 'loading' || dataReady) return;
+    if (status !== 'signedIn' || !token) {
+      setDataReady(true);
+      return;
+    }
+    let alive = true;
+    const timeout = new Promise((resolve) => setTimeout(resolve, 4000));
+    Promise.race([loadHomeFeed(token).catch(() => null), timeout]).finally(() => alive && setDataReady(true));
+    return () => {
+      alive = false;
+    };
+  }, [status, token, dataReady]);
 
   const fontsReady = fontsLoaded || !!fontError;
   const ready = fontsReady && dataReady && status !== 'loading';

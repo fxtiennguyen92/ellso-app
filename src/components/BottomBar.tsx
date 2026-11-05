@@ -34,6 +34,7 @@ const BAR_BORDER = 1;
 
 /**
  * Thanh điều hướng viên thuốc, nổi cách đáy 20px, căn giữa và chỉ rộng vừa các tab.
+ * Luôn tối ở cả chế độ sáng / tối (token nav*), tab đang chọn là khối emerald.
  * Đổi tab: khối 3D trượt sang tab mới (spring), tab cũ thu lại, tab mới giãn ra và hiện chữ;
  * cả thanh phình ra / co lại theo độ dài nhãn của tab đang chọn.
  *
@@ -135,7 +136,7 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
       <View
         accessibilityRole="tablist"
         accessibilityLabel="Điều hướng chính"
-        style={[styles.bar, { backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.shadowNav }]}
+        style={[styles.bar, { backgroundColor: colors.navBg, borderColor: colors.navLine, boxShadow: colors.navShadow }]}
       >
         <Animated.View style={[styles.track, frames ? { width: frames.trackWidth } : styles.trackStatic]}>
           {frames && (
@@ -146,11 +147,11 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                 {
                   left: frames.pillLeft,
                   width: frames.pillWidth,
-                  backgroundColor: colors.pillBottom,
+                  backgroundColor: colors.navPillBottom,
                   // Mép đáy đậm + quầng bóng = cảm giác khối nổi; nhấn xuống thì "lún" 2px
                   boxShadow: activePressed
-                    ? `0px 1px 0px ${colors.pillEdge}, 0px 3px 6px ${colors.pillGlow}`
-                    : `0px 3px 0px ${colors.pillEdge}, 0px 8px 16px ${colors.pillGlow}`,
+                    ? `0px 1px 0px ${colors.navPillEdge}, 0px 3px 6px ${colors.navPillGlow}`
+                    : `0px 3px 0px ${colors.navPillEdge}, 0px 8px 16px ${colors.navPillGlow}`,
                   transform: [{ translateY: activePressed ? 2 : 0 }],
                 },
               ]}
@@ -159,8 +160,8 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                 <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 10">
                   <Defs>
                     <LinearGradient id="pillFace" x1="0" y1="0" x2="0" y2="1">
-                      <Stop offset="0" stopColor={colors.pillTop} />
-                      <Stop offset="1" stopColor={colors.pillBottom} />
+                      <Stop offset="0" stopColor={colors.navPillTop} />
+                      <Stop offset="1" stopColor={colors.navPillBottom} />
                     </LinearGradient>
                   </Defs>
                   <Rect x="0" y="0" width="10" height="10" fill="url(#pillFace)" />
@@ -208,7 +209,7 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                   >
                     <View style={styles.iconBox}>
                       <Animated.View style={[StyleSheet.absoluteFill, { opacity: lerp(1, 0) }]}>
-                        <Icon name={tab.icon} color={colors.ink600} />
+                        <Icon name={tab.icon} color={colors.navIcon} />
                       </Animated.View>
                       <Animated.View
                         style={[
@@ -219,7 +220,7 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                           },
                         ]}
                       >
-                        <Icon name={tab.icon} color={colors.onEmerald} duotone />
+                        <Icon name={tab.icon} color={colors.navOn} duotone />
                       </Animated.View>
                     </View>
                     <Animated.Text
@@ -228,7 +229,7 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                         styles.label,
                         {
                           width: labelW[route.name],
-                          color: colors.onEmerald,
+                          color: colors.navOn,
                           opacity: labelOpacity,
                           transform: [{ translateX: lerp(-8, 0) }],
                         },
