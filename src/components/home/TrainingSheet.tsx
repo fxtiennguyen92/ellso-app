@@ -176,12 +176,13 @@ export function TrainingSheet({ training, onClose, onChanged }: { training: Home
   );
 }
 
-/** Tab Tổng quan: chỉ mô tả + nội dung CMS (ngày, số buổi, địa điểm… đã có ở thẻ và tab Lịch trình; phí nằm trên nút). */
+/** Tab Tổng quan: ảnh (nếu có) + mô tả + nội dung CMS (ngày, số buổi, địa điểm… đã có ở thẻ và tab Lịch trình; phí nằm trên nút). */
 function Overview({ t, detail }: { t: HomeTraining; detail: TrainingDetail | null }) {
   const { colors } = useTheme();
   const empty = !t.summary && detail !== null && detail.blocks.length === 0;
   return (
     <View style={styles.overview}>
+      {t.bannerUrl && <Image source={{ uri: t.bannerUrl }} style={[styles.banner, { backgroundColor: colors.mint50 }]} contentFit="cover" transition={150} />}
       {t.summary ? <RichText text={t.summary} style={[styles.summary, { color: colors.ink900 }]} /> : null}
       {detail?.blocks.map((b, i) => <Block key={i} block={b} />)}
       {empty && <Text style={[type.caption, { color: colors.ink600 }]}>Chưa có mô tả cho chương trình này.</Text>}
@@ -243,7 +244,7 @@ function Block({ block }: { block: ContentBlock }) {
 }
 
 const DAY_W = 64;
-const DAY_STEP = DAY_W + StyleSheet.hairlineWidth * 2; // ô + vạch ngăn
+const DAY_STEP = DAY_W + StyleSheet.hairlineWidth; // ô + vạch ngăn
 
 /**
  * Tab Lịch trình: hàng ngang các buổi (cuộn ngang, ô phẳng ngăn bằng vạch mảnh), buổi đang chọn luôn được cuộn
@@ -279,7 +280,7 @@ function Schedule({ sessions, selected, onSelect }: { sessions: Session[]; selec
         showsHorizontalScrollIndicator={false}
         onLayout={(e) => setRowW(e.nativeEvent.layout.width)}
         onContentSizeChange={() => firstScroll.current && reveal()}
-        style={[styles.daysRow, { borderColor: colors.line }]}
+        style={styles.daysRow}
       >
         {sessions.map((x, i) => {
           const on = i === selected;
@@ -365,9 +366,9 @@ const styles = StyleSheet.create({
   listMark: { width: 18, lineHeight: 24 },
   callout: { borderLeftWidth: 3, paddingLeft: 12, gap: 2 },
   schedule: { gap: 20 },
-  daysRow: { flexGrow: 0, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth },
+  daysRow: { flexGrow: 0 },
   dayWrap: { flexDirection: 'row', alignItems: 'center' },
-  daySep: { width: StyleSheet.hairlineWidth * 2, height: 40 },
+  daySep: { width: StyleSheet.hairlineWidth, height: 28, opacity: 0.9 },
   day: { width: DAY_W, alignItems: 'center', paddingTop: 10 },
   dayTop: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   dayNum: { fontFamily: fonts.sans600, fontSize: 11, lineHeight: 14 },

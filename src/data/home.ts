@@ -271,7 +271,7 @@ export function formatSession(session: Pick<TutorSession, 'start' | 'end'>, now 
     month: `Th ${start.getMonth() + 1}`,
     startTime: `${pad(start.getHours())}:${pad(start.getMinutes())}`,
     endTime: `${pad(end.getHours())}:${pad(end.getMinutes())}`,
-    countdown: daysLeft <= 0 ? 'Hôm nay' : daysLeft === 1 ? 'Ngày mai' : `Còn ${daysLeft} ngày`,
+    countdown: daysLeft <= 0 ? 'Hôm nay' : daysLeft === 1 ? 'Ngày mai' : `${daysLeft} ngày nữa`,
   };
 }
 

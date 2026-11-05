@@ -6,7 +6,7 @@ import {
 } from '@expo-google-fonts/be-vietnam-pro';
 import { Lexend_500Medium, Lexend_600SemiBold, Lexend_700Bold } from '@expo-google-fonts/lexend';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
@@ -39,6 +39,7 @@ export default function RootLayout() {
 function AppShell() {
   const { colors, scheme } = useTheme();
   const { status, token } = useAuth();
+  const pathname = usePathname();
 
   // Lượt mở app cho CMS › Thống kê › Hoạt động học viên (chỉ khi đã đăng nhập)
   useAppSessionTracking(token);
@@ -112,7 +113,8 @@ function AppShell() {
         )}
       </RevealProvider>
       {!splashDone && <SplashOverlay ready={ready} onExitStart={onExitStart} onFinish={onFinish} />}
-      <StatusBar style={!splashDone || scheme === 'light' ? 'dark' : 'light'} />
+      {/* Home có hero emerald đậm → chữ status bar sáng */}
+      <StatusBar style={!splashDone ? 'dark' : pathname === '/' || scheme === 'dark' ? 'light' : 'dark'} />
     </AppFrame>
   );
 }

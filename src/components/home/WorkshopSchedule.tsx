@@ -28,5 +28,5 @@ export function WorkshopSchedule({ workshops }: { workshops: HomeWorkshop[] }) {
 }
 
 const styles = StyleSheet.create({
-  band: { marginTop: 32, paddingTop: 24, paddingBottom: 28, paddingHorizontal: 16, gap: 12, borderRadius: 32 },
+  band: { marginTop: 32, paddingTop: 24, paddingBottom: 28, paddingHorizontal: 16, gap: 12 },
 });
