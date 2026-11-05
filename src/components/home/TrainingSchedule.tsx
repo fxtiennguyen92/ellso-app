@@ -23,5 +23,5 @@ export function TrainingSchedule({ trainings, onOpen }: { trainings: HomeTrainin
 }
 
 const styles = StyleSheet.create({
-  section: { paddingTop: 28, paddingHorizontal: 16, gap: 12 },
+  section: { paddingTop: 28, paddingHorizontal: 16, gap: 18 },
 });

@@ -61,9 +61,18 @@ export type HomeTraining = {
   schedule: TrainingSlot[];
 };
 
-/** Chi tiết chương trình (bottom sheet): thêm địa điểm + ghi chú từng buổi. */
+/** Khối nội dung (CMS soạn, giống trang chiến dịch). */
+export type ContentBlock =
+  | { type: 'paragraph' | 'heading'; text: string }
+  | { type: 'bullets' | 'steps'; title: string | null; items: string[] }
+  | { type: 'image'; url: string; caption: string | null }
+  | { type: 'callout'; tone: 'info' | 'warning'; title: string | null; text: string }
+  | { type: 'promo_code'; code: string };
+
+/** Chi tiết chương trình (bottom sheet): nội dung + địa điểm, ghi chú từng buổi. */
 export type TrainingDetail = HomeTraining & {
   capacity: number | null;
+  blocks: ContentBlock[];
   sessions: (TrainingSlot & {
     note: string | null;
     location: { label: string; address: string | null; mapUrl: string | null; note: string | null } | null;
@@ -111,6 +120,7 @@ type ApiTraining = {
   registration_open: boolean;
   schedule?: ApiSlot[];
   sessions?: ApiSession[];
+  blocks?: ContentBlock[];
   trainer: { name: string } | null;
   price: number;
   is_free: boolean;
@@ -226,6 +236,7 @@ export async function loadTraining(id: string, token: string | null): Promise<Tr
   return {
     ...base,
     capacity: data.capacity,
+    blocks: data.blocks ?? [],
     sessions: (data.sessions ?? []).map((x) => ({
       ...toSlot(x),
       note: x.note ?? null,
@@ -278,6 +289,9 @@ export const untilLabel = (iso: string) => {
 
 /** 200000 → "200.000 ₫" */
 export const formatVnd = (n: number) => `${n.toLocaleString('vi-VN')} ₫`;
+
+/** Phí hiển thị to: { main: "Miễn phí", sub: "cho thành viên" } hoặc { main: "1.500.000 ₫" }. */
+export const feeParts = (isFree: boolean, price: number) => (isFree ? { main: 'Miễn phí', sub: 'cho thành viên' } : { main: formatVnd(price), sub: null });
 
 /** Phí tham gia: 0 = miễn phí với học viên có gói thành viên. */
 export const feeLabel = (isFree: boolean, price: number) => (isFree ? 'Miễn phí cho thành viên' : formatVnd(price));

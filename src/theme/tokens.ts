@@ -59,6 +59,8 @@ export const lightColors = {
   heroDeco: 'rgba(52,211,153,0.28)',
   surfaceAlt: '#f1f5f4',
   danger: '#dc2626',
+  dangerTint: '#fef2f2',
+  dangerLine: '#fecaca',
   trackOff: '#cbd5e1',
   /** Tài liệu: nút lưu đã bật (vàng), chip trung tính (giá mua riêng), trang giấy PDF, bóng sách. */
   fav: '#f59e0b',
@@ -149,6 +151,8 @@ export const darkColors: ColorTokens = {
   heroDeco: 'rgba(4,36,26,0.18)',
   surfaceAlt: '#0f1828',
   danger: '#f87171',
+  dangerTint: '#2a1215',
+  dangerLine: '#7f1d1d',
   trackOff: '#334155',
   fav: '#fbbf24',
   chipNeutral: '#1f2a3d',
