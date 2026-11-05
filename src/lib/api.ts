@@ -12,6 +12,8 @@ export class ApiError extends Error {
     public status: number,
     public fieldErrors: Record<string, string[]> = {},
     public retryAfter?: number,
+    /** Mã lỗi nghiệp vụ từ server (vd membership_required, payment_required, full, closed). */
+    public code?: string,
   ) {
     super(message);
   }
@@ -62,7 +64,8 @@ export async function apiRequest<T>(method: 'GET' | 'POST', path: string, opts: 
           ? 'Máy chủ đang gặp sự cố, thử lại sau.'
           : 'Có lỗi xảy ra, thử lại sau.';
     const retry = typeof data.retry_after === 'number' ? data.retry_after : undefined;
-    throw new ApiError(message, res.status, (data.errors as Record<string, string[]>) ?? {}, retry);
+    const code = typeof data.code === 'string' ? data.code : undefined;
+    throw new ApiError(message, res.status, (data.errors as Record<string, string[]>) ?? {}, retry, code);
   }
   return data as T;
 }

@@ -7,15 +7,16 @@ import { CampaignCarousel } from '@/components/home/CampaignCarousel';
 import { HomeBooks } from '@/components/home/HomeBooks';
 import { HomeHeader } from '@/components/home/HomeHeader';
 import { TrainingSchedule } from '@/components/home/TrainingSchedule';
+import { TrainingSheet } from '@/components/home/TrainingSheet';
 import { WorkshopSchedule } from '@/components/home/WorkshopSchedule';
 import { useAuth } from '@/auth/AuthProvider';
-import { cachedHomeFeed, emptyFeed, type HomeFeed, loadHomeFeed } from '@/data/home';
+import { cachedHomeFeed, emptyFeed, type HomeFeed, type HomeTraining, loadHomeFeed } from '@/data/home';
 import { LoopScope } from '@/hooks/LoopScope';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/typography';
 
 /**
- * Home: Khuyến mãi (carousel) → Lịch huấn luyện → Lịch Workshop → Sách. Dữ liệu thật từ API (src/data/home.ts):
+ * Home: Khuyến mãi (carousel) → Chương trình huấn luyện → Workshop → Sách. Dữ liệu thật từ API (src/data/home.ts):
  * hiện ngay bản đã tải trước lúc splash, rồi làm mới; kéo xuống để tải lại. Mục nào trống thì ẩn.
  */
 export default function HomeScreen() {
@@ -27,6 +28,7 @@ export default function HomeScreen() {
   const [feed, setFeed] = useState<HomeFeed>(() => cachedHomeFeed(token) ?? emptyFeed);
   const [loaded, setLoaded] = useState(() => cachedHomeFeed(token) !== null);
   const [refreshing, setRefreshing] = useState(false);
+  const [openTraining, setOpenTraining] = useState<HomeTraining | null>(null);
 
   const refresh = useCallback(async () => {
     if (!token) return;
@@ -72,7 +74,7 @@ export default function HomeScreen() {
             </Text>
           )}
           <CampaignCarousel campaigns={feed.campaigns} />
-          <TrainingSchedule trainings={feed.trainings} />
+          <TrainingSchedule trainings={feed.trainings} onOpen={setOpenTraining} />
           <WorkshopSchedule workshops={feed.workshops} />
           <HomeBooks books={feed.books} />
           {loaded && empty && !feed.failed && (
@@ -80,6 +82,7 @@ export default function HomeScreen() {
           )}
         </ScrollView>
 
+        <TrainingSheet training={openTraining} onClose={() => setOpenTraining(null)} onChanged={refresh} />
         <HomeHeader student={student} scrolled={scrolled} topInset={topInset} onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)} />
       </View>
     </LoopScope>

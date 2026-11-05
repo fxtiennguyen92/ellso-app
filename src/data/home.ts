@@ -9,7 +9,7 @@
  * Kết quả lần tải gần nhất được giữ trong bộ nhớ: root layout tải trước lúc splash, Home hiện ngay rồi làm mới.
  */
 import { fromApiDoc, type ApiDoc, type Doc } from '@/data/documents';
-import { apiRequest } from '@/lib/api';
+import { ApiError, apiRequest } from '@/lib/api';
 
 // ---------- Kiểu dùng chung với màn khác (giữ nguyên) ----------
 
@@ -39,17 +39,35 @@ export type HomeCampaign = {
   endsAt: string;
 };
 
+export type SessionState = 'upcoming' | 'ongoing' | 'past' | 'cancelled';
+/** Một buổi trong lịch gọn của chương trình huấn luyện. */
+export type TrainingSlot = { number: number; start: string; end: string; state: SessionState };
+
 export type HomeTraining = {
   id: string;
   title: string;
+  summary: string | null;
+  bannerUrl: string | null;
   trainer: string | null;
   isFree: boolean;
   price: number;
   seatsLeft: number | null;
   sessionsCount: number;
   registered: boolean;
+  registrationOpen: boolean;
   /** Buổi sắp tới gần nhất (số thứ tự trong chương trình). */
   next: { number: number; start: string; end: string; place: string | null };
+  /** Mọi buổi của chương trình (buổi 1 … n). */
+  schedule: TrainingSlot[];
+};
+
+/** Chi tiết chương trình (bottom sheet): thêm địa điểm + ghi chú từng buổi. */
+export type TrainingDetail = HomeTraining & {
+  capacity: number | null;
+  sessions: (TrainingSlot & {
+    note: string | null;
+    location: { label: string; address: string | null; mapUrl: string | null; note: string | null } | null;
+  })[];
 };
 
 export type HomeWorkshop = {
@@ -62,6 +80,8 @@ export type HomeWorkshop = {
   capacity: number | null;
   upcomingCount: number;
   next: { start: string; end: string };
+  /** Vài buổi sắp tới gần nhất (tối đa 4). */
+  upcoming: { id: string; start: string; end: string; registered: boolean }[];
 };
 
 export type HomeFeed = {
@@ -79,10 +99,18 @@ export const emptyFeed: HomeFeed = { campaigns: [], trainings: [], workshops: []
 
 type Id = number | string;
 type ApiCampaign = { id: Id; title: string; summary: string | null; banner: { url: string | null }; ends_at: string };
-type ApiSession = { number: number; starts_at: string; ends_at: string; location: { label: string; address: string | null } | null };
+type ApiLocation = { label: string; address: string | null; map_url: string | null; note: string | null };
+type ApiSession = { number: number; starts_at: string; ends_at: string; state: SessionState; note?: string | null; location: ApiLocation | null };
+type ApiSlot = { number: number; starts_at: string; ends_at: string; state: SessionState };
 type ApiTraining = {
   id: Id;
   title: string;
+  summary: string | null;
+  banner: { url: string | null } | null;
+  capacity: number | null;
+  registration_open: boolean;
+  schedule?: ApiSlot[];
+  sessions?: ApiSession[];
   trainer: { name: string } | null;
   price: number;
   is_free: boolean;
@@ -100,6 +128,7 @@ type ApiWorkshop = {
   capacity: number | null;
   upcoming_sessions_count: number;
   next_session: { starts_at: string; ends_at: string } | null;
+  upcoming_sessions?: { id: Id; starts_at: string; ends_at: string; registered: boolean | null }[];
 };
 
 const toCampaign = (c: ApiCampaign): HomeCampaign => ({
@@ -110,11 +139,17 @@ const toCampaign = (c: ApiCampaign): HomeCampaign => ({
   endsAt: c.ends_at,
 });
 
+const toSlot = (x: ApiSlot): TrainingSlot => ({ number: x.number, start: x.starts_at, end: x.ends_at, state: x.state });
+
 const toTraining = (t: ApiTraining): HomeTraining | null =>
   t.next_session
     ? {
         id: String(t.id),
         title: t.title,
+        summary: t.summary,
+        bannerUrl: t.banner?.url ?? null,
+        registrationOpen: t.registration_open,
+        schedule: (t.schedule ?? t.sessions ?? []).map(toSlot),
         trainer: t.trainer?.name ?? null,
         isFree: t.is_free,
         price: t.price,
@@ -141,6 +176,12 @@ const toWorkshop = (w: ApiWorkshop): HomeWorkshop | null =>
         capacity: w.capacity,
         upcomingCount: w.upcoming_sessions_count,
         next: { start: w.next_session.starts_at, end: w.next_session.ends_at },
+        upcoming: (w.upcoming_sessions ?? [w.next_session as { id: Id; starts_at: string; ends_at: string; registered: null }]).map((x) => ({
+          id: String(x.id),
+          start: x.starts_at,
+          end: x.ends_at,
+          registered: !!x.registered,
+        })),
       }
     : null;
 
@@ -174,6 +215,30 @@ export async function loadHomeFeed(token: string): Promise<HomeFeed> {
   return feed;
 }
 
+// ---------- Chương trình huấn luyện: chi tiết + đăng ký ----------
+
+/** Chi tiết một chương trình (GET /trainings/{id}) — mọi buổi kèm địa điểm. */
+export async function loadTraining(id: string, token: string | null): Promise<TrainingDetail> {
+  const { data } = await apiRequest<{ data: ApiTraining }>('GET', `/trainings/${id}`, { token });
+  // Hết buổi sắp tới (đã diễn ra hết) → lấy buổi đầu làm mốc
+  const base = toTraining({ ...data, next_session: data.next_session ?? data.sessions?.[0] ?? null });
+  if (!base) throw new ApiError('Chương trình chưa có lịch.', 404);
+  return {
+    ...base,
+    capacity: data.capacity,
+    sessions: (data.sessions ?? []).map((x) => ({
+      ...toSlot(x),
+      note: x.note ?? null,
+      location: x.location ? { label: x.location.label, address: x.location.address, mapUrl: x.location.map_url, note: x.location.note } : null,
+    })),
+  };
+}
+
+/** Đăng ký cả chương trình (cần gói thành viên còn hạn; có phí → lỗi payment_required). */
+export async function registerTraining(id: string, token: string): Promise<void> {
+  await apiRequest('POST', `/trainings/${id}/register`, { token });
+}
+
 // ---------- Định dạng ngày giờ / tiền tiếng Việt ----------
 
 const WEEKDAYS = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
@@ -198,6 +263,12 @@ export function formatSession(session: Pick<TutorSession, 'start' | 'end'>, now 
     countdown: daysLeft <= 0 ? 'Hôm nay' : daysLeft === 1 ? 'Ngày mai' : `Còn ${daysLeft} ngày`,
   };
 }
+
+/** "17/11" */
+export const dayMonth = (iso: string) => {
+  const d = new Date(iso);
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+};
 
 /** "Đến hết 25/12" */
 export const untilLabel = (iso: string) => {

@@ -88,6 +88,9 @@ export const lightColors = {
   workshopTint: '#fff7ed',
   workshopText: '#c2410c',
   workshopDeep: '#9a3412',
+  /** Nền dải mục Workshop (đậm hơn nền trang để tách khỏi Chương trình huấn luyện). */
+  workshopBand: '#fbe6d0',
+  workshopLine: '#fdba74',
   /** Nền ngoài khung app trên web (màn hình rộng). */
   webBackdrop: '#e6ebe9',
   shadowCard: '0px 1px 2px rgba(15,23,42,0.04), 0px 8px 24px rgba(15,23,42,0.05)',
@@ -169,6 +172,8 @@ export const darkColors: ColorTokens = {
   workshopTint: '#26190f',
   workshopText: '#fdba74',
   workshopDeep: '#fed7aa',
+  workshopBand: '#1f1810',
+  workshopLine: '#7c4a1e',
   webBackdrop: '#060a12',
   shadowCard: '0px 1px 2px rgba(0,0,0,0.4)',
   shadowNav: '0px 8px 24px rgba(0,0,0,0.5)',

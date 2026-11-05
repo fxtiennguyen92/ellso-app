@@ -1,44 +1,32 @@
 import { Animated, StyleSheet } from 'react-native';
 
-import { initialsOf } from '@/data/auth';
 import { useRevealStyle } from '@/components/splash/RevealContext';
-import { feeLabel, type HomeWorkshop, type TutorSession } from '@/data/home';
+import type { HomeWorkshop } from '@/data/home';
+import { useTheme } from '@/theme/ThemeProvider';
 
-import { SessionRow, TicketCard } from './ScheduleCards';
 import { SectionTitle } from './SectionTitle';
-
-const toSession = (w: HomeWorkshop): TutorSession => ({
-  id: w.id,
-  title: w.title,
-  start: w.next.start,
-  end: w.next.end,
-  location: 'Online',
-  room: w.upcomingCount > 1 ? `${w.upcomingCount} khung giờ` : undefined,
-  tutor: { name: w.trainer ?? 'Ellso', initials: initialsOf(w.trainer ?? 'Ellso') },
-});
+import { WorkshopCard } from './WorkshopCard';
 
 /**
- * Lịch Workshop (online, 1 buổi lặp nhiều ngày — GET /v1/workshops): workshop có buổi gần nhất là thẻ vé,
- * 2 workshop sau là dòng gọn. Màu nhấn cam, biểu tượng video thay cho địa điểm.
+ * Workshop (online, lặp hằng tuần — GET /v1/workshops): dải nền đậm hơn nền trang để tách khỏi Chương trình huấn luyện.
+ * Tối đa 3 thẻ; mỗi thẻ hiện 3 ngày sắp diễn ra.
  */
 export function WorkshopSchedule({ workshops }: { workshops: HomeWorkshop[] }) {
+  const { colors } = useTheme();
   const reveal = useRevealStyle(3);
-  const [next, ...later] = workshops.slice(0, 3);
-  if (!next) return null;
-
-  const chips = [{ label: feeLabel(next.isFree, next.price), tone: 'accent' as const }];
+  const list = workshops.slice(0, 3);
+  if (list.length === 0) return null;
 
   return (
-    <Animated.View style={[styles.section, reveal]}>
-      <SectionTitle title="Lịch Workshop" subtitle="Online · chọn khung giờ phù hợp" />
-      <TicketCard session={toSession(next)} accent="orange" placeIcon="video" personLabel="Người dẫn" chips={chips} />
-      {later.map((w) => (
-        <SessionRow key={w.id} session={toSession(w)} accent="orange" personLabel="Người dẫn" />
+    <Animated.View style={[styles.band, { backgroundColor: colors.workshopBand }, reveal]}>
+      <SectionTitle title="Workshop" subtitle="Trao đổi hàng tuần" />
+      {list.map((w) => (
+        <WorkshopCard key={w.id} workshop={w} />
       ))}
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  section: { paddingTop: 28, paddingHorizontal: 16, gap: 12 },
+  band: { marginTop: 32, paddingTop: 24, paddingBottom: 28, paddingHorizontal: 16, gap: 12, borderRadius: 32 },
 });
