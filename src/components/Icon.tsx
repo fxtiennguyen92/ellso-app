@@ -8,6 +8,7 @@ export type IconName =
   | 'filter'
   | 'play'
   | 'pin'
+  | 'map'
   | 'chevronRight'
   | 'chevronLeft'
   | 'clock'
@@ -358,6 +359,13 @@ export function Icon({ name, size = 22, color, strokeWidth = 2, duotone = false,
           {...stroke}
           fill={name === 'bookmarkFilled' ? color : 'none'}
         />
+      )}
+      {/* Bản đồ gấp (biểu tượng "bản đồ" quen thuộc trên các app) */}
+      {name === 'map' && (
+        <>
+          <Path d="M3 6.5 9 4l6 2.5L21 4v13.5L15 20l-6-2.5L3 20Z" {...stroke} />
+          <Path d="M9 4v13.5M15 6.5V20" {...stroke} />
+        </>
       )}
       {name === 'tag' && (
         <>

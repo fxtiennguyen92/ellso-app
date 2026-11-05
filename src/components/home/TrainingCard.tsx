@@ -8,7 +8,7 @@ import { fonts, type } from '@/theme/typography';
 
 /**
  * Thẻ chương trình huấn luyện (Home), màu chính emerald. Chương trình thường 6–8 buổi nên không vẽ từng buổi:
- * ô "Ngày bắt đầu" (thứ, ngày, giờ, đếm ngày) cạnh ô "Số buổi" (n buổi, đến ngày nào); dưới cùng địa điểm (trái)
+ * ô "Ngày bắt đầu" (thứ, ngày, giờ) cạnh ô "Số buổi" (n buổi, đến ngày nào); dưới cùng địa điểm (trái)
  * và học phí chữ to (phải). Góc trên: badge "Đã đăng ký" hoặc "Hết chỗ" (chỉ khi có). Bấm → bottom sheet chi tiết.
  */
 export function TrainingCard({ training, onPress }: { training: HomeTraining; onPress: () => void }) {
@@ -17,7 +17,6 @@ export function TrainingCard({ training, onPress }: { training: HomeTraining; on
   const first = t.schedule[0] ?? { start: t.next.start, end: t.next.end, state: 'upcoming' as const };
   const last = t.schedule[t.schedule.length - 1];
   const total = t.sessionsCount || t.schedule.length;
-  const started = first.state !== 'upcoming';
   const f = formatSession(first);
   const fee = feeParts(t.isFree, t.price);
   const trainer = t.trainer ?? 'Ellso';
@@ -55,7 +54,6 @@ export function TrainingCard({ training, onPress }: { training: HomeTraining; on
           <Text style={[type.caption, { color: colors.ink600 }]}>
             {f.startTime} – {f.endTime}
           </Text>
-          <Text style={[type.captionStrong, { color: started ? colors.ink600 : colors.emerald700 }]}>{started ? 'Đã khai giảng' : f.countdown}</Text>
         </View>
         <View style={[styles.divider, { backgroundColor: colors.mint100 }]} />
         <View style={[styles.cell, styles.cellCount]}>

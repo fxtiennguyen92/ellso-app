@@ -1,17 +1,17 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/auth/AuthUI';
 import { BottomSheet } from '@/components/BottomSheet';
-import { Icon, type IconName } from '@/components/Icon';
+import { Icon } from '@/components/Icon';
 import { useAuth } from '@/auth/AuthProvider';
 import { initialsOf } from '@/data/auth';
 import {
   type ContentBlock,
   dayMonth,
-  feeParts,
+  formatVnd,
   formatSession,
   type HomeTraining,
   loadTraining,
@@ -25,14 +25,11 @@ import { fonts, type } from '@/theme/typography';
 type Tab = 'overview' | 'schedule';
 type Session = TrainingDetail['sessions'][number];
 
-const placeKey = (s: Session) => (s.location ? `${s.location.label}|${s.location.address ?? ''}` : '');
-
 /**
  * Bottom sheet "Chương trình huấn luyện" (bấm thẻ ở Home), cao ~85% màn hình, 2 tab:
- * - Tổng quan: banner, mô tả, danh sách thông tin (ngày bắt đầu, số buổi, giờ học, địa điểm, học phí), nội dung CMS.
- * - Lịch: hàng ngang các buổi (mặc định chọn buổi sắp tới gần nhất), bên dưới là giờ + địa điểm của buổi đang chọn.
- *   Mọi buổi cùng một địa điểm thì ghi rõ để người dùng khỏi phải dò từng buổi.
- * Nút đăng ký nổi phía dưới (không nằm trong footer). Chi tiết tải từ GET /v1/trainings/{id}.
+ * - Tổng quan: chỉ mô tả + nội dung CMS.
+ * - Lịch trình: hàng ngang các buổi (mặc định chọn buổi sắp tới gần nhất), bên dưới là giờ + địa điểm của buổi đang chọn.
+ * Nút nổi phía dưới: "Tham gia miễn phí" hoặc "Phí tham gia 1.500.000 ₫". Chi tiết tải từ GET /v1/trainings/{id}.
  */
 export function TrainingSheet({ training, onClose, onChanged }: { training: HomeTraining | null; onClose: () => void; onChanged: () => void }) {
   const { colors } = useTheme();
@@ -114,7 +111,7 @@ export function TrainingSheet({ training, onClose, onChanged }: { training: Home
             {(
               [
                 ['overview', 'Tổng quan'],
-                ['schedule', `Lịch học · ${total} buổi`],
+                ['schedule', `Lịch trình · ${total} buổi`],
               ] as const
             ).map(([key, label]) => {
               const on = tab === key;
@@ -130,7 +127,7 @@ export function TrainingSheet({ training, onClose, onChanged }: { training: Home
 
         <ScrollView style={styles.grow} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {tab === 'overview' ? (
-            <Overview t={t} detail={detail} full={full} />
+            <Overview t={t} detail={detail} />
           ) : detail ? (
             <Schedule sessions={detail.sessions} selected={selected} onSelect={setSelected} />
           ) : loadError ? (
@@ -166,7 +163,7 @@ export function TrainingSheet({ training, onClose, onChanged }: { training: Home
           ) : (
             <View style={[styles.buttonWrap, { boxShadow: colors.shadowCard }]}>
               <PrimaryButton
-                label={full ? 'Đã hết chỗ' : !t.registrationOpen ? 'Đã đóng đăng ký' : 'Đăng ký tham gia'}
+                label={full ? 'Đã hết chỗ' : !t.registrationOpen ? 'Đã đóng đăng ký' : t.isFree ? 'Tham gia miễn phí' : `Phí tham gia ${formatVnd(t.price)}`}
                 disabled={full || !t.registrationOpen}
                 loading={busy}
                 onPress={register}
@@ -179,53 +176,34 @@ export function TrainingSheet({ training, onClose, onChanged }: { training: Home
   );
 }
 
-/** Tab Tổng quan: không dùng thẻ — danh sách dòng có đường kẻ mảnh. */
-function Overview({ t, detail, full }: { t: HomeTraining; detail: TrainingDetail | null; full: boolean }) {
+/** Tab Tổng quan: chỉ mô tả + nội dung CMS (ngày, số buổi, địa điểm… đã có ở thẻ và tab Lịch trình; phí nằm trên nút). */
+function Overview({ t, detail }: { t: HomeTraining; detail: TrainingDetail | null }) {
   const { colors } = useTheme();
-  const first = t.schedule[0];
-  const last = t.schedule[t.schedule.length - 1];
-  const total = t.sessionsCount || t.schedule.length;
-  const fee = feeParts(t.isFree, t.price);
-
-  const sessions = detail?.sessions ?? [];
-  const sameTime = sessions.length > 0 && sessions.every((s) => formatSession(s).startTime === formatSession(sessions[0]).startTime && formatSession(s).endTime === formatSession(sessions[0]).endTime);
-  const places = new Set(sessions.map(placeKey));
-  const onePlace = sessions.length > 0 && places.size === 1 ? sessions[0].location : null;
-
-  const rows: { icon: IconName; label: string; value: string; sub?: string; tone?: 'danger' }[] = [
-    ...(first ? [{ icon: 'clock' as const, label: 'Ngày bắt đầu', value: `${formatSession(first).weekday}, ${dayMonth(first.start)}`, sub: first.state === 'upcoming' ? formatSession(first).countdown : 'Đã khai giảng' }] : []),
-    { icon: 'layers', label: 'Số buổi', value: `${total} buổi`, sub: last && total > 1 ? `đến ${dayMonth(last.start)}` : undefined },
-    ...(first ? [{ icon: 'clock' as const, label: 'Giờ học', value: sameTime || !detail ? `${formatSession(first).startTime} – ${formatSession(first).endTime}` : 'Theo từng buổi' }] : []),
-    {
-      icon: 'pin',
-      label: 'Địa điểm',
-      value: onePlace ? onePlace.label : detail && places.size > 1 ? `${places.size} địa điểm` : (t.next.place ?? 'Sẽ thông báo'),
-      sub: onePlace?.address ?? (detail && places.size > 1 ? 'Xem từng buổi ở tab Lịch học' : undefined),
-    },
-    { icon: 'tag', label: 'Học phí', value: fee.main, sub: fee.sub ?? undefined },
-    ...(full ? [{ icon: 'people' as const, label: 'Chỗ', value: 'Hết chỗ', tone: 'danger' as const }] : []),
-  ];
-
+  const empty = !t.summary && detail !== null && detail.blocks.length === 0;
   return (
     <View style={styles.overview}>
-      {t.bannerUrl && <Image source={{ uri: t.bannerUrl }} style={[styles.banner, { backgroundColor: colors.mint50 }]} contentFit="cover" transition={150} />}
-      {t.summary ? <Text style={[styles.summary, { color: colors.ink900 }]}>{t.summary}</Text> : null}
-
-      <View>
-        {rows.map((r, i) => (
-          <View key={r.label} style={[styles.row, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>
-            <Icon name={r.icon} size={18} color={colors.emerald700} />
-            <Text style={[type.caption, styles.rowLabel, { color: colors.ink600 }]}>{r.label}</Text>
-            <View style={styles.rowValue}>
-              <Text style={[type.label, styles.right, { color: r.tone === 'danger' ? colors.danger : colors.ink900 }]}>{r.value}</Text>
-              {r.sub && <Text style={[type.caption, styles.right, { color: colors.ink600 }]}>{r.sub}</Text>}
-            </View>
-          </View>
-        ))}
-      </View>
-
+      {t.summary ? <RichText text={t.summary} style={[styles.summary, { color: colors.ink900 }]} /> : null}
       {detail?.blocks.map((b, i) => <Block key={i} block={b} />)}
+      {empty && <Text style={[type.caption, { color: colors.ink600 }]}>Chưa có mô tả cho chương trình này.</Text>}
     </View>
+  );
+}
+
+/** "**đậm**" trong nội dung CMS → chữ đậm. */
+function RichText({ text, style }: { text: string; style: object }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <Text style={style}>
+      {parts.map((part, i) =>
+        part.startsWith('**') && part.endsWith('**') && part.length > 4 ? (
+          <Text key={i} style={{ fontFamily: fonts.sans700 }}>
+            {part.slice(2, -2)}
+          </Text>
+        ) : (
+          part
+        ),
+      )}
+    </Text>
   );
 }
 
@@ -236,7 +214,7 @@ function Block({ block }: { block: ContentBlock }) {
     case 'heading':
       return <Text style={[type.cardTitle, { color: colors.ink900 }]}>{block.text}</Text>;
     case 'paragraph':
-      return <Text style={[styles.summary, { color: colors.ink900 }]}>{block.text}</Text>;
+      return <RichText text={block.text} style={[styles.summary, { color: colors.ink900 }]} />;
     case 'bullets':
     case 'steps':
       return (
@@ -245,7 +223,7 @@ function Block({ block }: { block: ContentBlock }) {
           {block.items.map((it, i) => (
             <View key={i} style={styles.listRow}>
               <Text style={[type.label, styles.listMark, { color: colors.emerald700 }]}>{block.type === 'steps' ? `${i + 1}.` : '•'}</Text>
-              <Text style={[styles.summary, styles.grow, { color: colors.ink900 }]}>{it}</Text>
+              <RichText text={it} style={[styles.summary, styles.grow, { color: colors.ink900 }]} />
             </View>
           ))}
         </View>
@@ -256,7 +234,7 @@ function Block({ block }: { block: ContentBlock }) {
       return (
         <View style={[styles.callout, { borderLeftColor: block.tone === 'warning' ? colors.spark500 : colors.emerald700 }]}>
           {block.title && <Text style={[type.label, { color: colors.ink900 }]}>{block.title}</Text>}
-          <Text style={[type.caption, { color: colors.ink600 }]}>{block.text}</Text>
+          <RichText text={block.text} style={[type.caption, { color: colors.ink600 }]} />
         </View>
       );
     default:
@@ -264,17 +242,30 @@ function Block({ block }: { block: ContentBlock }) {
   }
 }
 
-/** Tab Lịch học: hàng ngang các buổi + chi tiết buổi đang chọn. */
+const DAY_W = 64;
+const DAY_STEP = DAY_W + StyleSheet.hairlineWidth * 2; // ô + vạch ngăn
+
+/**
+ * Tab Lịch trình: hàng ngang các buổi (cuộn ngang, ô phẳng ngăn bằng vạch mảnh), buổi đang chọn luôn được cuộn
+ * vào giữa tầm nhìn (kể cả buổi cuối nằm ngoài mép phải). Bên dưới: ngày giờ + địa điểm của buổi đang chọn.
+ */
 function Schedule({ sessions, selected, onSelect }: { sessions: Session[]; selected: number; onSelect: (i: number) => void }) {
   const { colors } = useTheme();
   const rowRef = useRef<ScrollViewInstance>(null);
+  const [rowW, setRowW] = useState(0);
+  const firstScroll = useRef(true);
   const s = sessions[selected];
-  const samePlace = useMemo(() => sessions.length > 1 && new Set(sessions.map(placeKey)).size === 1, [sessions]);
 
-  // Đưa buổi đang chọn vào giữa hàng ngang
+  const reveal = useCallback(() => {
+    if (!rowW) return;
+    const x = Math.max(0, selected * DAY_STEP - (rowW - DAY_W) / 2);
+    rowRef.current?.scrollTo({ x, animated: !firstScroll.current });
+    firstScroll.current = false;
+  }, [selected, rowW]);
   useEffect(() => {
-    rowRef.current?.scrollTo({ x: Math.max(0, selected * 72 - 120), animated: true });
-  }, [selected]);
+    const id = requestAnimationFrame(reveal);
+    return () => cancelAnimationFrame(id);
+  }, [reveal]);
 
   if (!s) return <Text style={[type.caption, { color: colors.ink600 }]}>Chưa có lịch.</Text>;
   const f = formatSession(s);
@@ -282,36 +273,37 @@ function Schedule({ sessions, selected, onSelect }: { sessions: Session[]; selec
 
   return (
     <View style={styles.schedule}>
-      <ScrollView ref={rowRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.days}>
+      <ScrollView
+        ref={rowRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        onLayout={(e) => setRowW(e.nativeEvent.layout.width)}
+        onContentSizeChange={() => firstScroll.current && reveal()}
+        style={[styles.daysRow, { borderColor: colors.line }]}
+      >
         {sessions.map((x, i) => {
           const on = i === selected;
           const past = x.state === 'past';
-          const xf = formatSession(x);
+          const xd = new Date(x.start);
           return (
-            <Pressable
-              key={x.number}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: on }}
-              accessibilityLabel={`Buổi ${x.number}, ${xf.weekday} ${dayMonth(x.start)}${past ? ', đã diễn ra' : ''}`}
-              onPress={() => onSelect(i)}
-              style={[
-                styles.day,
-                on
-                  ? { backgroundColor: colors.emerald700, borderColor: colors.emerald700 }
-                  : { backgroundColor: colors.card, borderColor: colors.line, opacity: past ? 0.55 : 1 },
-              ]}
-            >
-              <Text style={[styles.dayNum, { color: on ? colors.onEmeraldMuted : colors.ink600 }]}>Buổi {x.number}</Text>
-              <Text style={[styles.dayBig, { color: on ? colors.onEmerald : colors.ink900 }]}>{new Date(x.start).getDate()}</Text>
-              <Text style={[styles.dayNum, { color: on ? colors.onEmeraldMuted : colors.ink600 }]}>
-                {xf.weekdayShort} · Th{new Date(x.start).getMonth() + 1}
-              </Text>
-              {past && !on && (
-                <View style={[styles.dayCheck, { backgroundColor: colors.emerald700, borderColor: colors.card }]}>
-                  <Icon name="check" size={9} strokeWidth={3.4} color={colors.onEmerald} />
+            <View key={x.number} style={styles.dayWrap}>
+              {i > 0 && <View style={[styles.daySep, { backgroundColor: colors.line }]} />}
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={`Buổi ${x.number}, ngày ${dayMonth(x.start)}${past ? ', đã diễn ra' : ''}`}
+                onPress={() => onSelect(i)}
+                style={[styles.day, on && { backgroundColor: colors.mint50 }]}
+              >
+                <View style={styles.dayTop}>
+                  {past && <Icon name="check" size={11} strokeWidth={3} color={on ? colors.emerald700 : colors.ink400} />}
+                  <Text style={[styles.dayNum, { color: on ? colors.emerald700 : colors.ink600 }]}>Buổi {x.number}</Text>
                 </View>
-              )}
-            </Pressable>
+                <Text style={[styles.dayBig, { color: on ? colors.emerald700 : past ? colors.ink400 : colors.ink900 }]}>{xd.getDate()}</Text>
+                <Text style={[styles.dayNum, { color: on ? colors.emerald700 : colors.ink600 }]}>Th {xd.getMonth() + 1}</Text>
+                <View style={[styles.dayBar, { backgroundColor: on ? colors.emerald700 : 'transparent' }]} />
+              </Pressable>
+            </View>
           );
         })}
       </ScrollView>
@@ -341,15 +333,9 @@ function Schedule({ sessions, selected, onSelect }: { sessions: Session[]; selec
             {s.location.note && <Text style={[type.caption, { color: colors.ink600 }]}>{s.location.note}</Text>}
             {s.location.mapUrl && (
               <Pressable accessibilityRole="link" onPress={() => s.location?.mapUrl && Linking.openURL(s.location.mapUrl)} style={styles.mapLink} hitSlop={6}>
-                <Icon name="pin" size={16} color={colors.emerald700} />
+                <Icon name="map" size={18} color={colors.emerald700} />
                 <Text style={[type.label, { color: colors.emerald700 }]}>Mở bản đồ</Text>
               </Pressable>
-            )}
-            {samePlace && (
-              <View style={[styles.same, { backgroundColor: colors.mint50 }]}>
-                <Icon name="info" size={14} color={colors.emerald700} />
-                <Text style={[type.caption, styles.grow, { color: colors.emerald800 }]}>Tất cả {sessions.length} buổi học tại cùng địa điểm này.</Text>
-              </View>
             )}
           </>
         ) : (
@@ -374,25 +360,23 @@ const styles = StyleSheet.create({
   overview: { gap: 16 },
   banner: { width: '100%', aspectRatio: 16 / 9, borderRadius: 16 },
   summary: { fontFamily: fonts.sans400, fontSize: 15, lineHeight: 24 },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 12 },
-  rowLabel: { width: 96, paddingTop: 1 },
-  rowValue: { flex: 1, alignItems: 'flex-end' },
-  right: { textAlign: 'right' },
   list: { gap: 6 },
   listRow: { flexDirection: 'row', gap: 8 },
   listMark: { width: 18, lineHeight: 24 },
   callout: { borderLeftWidth: 3, paddingLeft: 12, gap: 2 },
   schedule: { gap: 20 },
-  days: { gap: 8, paddingTop: 6, paddingRight: 8 },
-  day: { width: 64, alignItems: 'center', paddingVertical: 10, borderRadius: 16, borderWidth: 1.5 },
+  daysRow: { flexGrow: 0, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth },
+  dayWrap: { flexDirection: 'row', alignItems: 'center' },
+  daySep: { width: StyleSheet.hairlineWidth * 2, height: 40 },
+  day: { width: DAY_W, alignItems: 'center', paddingTop: 10 },
+  dayTop: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   dayNum: { fontFamily: fonts.sans600, fontSize: 11, lineHeight: 14 },
   dayBig: { fontFamily: fonts.display700, fontSize: 22, lineHeight: 30 },
-  dayCheck: { position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: 9, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  dayBar: { alignSelf: 'stretch', height: 3, marginTop: 8 },
   detail: { gap: 6 },
   line: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   placeBlock: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 16, gap: 4 },
   mapLink: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, alignSelf: 'flex-start' },
-  same: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, padding: 10, marginTop: 12 },
   floating: { position: 'absolute', left: 0, right: 0, bottom: 0, gap: 8 },
   errorBox: { borderWidth: 1, borderRadius: 16, padding: 12, gap: 4 },
   buttonWrap: { borderRadius: 18 },
