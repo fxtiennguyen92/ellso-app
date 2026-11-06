@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Platform, Pressable, RefreshControl, type ScrollViewInstance, Share, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
@@ -15,7 +15,6 @@ import { useToast } from '@/components/Toast';
 import { UserAvatar } from '@/components/UserAvatar';
 import { displayLink, getProfile, type ProfileSection } from '@/data/profile';
 import { NATIVE_DRIVER } from '@/hooks/useLoop';
-import { PULL_TRIGGER, usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { appVersionLabel } from '@/lib/appVersion';
 import { useTheme } from '@/theme/ThemeProvider';
 import { illo } from '@/theme/tokens';
@@ -44,7 +43,7 @@ const COMPACT_H = 52;
  * - Thẻ "Xu của bạn" nổi đè mép dưới hero: chỉ số xu (không quy đổi tiền) → Lịch sử xu.
  * - Các nhóm cài đặt: icon một kiểu (Lucide, ô mint). Giao diện Sáng / Tối / Hệ thống lưu trên máy.
  * - Cuộn: thanh trên cùng luôn cố định (tiêu đề + QR). Khối tên trên hero mờ dần / thu nhỏ khi cuộn; tới khoảng
- *   giữa hero thì thanh trên cùng hiện nền hero và đổi tiêu đề thành avatar nhỏ + tên + số xu. Kéo xuống để làm mới.
+ *   giữa hero thì thanh trên cùng hiện nền hero và đổi tiêu đề thành avatar nhỏ + tên + số xu. Nút làm mới (bên trái QR) tải lại số xu / gói / ảnh; mỗi lần vào tab cũng tự làm mới.
  * - Phiên bản lấy từ bản cài (appVersionLabel), không đặt cứng.
  */
 export function ProfileScreen() {
@@ -78,16 +77,21 @@ export function ProfileScreen() {
     }, [refreshUser]),
   );
 
+  // Nút làm mới trên thanh trên cùng (không dùng kéo xuống: lộ nền hero phía trên, không đẹp).
+  // Icon quay liên tục trong lúc tải, tối thiểu 1 vòng để người dùng thấy đã bấm.
+  const spin = useRef(new Animated.Value(0)).current;
   const onRefresh = async () => {
+    if (refreshing) return;
     setRefreshing(true);
-    await refreshUser();
+    spin.setValue(0);
+    const loop = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 700, easing: Easing.linear, useNativeDriver: NATIVE_DRIVER }));
+    loop.start();
+    await Promise.all([refreshUser(), new Promise((res) => setTimeout(res, 700))]);
+    loop.stop();
+    spin.setValue(0);
     setRefreshing(false);
+    showToast('Đã cập nhật hồ sơ');
   };
-
-  // Web không có RefreshControl → kéo xuống (chạm / giữ chuột) ở đầu trang, cùng cơ chế Home
-  const scrollRef = useRef<ScrollViewInstance>(null);
-  const webPull = usePullToRefresh(scrollRef, refreshUser);
-  const barH = topInset + COMPACT_H;
 
   // Thanh trên cùng đổi chéo khi khối tên trên hero đã mờ gần hết (≈ 25% → 45% chiều cao hero)
   const barFrom = Math.max(1, heroH * 0.25);
@@ -124,6 +128,20 @@ export function ProfileScreen() {
     }
   };
 
+  const refreshButton = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={refreshing ? 'Đang làm mới hồ sơ' : 'Làm mới hồ sơ'}
+      accessibilityState={{ busy: refreshing }}
+      onPress={onRefresh}
+      style={({ pressed }) => [styles.glassBtn, { backgroundColor: colors.heroGlass, borderColor: colors.heroGlassLine, opacity: pressed ? 0.75 : 1 }]}
+    >
+      <Animated.View style={{ transform: [{ rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }}>
+        <Icon name="refresh" size={20} color={colors.heroOn} />
+      </Animated.View>
+    </Pressable>
+  );
+
   const qrButton = (
     <Pressable
       accessibilityRole="button"
@@ -140,30 +158,11 @@ export function ProfileScreen() {
       {/* Nền emerald phía sau nửa trên: kéo quá đầu trang (iOS) vẫn thấy màu hero, không lộ khoảng trắng */}
       <View pointerEvents="none" style={[styles.overscroll, { backgroundColor: colors.heroFrom }]} />
 
-      {Platform.OS === 'web' && (
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.pullIndicator,
-            { top: barH + 6, opacity: webPull.pull.interpolate({ inputRange: [0, PULL_TRIGGER * 0.4, PULL_TRIGGER], outputRange: [0, 0.4, 1], extrapolate: 'clamp' }) },
-          ]}
-        >
-          <View style={[styles.pullBadge, { backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.shadowCard }]}>
-            <ActivityIndicator size="small" color={colors.emerald700} animating />
-          </View>
-        </Animated.View>
-      )}
-
-      <Animated.View style={[styles.screen, Platform.OS === 'web' && { transform: [{ translateY: webPull.pull }] }]}>
       <Animated.ScrollView
-        ref={scrollRef}
         scrollEventThrottle={16}
         onScroll={onScroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 16, backgroundColor: colors.bg }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.heroOn} colors={[colors.emerald700]} progressViewOffset={barH} />
-        }
       >
         {/* ---------- Hero ---------- */}
         <View style={[styles.hero, { paddingTop: topInset, backgroundColor: colors.heroMid }]} onLayout={(e) => setHeroH(e.nativeEvent.layout.height)}>
@@ -279,7 +278,6 @@ export function ProfileScreen() {
           <Text style={[styles.version, { color: colors.ink400 }]}>Ellso · Phiên bản {appVersionLabel()}</Text>
         </View>
       </Animated.ScrollView>
-      </Animated.View>
 
       {/* ---------- Thanh trên cùng cố định ----------
           Đầu trang: trong suốt, chỉ có tiêu đề "Hồ sơ" + nút QR nằm trên hero.
@@ -319,6 +317,7 @@ export function ProfileScreen() {
               </Text>
             </View>
           </Animated.View>
+          {refreshButton}
           {qrButton}
         </View>
       </View>
@@ -429,8 +428,6 @@ const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   center: { textAlign: 'center' },
   onTop: { position: 'relative', zIndex: 1 },
-  pullIndicator: { position: 'absolute', left: 0, right: 0, zIndex: 5, alignItems: 'center' },
-  pullBadge: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   overscroll: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%' },
 
   hero: { paddingHorizontal: 16, paddingBottom: 72, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
@@ -463,7 +460,7 @@ const styles = StyleSheet.create({
   topBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, paddingHorizontal: 16 },
   topBarBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderBottomLeftRadius: 20, borderBottomRightRadius: 20, overflow: 'hidden' },
   topBarRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  topTitle: { position: 'absolute', left: 0, right: 56 },
+  topTitle: { position: 'absolute', left: 0, right: 108 },
   compactIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
   compactName: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
 

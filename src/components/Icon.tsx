@@ -42,6 +42,7 @@ import Pencil from 'lucide-react-native/icons/pencil';
 import Play from 'lucide-react-native/icons/play';
 import QrCode from 'lucide-react-native/icons/qr-code';
 import Receipt from 'lucide-react-native/icons/receipt';
+import RotateCw from 'lucide-react-native/icons/rotate-cw';
 import Scale from 'lucide-react-native/icons/scale';
 import ScanLine from 'lucide-react-native/icons/scan-line';
 import Search from 'lucide-react-native/icons/search';
@@ -121,6 +122,7 @@ const ICONS = {
   shield: ShieldCheck,
   logout: LogOut,
   close: X,
+  refresh: RotateCw,
   user: User,
   coins: Coins,
   history: History,
