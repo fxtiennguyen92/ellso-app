@@ -19,11 +19,12 @@ export function SettingsGroup({ title, children }: { title: string; children: Re
   );
 }
 
-/** Ô icon vuông bo góc đầu mỗi dòng. */
-export function RowIcon({ name, bg, fg }: { name: IconName; bg: string; fg: string }) {
+/** Ô icon đầu mỗi dòng — một kiểu duy nhất cho mọi dòng (nền mint, icon emerald) để màn nhìn đồng bộ. */
+export function RowIcon({ name }: { name: IconName }) {
+  const { colors } = useTheme();
   return (
-    <View style={[styles.rowIcon, { backgroundColor: bg }]}>
-      <Icon name={name} size={18} strokeWidth={1.9} color={fg} />
+    <View style={[styles.rowIcon, { backgroundColor: colors.mint50 }]}>
+      <Icon name={name} size={18} strokeWidth={2} color={colors.emerald700} />
     </View>
   );
 }

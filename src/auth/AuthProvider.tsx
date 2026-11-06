@@ -28,6 +28,8 @@ type Ctx = {
   login: (email: string, password: string) => Promise<void>;
   changePassword: (newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Tải lại thông tin user (GET /me) — vd vào màn Hồ sơ / kéo để làm mới (số xu, gói thành viên). */
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<Ctx | null>(null);
@@ -110,6 +112,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearNotice = useCallback(() => setNotice(null), []);
 
+  const refreshUser = useCallback(async () => {
+    const s = sessionRef.current;
+    if (!s || s.mustChangePassword) return;
+    try {
+      const user = await apiMe(s.token);
+      if (sessionRef.current?.token === s.token) apply({ ...s, user });
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401 && sessionRef.current?.token === s.token) apply(null);
+    }
+  }, [apply]);
+
   const value = useMemo<Ctx>(
     () => ({
       status: loaded ? statusOf(session) : 'loading',
@@ -121,8 +134,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       changePassword,
       logout,
+      refreshUser,
     }),
-    [loaded, session, tempPassword, notice, clearNotice, login, changePassword, logout],
+    [loaded, session, tempPassword, notice, clearNotice, login, changePassword, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,42 +1,97 @@
 import * as Clipboard from 'expo-clipboard';
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
+import { Animated, Platform, Pressable, RefreshControl, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { BottomSheet } from '@/components/BottomSheet';
+import { HeroBackground } from '@/components/HeroBackground';
 import { Icon } from '@/components/Icon';
 import { QrCode } from '@/components/QrCode';
 import { useToast } from '@/components/Toast';
-import { displayLink, formatDate, getProfile, type ProfileSection } from '@/data/profile';
-import { useScreenTopInset } from '@/hooks/useScreenTopInset';
+import { displayLink, getProfile, type ProfileSection } from '@/data/profile';
+import { NATIVE_DRIVER } from '@/hooks/useLoop';
+import { appVersionLabel } from '@/lib/appVersion';
 import { useTheme } from '@/theme/ThemeProvider';
 import { illo } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
 
-import { ReferralCard } from './ReferralCard';
 import { RowIcon, SettingsGroup, SettingsRow, settingsStyles, ThemeSegment, Toggle } from './SettingsParts';
 
 const go = (section: ProfileSection) => router.push(`/profile/${section}`);
 
-/** Tab Hồ sơ. */
+/** 1250 → "1.250" */
+const groupThousands = (n: number) => String(Math.max(0, Math.floor(n))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+/** "2026-11-30T…" → "30/11/2026" */
+const dmy = (iso: string) => {
+  const d = new Date(iso);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+};
+
+const COMPACT_H = 52;
+
+/**
+ * Tab Hồ sơ.
+ * - Hero emerald (cùng kiểu Home): tiêu đề + nút QR, avatar lớn (bấm → sửa thông tin), tên, email, chip gói thành viên.
+ * - Thẻ "Xu của bạn" nổi đè mép dưới hero: chỉ số xu (không quy đổi tiền) → Lịch sử xu.
+ * - Các nhóm cài đặt: icon một kiểu (Lucide, ô mint). Giao diện Sáng / Tối / Hệ thống lưu trên máy.
+ * - Cuộn: thanh trên cùng luôn cố định (tiêu đề + QR). Khối tên trên hero mờ dần / thu nhỏ khi cuộn; tới khoảng
+ *   giữa hero thì thanh trên cùng hiện nền hero và đổi tiêu đề thành avatar nhỏ + tên + số xu. Kéo xuống để làm mới.
+ * - Phiên bản lấy từ bản cài (appVersionLabel), không đặt cứng.
+ */
 export function ProfileScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const topInset = useScreenTopInset();
-  const { user, logout } = useAuth();
-  // Tên / email / chữ viết tắt lấy từ tài khoản đang đăng nhập; phần còn lại vẫn là data tạm
-  const profile = { ...getProfile(), ...(user ? { name: user.name, email: user.email, initials: user.initials } : null) };
-  const { referral } = profile;
+  const { user, logout, refreshUser } = useAuth();
 
-  const [scrollY, setScrollY] = useState(0);
+  // Mã / link giới thiệu: mã thật từ tài khoản, link theo mẫu tạm
+  const mock = getProfile();
+  const code = user?.referralCode ?? mock.referral.code;
+  const referralLink = `https://ellso.app/r/${code}`;
+  const name = user?.name ?? '';
+  const initials = user?.initials ?? '?';
+  const coins = user?.coins ?? 0;
+  const membership = user?.membership?.active && user.membership.endsAt ? { endsAt: user.membership.endsAt } : null;
+
+  const topInset = Platform.OS === 'web' ? 20 : insets.top + 8;
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [heroH, setHeroH] = useState(320);
+  const [compact, setCompact] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [systemNotif, setSystemNotif] = useState(true);
   const [toast, showToast] = useToast();
+
+  // Mỗi lần vào tab: làm mới số xu / gói (lỗi mạng bỏ qua, giữ số cũ)
+  useFocusEffect(
+    useCallback(() => {
+      refreshUser();
+    }, [refreshUser]),
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refreshUser();
+    setRefreshing(false);
+  };
+
+  // Thanh trên cùng đổi chéo khi khối tên trên hero đã mờ gần hết (≈ 25% → 45% chiều cao hero)
+  const barFrom = Math.max(1, heroH * 0.25);
+  const barTo = barFrom + Math.max(40, heroH * 0.2);
+  const barIn = scrollY.interpolate({ inputRange: [barFrom, barTo], outputRange: [0, 1], extrapolate: 'clamp' });
+  const barOut = scrollY.interpolate({ inputRange: [barFrom, barTo], outputRange: [1, 0], extrapolate: 'clamp' });
+  const onScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+    useNativeDriver: NATIVE_DRIVER,
+    listener: (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+      const on = e.nativeEvent.contentOffset.y > (barFrom + barTo) / 2;
+      setCompact((c) => (c === on ? c : on));
+    },
+  });
 
   const copy = async (text: string, message: string) => {
     try {
@@ -48,127 +103,134 @@ export function ProfileScreen() {
   };
 
   const share = async () => {
-    const message = `Học cùng mình trên Ellso! Dùng mã ${referral.code} khi đăng ký: ${referral.link}`;
+    const message = `Học cùng mình trên Ellso! Dùng mã ${code} khi đăng ký: ${referralLink}`;
     // Web: trình duyệt không hỗ trợ share sheet → sao chép link thay thế
     if (Platform.OS === 'web' && !(typeof navigator !== 'undefined' && 'share' in navigator)) {
-      return copy(referral.link, 'Đã sao chép link giới thiệu');
+      return copy(referralLink, 'Đã sao chép link giới thiệu');
     }
     try {
-      await Share.share({ message, url: referral.link, title: 'Mời bạn học Ellso' });
+      await Share.share({ message, url: referralLink, title: 'Mời bạn học Ellso' });
     } catch {
-      copy(referral.link, 'Đã sao chép link giới thiệu');
+      copy(referralLink, 'Đã sao chép link giới thiệu');
     }
   };
 
+  const qrButton = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Mã QR giới thiệu của bạn"
+      onPress={() => setQrOpen(true)}
+      style={({ pressed }) => [styles.glassBtn, { backgroundColor: colors.heroGlass, borderColor: colors.heroGlassLine, opacity: pressed ? 0.75 : 1 }]}
+    >
+      <Icon name="qr" size={20} color={colors.heroOn} />
+    </Pressable>
+  );
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      {/* Header cố định */}
-      <View
-        style={[
-          styles.header,
-          { paddingTop: topInset, backgroundColor: colors.bg, borderBottomColor: scrollY > 4 ? colors.line : 'transparent' },
-        ]}
-      >
-        <Text accessibilityRole="header" style={[type.screenTitle, styles.grow, { color: colors.ink900 }]}>
-          Hồ sơ
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Mã QR giới thiệu của bạn"
-          onPress={() => setQrOpen(true)}
-          style={({ pressed }) => [styles.iconBtn, { backgroundColor: colors.card, borderColor: colors.line, opacity: pressed ? 0.7 : 1 }]}
-        >
-          <Icon name="qr" strokeWidth={1.9} color={colors.ink900} />
-        </Pressable>
-      </View>
+      {/* Nền emerald phía sau nửa trên: kéo quá đầu trang (iOS) vẫn thấy màu hero, không lộ khoảng trắng */}
+      <View pointerEvents="none" style={[styles.overscroll, { backgroundColor: colors.heroFrom }]} />
 
-      <ScrollView
+      <Animated.ScrollView
         scrollEventThrottle={16}
-        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+        onScroll={onScroll}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 4, paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 16 }}
+        contentContainerStyle={{ paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 16, backgroundColor: colors.bg }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.heroOn} colors={[colors.emerald700]} progressViewOffset={topInset} />
+        }
       >
-        {/* Thẻ hồ sơ */}
+        {/* ---------- Hero ---------- */}
+        <View style={[styles.hero, { paddingTop: topInset, backgroundColor: colors.heroMid }]} onLayout={(e) => setHeroH(e.nativeEvent.layout.height)}>
+          <HeroBackground id="profile-hero" ringsY={topInset + 30} />
+
+          {/* chỗ cho thanh trên cùng cố định (tiêu đề + QR nằm ở thanh đó) */}
+          <View style={styles.heroTop} />
+
+          <Animated.View
+            style={[
+              styles.identity,
+              {
+                // mờ hết trước khi thanh trên cùng đổi chéo (≈ 25% hero) → không chồng lên tiêu đề
+                opacity: scrollY.interpolate({ inputRange: [0, Math.max(1, heroH * 0.24)], outputRange: [1, 0], extrapolate: 'clamp' }),
+                transform: [
+                  // trôi chậm hơn nội dung (gần như đứng yên) để không trượt lên vùng tiêu đề
+                  { translateY: scrollY.interpolate({ inputRange: [-120, 0, 300], outputRange: [-30, 0, 240], extrapolate: 'clamp' }) },
+                  { scale: scrollY.interpolate({ inputRange: [-120, 0, 200], outputRange: [1.08, 1, 0.8], extrapolate: 'clamp' }) },
+                ],
+              },
+            ]}
+          >
+            <Pressable accessibilityRole="link" accessibilityLabel={`${name}. Sửa thông tin cá nhân`} onPress={() => go('thong-tin')} style={styles.avatarPress}>
+              <BigAvatar initials={initials} />
+              <View style={[styles.editBadge, { backgroundColor: colors.card, borderColor: colors.heroMid }]}>
+                <Icon name="pencil" size={13} strokeWidth={2.4} color={colors.emerald700} />
+              </View>
+            </Pressable>
+            <Text style={[styles.name, { color: colors.heroOn }]} numberOfLines={1}>
+              {name}
+            </Text>
+            <Text style={[styles.email, { color: colors.heroOnMuted }]} numberOfLines={1}>
+              {user?.email}
+            </Text>
+
+            <Pressable
+              accessibilityRole="link"
+              accessibilityLabel={membership ? `Gói thành viên, còn hạn đến ${dmy(membership.endsAt)}. Quản lý gói` : 'Chưa có gói thành viên. Xem các gói'}
+              onPress={() => go('quan-ly-goi')}
+              style={({ pressed }) => [styles.memberChip, { backgroundColor: colors.heroGlass, borderColor: colors.heroGlassLine, opacity: pressed ? 0.8 : 1 }]}
+            >
+              <Icon name="crown" size={15} strokeWidth={2.2} color={membership ? colors.spark500 : colors.heroOnMuted} />
+              <Text style={[styles.memberText, { color: colors.heroOn }]}>
+                {membership ? `Thành viên · đến ${dmy(membership.endsAt)}` : 'Chưa có gói thành viên'}
+              </Text>
+              <Icon name="chevronRight" size={15} color={colors.heroOnMuted} />
+            </Pressable>
+          </Animated.View>
+        </View>
+
+        {/* ---------- Xu (nổi đè mép dưới hero) ---------- */}
         <Pressable
           accessibilityRole="link"
-          accessibilityLabel={`${profile.name}, ${profile.email}. Sửa thông tin cá nhân`}
-          onPress={() => go('thong-tin')}
-          style={({ pressed }) => [styles.profileCard, { opacity: pressed ? 0.8 : 1 }]}
+          accessibilityLabel={`Bạn đang có ${groupThousands(coins)} xu. Xem lịch sử xu`}
+          onPress={() => go('lich-su-credit')}
+          style={({ pressed }) => [
+            styles.coinCard,
+            { backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.navShadow, transform: [{ scale: pressed ? 0.99 : 1 }] },
+          ]}
         >
-          <Avatar initials={profile.initials} />
-          <Text style={[type.sectionTitle, { color: colors.ink900 }]}>{profile.name}</Text>
-          <Text style={[styles.email, { color: colors.ink600 }]}>{profile.email}</Text>
+          <CoinBadge />
+          <View style={styles.grow}>
+            <Text style={[type.caption, { color: colors.ink600 }]}>Xu của bạn</Text>
+            <Text style={[styles.coinValue, { color: colors.ink900 }]} numberOfLines={1}>
+              {groupThousands(coins)}
+              <Text style={[styles.coinUnit, { color: colors.ink600 }]}> xu</Text>
+            </Text>
+          </View>
+          <View style={[styles.historyPill, { backgroundColor: colors.mint50 }]}>
+            <Icon name="history" size={15} color={colors.emerald700} />
+            <Text style={[type.captionStrong, { color: colors.emerald700 }]}>Lịch sử</Text>
+          </View>
         </Pressable>
 
-        {/* Gói thành viên */}
-        {profile.membership && (
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel={`Gói ${profile.membership.name}, còn hạn đến ${formatDate(profile.membership.expiresAt)}. Quản lý gói`}
-            onPress={() => go('quan-ly-goi')}
-            style={({ pressed }) => [styles.member, { backgroundColor: colors.amberChip, transform: [{ scale: pressed ? 0.99 : 1 }] }]}
-          >
-            <View style={[styles.crown, { boxShadow: `0px 4px 0px ${illo.goldEdge}` }]}>
-              <Svg width={44} height={44} style={StyleSheet.absoluteFill}>
-                <Defs>
-                  <LinearGradient id="crownBg" x1="0.15" y1="0" x2="0.85" y2="1">
-                    <Stop offset="0" stopColor={illo.goldHi} />
-                    <Stop offset="1" stopColor={illo.goldLo} />
-                  </LinearGradient>
-                </Defs>
-                <Rect x="0" y="0" width="44" height="44" rx="14" fill="url(#crownBg)" />
-              </Svg>
-              {/* bọc để icon nằm trên lớp gradient (web vẽ lớp absolute đè phần tử thường) */}
-              <View style={styles.onTop}>
-                <Icon name="crown" strokeWidth={2.1} color="#ffffff" />
-              </View>
-            </View>
-            <View style={styles.grow}>
-              <Text style={[styles.memberName, { color: colors.ink900 }]}>{profile.membership.name}</Text>
-              <Text style={[styles.memberSub, { color: colors.amberChipText }]}>
-                Còn hạn đến {formatDate(profile.membership.expiresAt)}
-              </Text>
-            </View>
-            <Text style={[type.captionStrong, { color: colors.amberChipText }]}>Quản lý gói</Text>
-            <Icon name="chevronRight" size={18} color={colors.amberChipText} />
-          </Pressable>
-        )}
-
-        <ReferralCard referral={referral} />
-
+        {/* ---------- Cài đặt ---------- */}
         <SettingsGroup title="Tài khoản">
-          <SettingsRow
-            first
-            icon={<RowIcon name="user" bg={colors.mint50} fg={colors.emerald700} />}
-            label="Thông tin cá nhân"
-            onPress={() => go('thong-tin')}
-          />
-          <SettingsRow
-            icon={<RowIcon name="lock" bg={colors.surfaceAlt} fg={colors.ink600} />}
-            label="Đổi mật khẩu"
-            onPress={() => go('doi-mat-khau')}
-          />
-          <SettingsRow
-            icon={<RowIcon name="receipt" bg={colors.skyTint} fg={colors.skyText} />}
-            label="Lịch sử mua hàng"
-            onPress={() => go('lich-su-mua-hang')}
-          />
-          <SettingsRow
-            icon={<RowIcon name="ticket" bg={colors.violetTint} fg={colors.violetText} />}
-            label="Nhập mã kích hoạt"
-            onPress={() => go('ma-kich-hoat')}
-          />
+          <SettingsRow first icon={<RowIcon name="user" />} label="Thông tin cá nhân" onPress={() => go('thong-tin')} />
+          <SettingsRow icon={<RowIcon name="crown" />} label="Gói thành viên" value={membership ? `đến ${dmy(membership.endsAt)}` : 'Chưa có'} onPress={() => go('quan-ly-goi')} />
+          <SettingsRow icon={<RowIcon name="lock" />} label="Đổi mật khẩu" onPress={() => go('doi-mat-khau')} />
+          <SettingsRow icon={<RowIcon name="receipt" />} label="Lịch sử mua hàng" onPress={() => go('lich-su-mua-hang')} />
+          <SettingsRow icon={<RowIcon name="ticket" />} label="Nhập mã kích hoạt" onPress={() => go('ma-kich-hoat')} />
         </SettingsGroup>
 
         <SettingsGroup title="Ứng dụng">
           <View style={settingsStyles.rowStatic}>
-            <RowIcon name="bell" bg={colors.orangeTint} fg={colors.orangeText} />
+            <RowIcon name="bell" />
             <Text style={[styles.rowLabel, { color: colors.ink900 }]}>Thông báo hệ thống</Text>
             <Toggle value={systemNotif} onChange={setSystemNotif} label="Thông báo hệ thống" />
           </View>
           <View style={[styles.themeBlock, { borderTopWidth: 1, borderTopColor: colors.line }]}>
             <View style={styles.themeHead}>
-              <RowIcon name="moon" bg={colors.violetTint} fg={colors.violetText} />
+              <RowIcon name="palette" />
               <Text style={[styles.rowLabel, { color: colors.ink900 }]}>Giao diện</Text>
             </View>
             <ThemeSegment />
@@ -176,17 +238,8 @@ export function ProfileScreen() {
         </SettingsGroup>
 
         <SettingsGroup title="Hỗ trợ">
-          <SettingsRow
-            first
-            icon={<RowIcon name="help" bg={colors.surfaceAlt} fg={colors.ink600} />}
-            label="Trung tâm trợ giúp"
-            onPress={() => go('tro-giup')}
-          />
-          <SettingsRow
-            icon={<RowIcon name="shield" bg={colors.surfaceAlt} fg={colors.ink600} />}
-            label="Điều khoản & quyền riêng tư"
-            onPress={() => go('dieu-khoan')}
-          />
+          <SettingsRow first icon={<RowIcon name="help" />} label="Trung tâm trợ giúp" onPress={() => go('tro-giup')} />
+          <SettingsRow icon={<RowIcon name="shield" />} label="Điều khoản & quyền riêng tư" onPress={() => go('dieu-khoan')} />
         </SettingsGroup>
 
         <View style={styles.footer}>
@@ -198,30 +251,72 @@ export function ProfileScreen() {
             <Icon name="logout" size={18} color={colors.danger} />
             <Text style={[styles.logoutText, { color: colors.danger }]}>Đăng xuất</Text>
           </Pressable>
-          <Text style={[styles.version, { color: colors.ink400 }]}>Ellso · Phiên bản {profile.appVersion}</Text>
+          <Text style={[styles.version, { color: colors.ink400 }]}>Ellso · Phiên bản {appVersionLabel()}</Text>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      {/* ---------- Thanh trên cùng cố định ----------
+          Đầu trang: trong suốt, chỉ có tiêu đề "Hồ sơ" + nút QR nằm trên hero.
+          Cuộn xuống: nền hero hiện dần, tiêu đề chuyển thành avatar nhỏ + tên + số xu (đổi chéo, không có khoảng trống). */}
+      <View pointerEvents="box-none" style={[styles.topBar, { paddingTop: topInset, height: topInset + COMPACT_H }]}>
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.topBarBg, { backgroundColor: colors.heroMid, boxShadow: colors.navShadow, opacity: barIn }]}
+        >
+          <HeroBackground id="profile-bar" ringsY={0} glow={false} />
+        </Animated.View>
+
+        <View style={styles.topBarRow} pointerEvents="box-none">
+          <Animated.Text
+            accessibilityRole="header"
+            style={[type.screenTitle, styles.topTitle, { color: colors.heroOn, opacity: barOut }]}
+            numberOfLines={1}
+          >
+            Hồ sơ
+          </Animated.Text>
+          <Animated.View
+            pointerEvents="none"
+            accessibilityElementsHidden={!compact}
+            importantForAccessibility={compact ? 'auto' : 'no-hide-descendants'}
+            style={[
+              styles.compactIdentity,
+              { opacity: barIn, transform: [{ translateY: barIn.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] },
+            ]}
+          >
+            <View style={[styles.smallAvatar, { backgroundColor: colors.mint100, borderColor: colors.heroGlassLine }]}>
+              <Text style={[styles.smallAvatarText, { color: colors.emerald800 }]}>{initials}</Text>
+            </View>
+            <View style={styles.grow}>
+              <Text style={[styles.compactName, { color: colors.heroOn }]} numberOfLines={1}>
+                {name}
+              </Text>
+              <Text style={[type.caption, { color: colors.heroOnMuted }]} numberOfLines={1}>
+                {groupThousands(coins)} xu{membership ? ' · Thành viên' : ''}
+              </Text>
+            </View>
+          </Animated.View>
+          {qrButton}
+        </View>
+      </View>
 
       {/* QR giới thiệu */}
       <BottomSheet visible={qrOpen} onClose={() => setQrOpen(false)} title="Mã QR giới thiệu">
         <View style={styles.qrWrap}>
           <View style={[styles.qrBox, { borderColor: colors.line }]}>
             {/* QR luôn đen trên trắng để máy quét đọc tốt ở cả chế độ tối */}
-            <QrCode value={referral.link} size={220} color="#0f172a" background="#ffffff" />
+            <QrCode value={referralLink} size={220} color="#0f172a" background="#ffffff" />
           </View>
-          <Text style={[type.caption, styles.center, { color: colors.ink600 }]}>
-            Bạn bè quét mã này để đăng ký với mã giới thiệu của bạn
-          </Text>
+          <Text style={[type.caption, styles.center, { color: colors.ink600 }]}>Bạn bè quét mã này để đăng ký với mã giới thiệu của bạn</Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Sao chép mã ${referral.code}`}
-            onPress={() => copy(referral.code, `Đã sao chép mã ${referral.code}`)}
+            accessibilityLabel={`Sao chép mã ${code}`}
+            onPress={() => copy(code, `Đã sao chép mã ${code}`)}
             style={({ pressed }) => [styles.qrCode, { backgroundColor: colors.mint50, borderColor: colors.emerald500, opacity: pressed ? 0.8 : 1 }]}
           >
-            <Text style={[styles.qrCodeText, { color: colors.ink900 }]}>{referral.code}</Text>
+            <Text style={[styles.qrCodeText, { color: colors.ink900 }]}>{code}</Text>
             <Icon name="copy" size={16} color={colors.emerald700} />
           </Pressable>
-          <Text style={[type.caption, { color: colors.ink600 }]}>{displayLink(referral.link)}</Text>
+          <Text style={[type.caption, { color: colors.ink600 }]}>{displayLink(referralLink)}</Text>
           <Pressable
             accessibilityRole="button"
             onPress={share}
@@ -235,9 +330,7 @@ export function ProfileScreen() {
 
       {/* Xác nhận đăng xuất (dùng sheet vì Alert không chạy trên web) */}
       <BottomSheet visible={logoutOpen} onClose={() => setLogoutOpen(false)} title="Đăng xuất khỏi Ellso?">
-        <Text style={[type.body, { color: colors.ink600 }]}>
-          Bạn sẽ cần đăng nhập lại để tiếp tục học. Tiến độ học vẫn được lưu trên tài khoản.
-        </Text>
+        <Text style={[type.body, { color: colors.ink600 }]}>Bạn sẽ cần đăng nhập lại để tiếp tục học. Tiến độ học vẫn được lưu trên tài khoản.</Text>
         <View style={styles.confirmRow}>
           <Pressable
             accessibilityRole="button"
@@ -255,7 +348,7 @@ export function ProfileScreen() {
             }}
             style={({ pressed }) => [styles.danger, { backgroundColor: colors.danger, opacity: pressed ? 0.85 : 1 }]}
           >
-            <Text style={[type.label, { color: '#ffffff' }]}>Đăng xuất</Text>
+            <Text style={[type.label, { color: colors.onEmerald }]}>Đăng xuất</Text>
           </Pressable>
         </View>
       </BottomSheet>
@@ -265,23 +358,45 @@ export function ProfileScreen() {
   );
 }
 
-/** Avatar 88px với viền gradient vàng–xanh. */
-function Avatar({ initials }: { initials: string }) {
-  const { colors } = useTheme();
+/** Avatar lớn trên hero: viền kính mờ + vòng gradient mảnh, chữ viết tắt. */
+function BigAvatar({ initials }: { initials: string }) {
+  const { colors, scheme } = useTheme();
+  const id = `avatarRing-${scheme}`;
   return (
     <View style={styles.avatarWrap}>
-      <Svg width={88} height={88} style={StyleSheet.absoluteFill}>
+      <Svg width={104} height={104} style={StyleSheet.absoluteFill}>
         <Defs>
-          <LinearGradient id="avatarRing" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={illo.goldMid} />
-            <Stop offset="0.5" stopColor={colors.emerald500} />
-            <Stop offset="1" stopColor={illo.goldMid} />
+          <LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor={colors.heroGlow} />
+            <Stop offset="0.5" stopColor={colors.heroOn} stopOpacity={0.9} />
+            <Stop offset="1" stopColor={colors.heroGlow} />
           </LinearGradient>
         </Defs>
-        <Circle cx="44" cy="44" r="42.5" fill="none" stroke="url(#avatarRing)" strokeWidth={3} />
+        <Circle cx="52" cy="52" r="50" fill="none" stroke={`url(#${id})`} strokeWidth={2.5} />
       </Svg>
-      <View style={[styles.avatar, { backgroundColor: colors.mint100, borderColor: colors.card }]}>
+      <View style={[styles.avatar, { backgroundColor: colors.mint100, borderColor: colors.heroGlassLine }]}>
         <Text style={[styles.avatarText, { color: colors.emerald800 }]}>{initials}</Text>
+      </View>
+    </View>
+  );
+}
+
+/** Đồng xu vàng (gradient) chứa icon Lucide "coins". */
+function CoinBadge() {
+  return (
+    <View style={[styles.coin, { boxShadow: `0px 4px 0px ${illo.goldEdge}` }]}>
+      <Svg width={52} height={52} style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id="coinBg" x1="0.15" y1="0" x2="0.85" y2="1">
+            <Stop offset="0" stopColor={illo.goldHi} />
+            <Stop offset="1" stopColor={illo.goldLo} />
+          </LinearGradient>
+        </Defs>
+        <Circle cx="26" cy="26" r="26" fill="url(#coinBg)" />
+      </Svg>
+      {/* bọc để icon nằm trên lớp gradient (web vẽ lớp absolute đè phần tử thường) */}
+      <View style={styles.onTop}>
+        <Icon name="coins" size={24} strokeWidth={2.2} color={illo.goldEdge} />
       </View>
     </View>
   );
@@ -292,19 +407,27 @@ const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   center: { textAlign: 'center' },
   onTop: { position: 'relative', zIndex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, zIndex: 10 },
-  iconBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  overscroll: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%' },
 
-  profileCard: { marginTop: 8, marginHorizontal: 16, paddingTop: 8, paddingBottom: 8, alignItems: 'center', gap: 4 },
-  avatarWrap: { width: 88, height: 88, marginBottom: 8, alignItems: 'center', justifyContent: 'center' },
-  avatar: { width: 82, height: 82, borderRadius: 41, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontFamily: fonts.display600, fontSize: 28, lineHeight: 34 },
-  email: { fontFamily: fonts.sans400, fontSize: 14, lineHeight: 20 },
+  hero: { paddingHorizontal: 16, paddingBottom: 72, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
+  heroTop: { height: COMPACT_H },
+  glassBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  identity: { alignItems: 'center', paddingTop: 8 },
+  avatarPress: { marginBottom: 12 },
+  avatarWrap: { width: 104, height: 104, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 90, height: 90, borderRadius: 45, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontFamily: fonts.display600, fontSize: 32, lineHeight: 40 },
+  editBadge: { position: 'absolute', right: 4, bottom: 4, width: 30, height: 30, borderRadius: 15, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
+  name: { fontFamily: fonts.display600, fontSize: 24, lineHeight: 32, maxWidth: '100%' },
+  email: { fontFamily: fonts.sans500, fontSize: 14, lineHeight: 20, marginTop: 2 },
+  memberChip: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, paddingLeft: 12, paddingRight: 10, height: 34, borderRadius: 9999, borderWidth: 1 },
+  memberText: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18 },
 
-  member: { marginTop: 12, marginHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingLeft: 14, paddingRight: 12, borderRadius: 20 },
-  crown: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  memberName: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
-  memberSub: { fontFamily: fonts.sans400, fontSize: 12, lineHeight: 16 },
+  coinCard: { marginTop: -44, marginHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 24, borderWidth: 1 },
+  coin: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  coinValue: { fontFamily: fonts.display700, fontSize: 28, lineHeight: 34 },
+  coinUnit: { fontFamily: fonts.sans600, fontSize: 15 },
+  historyPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, height: 34, borderRadius: 9999 },
 
   themeBlock: { gap: 12, paddingTop: 12, paddingRight: 12, paddingBottom: 14, paddingLeft: 14 },
   themeHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -314,6 +437,15 @@ const styles = StyleSheet.create({
   logout: { alignSelf: 'stretch', height: 52, borderRadius: 16, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   logoutText: { fontFamily: fonts.sans600, fontSize: 15, lineHeight: 22 },
   version: { fontFamily: fonts.sans400, fontSize: 12, lineHeight: 16 },
+
+  topBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, paddingHorizontal: 16 },
+  topBarBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderBottomLeftRadius: 20, borderBottomRightRadius: 20, overflow: 'hidden' },
+  topBarRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  topTitle: { position: 'absolute', left: 0, right: 56 },
+  compactIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  smallAvatar: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  smallAvatarText: { fontFamily: fonts.display600, fontSize: 13, lineHeight: 18 },
+  compactName: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
 
   qrWrap: { alignItems: 'center', gap: 12 },
   qrBox: { padding: 12, borderRadius: 20, borderWidth: 1, backgroundColor: '#ffffff' },

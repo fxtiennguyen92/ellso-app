@@ -17,6 +17,10 @@ export type AuthUser = {
   initials: string;
   avatar?: string | null;
   referralCode?: string | null;
+  /** Số xu đang có (GET /me → coins). */
+  coins?: number;
+  /** Gói thành viên: endsAt = ngày hết hạn (ISO) khi còn gói, null khi chưa có / đã hết. */
+  membership?: { active: boolean; endsAt: string | null };
 };
 export type Session = {
   token: string;
@@ -50,7 +54,15 @@ export function initialsOf(name: string) {
   return (first + parts[parts.length - 1][0]).toUpperCase();
 }
 
-type ServerUser = { id: number | string; name: string; email: string; avatar?: string | null; referral_code?: string | null };
+type ServerUser = {
+  id: number | string;
+  name: string;
+  email: string;
+  avatar?: string | null;
+  referral_code?: string | null;
+  coins?: number;
+  membership?: { active: boolean; ends_at: string | null };
+};
 const toUser = (u: ServerUser): AuthUser => ({
   id: String(u.id),
   name: u.name,
@@ -58,6 +70,8 @@ const toUser = (u: ServerUser): AuthUser => ({
   initials: initialsOf(u.name),
   avatar: u.avatar ?? null,
   referralCode: u.referral_code ?? null,
+  coins: u.coins ?? 0,
+  membership: u.membership ? { active: u.membership.active, endsAt: u.membership.ends_at } : undefined,
 });
 
 /** Đổi ApiError của server thành AuthError gắn đúng ô trên form. `fields`: tên trường server → ô trên app. */

@@ -1,13 +1,7 @@
 /**
- * DỮ LIỆU TẠM cho màn Hồ sơ — chưa nối CMS.
- * Quy tắc giới thiệu bạn bè (đã chốt 22/10/2026):
- * - mỗi học viên có 1 mã + 1 link + 1 mã QR riêng;
- * - người được mời mua gói thành viên → người mời nhận `ratePercent`% giá trị đơn thành credit (tỉ lệ lưu ở DB, mặc định 10%);
- * - 1 credit = 1.000đ, không hết hạn, trừ không giới hạn vào mọi thanh toán.
+ * Màn Hồ sơ: tên, email, mã giới thiệu, số xu, gói thành viên lấy từ GET /me (AuthProvider).
+ * Phần dưới đây là DỮ LIỆU TẠM còn lại (mẫu link giới thiệu…) + danh sách trang con.
  */
-import { formatPrice } from './courses';
-
-export const CREDIT_VND = 1000;
 
 export type Profile = {
   name: string;
@@ -54,8 +48,6 @@ export const formatDate = (iso: string) => {
 /** Link hiển thị gọn (bỏ https://) */
 export const displayLink = (url: string) => url.replace(/^https?:\/\//, '');
 
-export const creditToVnd = (credit: number) => formatPrice(credit * CREDIT_VND);
-
 /** Các trang con của Hồ sơ (đang là màn tạm) — key = đường dẫn /profile/<key>. */
 export const profileSections = {
   'thong-tin': 'Thông tin cá nhân',
@@ -63,7 +55,7 @@ export const profileSections = {
   'lich-su-mua-hang': 'Lịch sử mua hàng',
   'ma-kich-hoat': 'Nhập mã kích hoạt',
   'quan-ly-goi': 'Quản lý gói',
-  'lich-su-credit': 'Lịch sử credit',
+  'lich-su-credit': 'Lịch sử xu',
   'tro-giup': 'Trung tâm trợ giúp',
   'dieu-khoan': 'Điều khoản & quyền riêng tư',
 } as const;

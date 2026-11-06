@@ -37,7 +37,7 @@ export default function RootLayout() {
 }
 
 function AppShell() {
-  const { colors, scheme } = useTheme();
+  const { colors, scheme, ready: themeReady } = useTheme();
   const { status, token } = useAuth();
   const pathname = usePathname();
 
@@ -72,7 +72,7 @@ function AppShell() {
   }, [status, token, dataReady]);
 
   const fontsReady = fontsLoaded || !!fontError;
-  const ready = fontsReady && dataReady && status !== 'loading';
+  const ready = fontsReady && dataReady && themeReady && status !== 'loading';
   const signedIn = status === 'signedIn';
 
   // 3) Splash video → chuyển cảnh sang Home
@@ -113,8 +113,8 @@ function AppShell() {
         )}
       </RevealProvider>
       {!splashDone && <SplashOverlay ready={ready} onExitStart={onExitStart} onFinish={onFinish} />}
-      {/* Home có hero emerald đậm → chữ status bar sáng */}
-      <StatusBar style={!splashDone ? 'dark' : pathname === '/' || scheme === 'dark' ? 'light' : 'dark'} />
+      {/* Home và Hồ sơ có hero emerald đậm ở trên cùng → chữ status bar sáng */}
+      <StatusBar style={!splashDone ? 'dark' : pathname === '/' || pathname === '/profile' || scheme === 'dark' ? 'light' : 'dark'} />
     </AppFrame>
   );
 }
