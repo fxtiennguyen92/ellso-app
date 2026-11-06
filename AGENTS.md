@@ -40,6 +40,17 @@ Docs: https://docs.expo.dev/eas/index.md
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
 
+## Keyboard handling (bắt buộc cho mọi màn có ô nhập)
+
+Màn hình / bottom sheet nào có `TextInput` thì phải xử lý bàn phím và **kiểm tra lại khi bàn phím đang mở** trước khi coi là xong. Docs: https://docs.expo.dev/guides/keyboard-handling/
+
+- Bọc màn bằng `KeyboardAvoidingView behavior="padding"` cho **cả iOS và Android** (app Expo chạy edge-to-edge nên Android không tự resize). Không để `behavior` undefined trên Android, không đặt `softwareKeyboardLayoutMode: "pan"`.
+- Nội dung form nằm trong `ScrollView` với `keyboardShouldPersistTaps="handled"`; dùng `useKeyboardForm()` (`src/hooks/useKeyboardForm.ts`): gắn `scrollRef`, bọc từng ô bằng `field(key).wrap` + `onFocus={field(key).onFocus}` để ô đang nhập luôn được cuộn lên trên bàn phím.
+- Nút chính (Lưu / Gửi…) đặt ở footer ngoài ScrollView để luôn nằm ngay trên bàn phím; khi `keyboardOpen` thì bỏ khoảng home indicator (`paddingBottom: 12`).
+- Chuỗi ô nhập: `returnKeyType="next"` + `onSubmitEditing` focus ô kế tiếp; ô cuối `returnKeyType="done"` gọi submit.
+- Màn form đặt ngoài nhóm `(tabs)` (vd `src/app/account/*`) để thanh tab dưới không che ô nhập.
+- Kiểm tra: tối thiểu giả lập trên web (thu nhỏ chiều cao viewport, focus từng ô, chụp màn hình xem ô đang nhập + nút chính còn thấy), sau đó thử trên máy Android/iOS thật. Ghi rõ trong báo cáo nếu chưa thử được trên máy thật.
+
 ## Branding
 
 Cố gắng follow theo bộ nhận diện đã thiết kế trong `branding_readme.md` (nằm trong Project docs của Ellso) cho mọi màn hình và component mới. Tóm tắt các điểm chính:

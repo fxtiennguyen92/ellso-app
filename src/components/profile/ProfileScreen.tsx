@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, RefreshControl, Share, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Platform, Pressable, RefreshControl, type ScrollViewInstance, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
@@ -15,6 +15,7 @@ import { useToast } from '@/components/Toast';
 import { UserAvatar } from '@/components/UserAvatar';
 import { displayLink, getProfile, type ProfileSection } from '@/data/profile';
 import { NATIVE_DRIVER } from '@/hooks/useLoop';
+import { PULL_TRIGGER, usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { appVersionLabel } from '@/lib/appVersion';
 import { useTheme } from '@/theme/ThemeProvider';
 import { illo } from '@/theme/tokens';
@@ -83,6 +84,11 @@ export function ProfileScreen() {
     setRefreshing(false);
   };
 
+  // Web không có RefreshControl → kéo xuống (chạm / giữ chuột) ở đầu trang, cùng cơ chế Home
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const webPull = usePullToRefresh(scrollRef, refreshUser);
+  const barH = topInset + COMPACT_H;
+
   // Thanh trên cùng đổi chéo khi khối tên trên hero đã mờ gần hết (≈ 25% → 45% chiều cao hero)
   const barFrom = Math.max(1, heroH * 0.25);
   const barTo = barFrom + Math.max(40, heroH * 0.2);
@@ -134,13 +140,29 @@ export function ProfileScreen() {
       {/* Nền emerald phía sau nửa trên: kéo quá đầu trang (iOS) vẫn thấy màu hero, không lộ khoảng trắng */}
       <View pointerEvents="none" style={[styles.overscroll, { backgroundColor: colors.heroFrom }]} />
 
+      {Platform.OS === 'web' && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.pullIndicator,
+            { top: barH + 6, opacity: webPull.pull.interpolate({ inputRange: [0, PULL_TRIGGER * 0.4, PULL_TRIGGER], outputRange: [0, 0.4, 1], extrapolate: 'clamp' }) },
+          ]}
+        >
+          <View style={[styles.pullBadge, { backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.shadowCard }]}>
+            <ActivityIndicator size="small" color={colors.emerald700} animating />
+          </View>
+        </Animated.View>
+      )}
+
+      <Animated.View style={[styles.screen, Platform.OS === 'web' && { transform: [{ translateY: webPull.pull }] }]}>
       <Animated.ScrollView
+        ref={scrollRef}
         scrollEventThrottle={16}
         onScroll={onScroll}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 16, backgroundColor: colors.bg }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.heroOn} colors={[colors.emerald700]} progressViewOffset={topInset} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.heroOn} colors={[colors.emerald700]} progressViewOffset={barH} />
         }
       >
         {/* ---------- Hero ---------- */}
@@ -257,6 +279,7 @@ export function ProfileScreen() {
           <Text style={[styles.version, { color: colors.ink400 }]}>Ellso · Phiên bản {appVersionLabel()}</Text>
         </View>
       </Animated.ScrollView>
+      </Animated.View>
 
       {/* ---------- Thanh trên cùng cố định ----------
           Đầu trang: trong suốt, chỉ có tiêu đề "Hồ sơ" + nút QR nằm trên hero.
@@ -406,6 +429,8 @@ const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   center: { textAlign: 'center' },
   onTop: { position: 'relative', zIndex: 1 },
+  pullIndicator: { position: 'absolute', left: 0, right: 0, zIndex: 5, alignItems: 'center' },
+  pullBadge: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   overscroll: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%' },
 
   hero: { paddingHorizontal: 16, paddingBottom: 72, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
