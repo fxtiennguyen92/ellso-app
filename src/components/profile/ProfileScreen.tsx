@@ -12,6 +12,7 @@ import { HeroBackground } from '@/components/HeroBackground';
 import { Icon } from '@/components/Icon';
 import { QrCode } from '@/components/QrCode';
 import { useToast } from '@/components/Toast';
+import { UserAvatar } from '@/components/UserAvatar';
 import { displayLink, getProfile, type ProfileSection } from '@/data/profile';
 import { NATIVE_DRIVER } from '@/hooks/useLoop';
 import { appVersionLabel } from '@/lib/appVersion';
@@ -21,7 +22,9 @@ import { fonts, type } from '@/theme/typography';
 
 import { RowIcon, SettingsGroup, SettingsRow, settingsStyles, ThemeSegment, Toggle } from './SettingsParts';
 
-const go = (section: ProfileSection) => router.push(`/profile/${section}`);
+// Thông tin cá nhân / Đổi mật khẩu là màn riêng ngoài tab (/account/…); các trang còn lại vẫn là trang tạm /profile/…
+const go = (section: ProfileSection) =>
+  section === 'thong-tin' ? router.push('/account/info') : section === 'doi-mat-khau' ? router.push('/account/password') : router.push(`/profile/${section}`);
 
 /** 1250 → "1.250" */
 const groupThousands = (n: number) => String(Math.max(0, Math.floor(n))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -162,7 +165,7 @@ export function ProfileScreen() {
             ]}
           >
             <Pressable accessibilityRole="link" accessibilityLabel={`${name}. Sửa thông tin cá nhân`} onPress={() => go('thong-tin')} style={styles.avatarPress}>
-              <BigAvatar initials={initials} />
+              <BigAvatar initials={initials} uri={user?.avatar} />
               <View style={[styles.editBadge, { backgroundColor: colors.card, borderColor: colors.heroMid }]}>
                 <Icon name="pencil" size={13} strokeWidth={2.4} color={colors.emerald700} />
               </View>
@@ -283,9 +286,7 @@ export function ProfileScreen() {
               { opacity: barIn, transform: [{ translateY: barIn.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] },
             ]}
           >
-            <View style={[styles.smallAvatar, { backgroundColor: colors.mint100, borderColor: colors.heroGlassLine }]}>
-              <Text style={[styles.smallAvatarText, { color: colors.emerald800 }]}>{initials}</Text>
-            </View>
+            <UserAvatar uri={user?.avatar} initials={initials} size={36} bg={colors.mint100} fg={colors.emerald800} borderColor={colors.heroGlassLine} borderWidth={2} />
             <View style={styles.grow}>
               <Text style={[styles.compactName, { color: colors.heroOn }]} numberOfLines={1}>
                 {name}
@@ -359,7 +360,7 @@ export function ProfileScreen() {
 }
 
 /** Avatar lớn trên hero: viền kính mờ + vòng gradient mảnh, chữ viết tắt. */
-function BigAvatar({ initials }: { initials: string }) {
+function BigAvatar({ initials, uri }: { initials: string; uri?: string | null }) {
   const { colors, scheme } = useTheme();
   const id = `avatarRing-${scheme}`;
   return (
@@ -374,9 +375,7 @@ function BigAvatar({ initials }: { initials: string }) {
         </Defs>
         <Circle cx="52" cy="52" r="50" fill="none" stroke={`url(#${id})`} strokeWidth={2.5} />
       </Svg>
-      <View style={[styles.avatar, { backgroundColor: colors.mint100, borderColor: colors.heroGlassLine }]}>
-        <Text style={[styles.avatarText, { color: colors.emerald800 }]}>{initials}</Text>
-      </View>
+      <UserAvatar uri={uri} initials={initials} size={90} bg={colors.mint100} fg={colors.emerald800} borderColor={colors.heroGlassLine} borderWidth={3} />
     </View>
   );
 }
@@ -415,8 +414,6 @@ const styles = StyleSheet.create({
   identity: { alignItems: 'center', paddingTop: 8 },
   avatarPress: { marginBottom: 12 },
   avatarWrap: { width: 104, height: 104, alignItems: 'center', justifyContent: 'center' },
-  avatar: { width: 90, height: 90, borderRadius: 45, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontFamily: fonts.display600, fontSize: 32, lineHeight: 40 },
   editBadge: { position: 'absolute', right: 4, bottom: 4, width: 30, height: 30, borderRadius: 15, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
   name: { fontFamily: fonts.display600, fontSize: 24, lineHeight: 32, maxWidth: '100%' },
   email: { fontFamily: fonts.sans500, fontSize: 14, lineHeight: 20, marginTop: 2 },
@@ -443,8 +440,6 @@ const styles = StyleSheet.create({
   topBarRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   topTitle: { position: 'absolute', left: 0, right: 56 },
   compactIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  smallAvatar: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  smallAvatarText: { fontFamily: fonts.display600, fontSize: 13, lineHeight: 18 },
   compactName: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
 
   qrWrap: { alignItems: 'center', gap: 12 },

@@ -96,6 +96,8 @@ function AppShell() {
               <Stack.Screen name="search" />
               <Stack.Screen name="campaign/[id]" />
               <Stack.Screen name="placement-test" />
+              <Stack.Screen name="account/info" />
+              <Stack.Screen name="account/password" />
             </Stack.Protected>
             {/* Đăng nhập bằng mật khẩu tạm: chỉ còn màn đặt mật khẩu mới (không vuốt lui được) */}
             <Stack.Protected guard={status === 'mustChangePassword'}>

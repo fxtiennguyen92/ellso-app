@@ -3,13 +3,14 @@ import { Animated, type LayoutChangeEvent, Pressable, StyleSheet, Text, View } f
 
 import { HeroBackground } from '@/components/HeroBackground';
 import { Icon } from '@/components/Icon';
+import { UserAvatar } from '@/components/UserAvatar';
 import { useRevealStyle } from '@/components/splash/RevealContext';
 import { useLoop } from '@/hooks/useLoop';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
 type Props = {
-  student: { name: string; initials: string; unreadNotifications: number };
+  student: { name: string; initials: string; avatar?: string | null; unreadNotifications: number };
   /** Đã cuộn nội dung → ô tìm kiếm đổ bóng đậm hơn (nội dung trượt bên dưới). */
   scrolled: boolean;
   topInset: number;
@@ -48,9 +49,8 @@ export function HomeHeader({ student, scrolled, topInset, onHeroHeight }: Props)
             onLongPress={toggle}
             accessibilityRole="button"
             accessibilityLabel={`Ảnh đại diện ${student.name}. Nhấn giữ để đổi giao diện sáng / tối`}
-            style={[styles.avatar, { backgroundColor: colors.heroGlass, borderColor: colors.heroGlassLine }]}
           >
-            <Text style={[styles.avatarText, { color: colors.heroOn }]}>{student.initials}</Text>
+            <UserAvatar uri={student.avatar} initials={student.initials} size={48} bg={colors.heroGlass} fg={colors.heroOn} borderColor={colors.heroGlassLine} borderWidth={1.5} />
           </Pressable>
 
           <View style={styles.greeting}>
@@ -142,8 +142,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 48, height: 48, borderRadius: 9999, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
   greeting: { flex: 1, minWidth: 0 },
   bell: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   dotWrap: { position: 'absolute', top: 9, right: 10, width: 9, height: 9 },

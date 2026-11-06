@@ -4,6 +4,7 @@ import BadgeCheck from 'lucide-react-native/icons/badge-check';
 import Bell from 'lucide-react-native/icons/bell';
 import Book from 'lucide-react-native/icons/book';
 import BookOpen from 'lucide-react-native/icons/book-open';
+import Camera from 'lucide-react-native/icons/camera';
 import Bookmark from 'lucide-react-native/icons/bookmark';
 import Check from 'lucide-react-native/icons/check';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
@@ -51,6 +52,7 @@ import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import Smartphone from 'lucide-react-native/icons/smartphone';
 import Sun from 'lucide-react-native/icons/sun';
 import Tag from 'lucide-react-native/icons/tag';
+import Trash2 from 'lucide-react-native/icons/trash-2';
 import Target from 'lucide-react-native/icons/target';
 import Ticket from 'lucide-react-native/icons/ticket';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
@@ -125,6 +127,8 @@ const ICONS = {
   pencil: Pencil,
   palette: Palette,
   verified: BadgeCheck,
+  camera: Camera,
+  trash: Trash2,
   // tài liệu
   bookmark: Bookmark,
   bookmarkFilled: Bookmark,

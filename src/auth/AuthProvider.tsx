@@ -28,6 +28,8 @@ type Ctx = {
   login: (email: string, password: string) => Promise<void>;
   changePassword: (newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Thay thông tin user sau khi sửa hồ sơ (server trả user mới). */
+  updateUser: (user: AuthUser) => void;
   /** Tải lại thông tin user (GET /me) — vd vào màn Hồ sơ / kéo để làm mới (số xu, gói thành viên). */
   refreshUser: () => Promise<void>;
 };
@@ -112,6 +114,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearNotice = useCallback(() => setNotice(null), []);
 
+  const updateUser = useCallback(
+    (user: AuthUser) => {
+      const s = sessionRef.current;
+      if (s && !s.mustChangePassword) apply({ ...s, user });
+    },
+    [apply],
+  );
+
   const refreshUser = useCallback(async () => {
     const s = sessionRef.current;
     if (!s || s.mustChangePassword) return;
@@ -134,9 +144,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       changePassword,
       logout,
+      updateUser,
       refreshUser,
     }),
-    [loaded, session, tempPassword, notice, clearNotice, login, changePassword, logout, refreshUser],
+    [loaded, session, tempPassword, notice, clearNotice, login, changePassword, logout, updateUser, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

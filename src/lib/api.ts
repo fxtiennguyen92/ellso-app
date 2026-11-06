@@ -25,22 +25,31 @@ export class ApiError extends Error {
 
 const TIMEOUT_MS = 15000;
 
-export async function apiRequest<T>(method: 'GET' | 'POST', path: string, opts: { body?: unknown; token?: string | null } = {}): Promise<T> {
+/** Tải file (ảnh đại diện…) cần lâu hơn gọi API thường. */
+const UPLOAD_TIMEOUT_MS = 60000;
+
+export async function apiRequest<T>(
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+  path: string,
+  opts: { body?: unknown; token?: string | null } = {},
+): Promise<T> {
+  // FormData (multipart, vd ảnh): để fetch tự đặt Content-Type kèm boundary, không JSON.stringify
+  const isForm = typeof FormData !== 'undefined' && opts.body instanceof FormData;
   const headers: Record<string, string> = {
     Accept: 'application/json',
     ...(await deviceHeaders()),
   };
-  if (opts.body !== undefined) headers['Content-Type'] = 'application/json';
+  if (opts.body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
   if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), isForm ? UPLOAD_TIMEOUT_MS : TIMEOUT_MS);
   let res: Response;
   try {
     res = await fetch(env.apiUrl + path, {
       method,
       headers,
-      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      body: opts.body === undefined ? undefined : isForm ? (opts.body as FormData) : JSON.stringify(opts.body),
       signal: controller.signal,
     });
   } catch {

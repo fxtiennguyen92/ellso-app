@@ -24,7 +24,7 @@ export default function HomeScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { user, token } = useAuth();
-  const student = { name: user?.name ?? 'bạn', initials: user?.initials ?? 'E', unreadNotifications: 0 };
+  const student = { name: user?.name ?? 'bạn', initials: user?.initials ?? 'E', avatar: user?.avatar, unreadNotifications: 0 };
 
   const [feed, setFeed] = useState<HomeFeed>(() => cachedHomeFeed(token) ?? emptyFeed);
   const [loaded, setLoaded] = useState(() => cachedHomeFeed(token) !== null);

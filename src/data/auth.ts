@@ -16,6 +16,7 @@ export type AuthUser = {
   email: string;
   initials: string;
   avatar?: string | null;
+  phone?: string | null;
   referralCode?: string | null;
   /** Số xu đang có (GET /me → coins). */
   coins?: number;
@@ -54,21 +55,23 @@ export function initialsOf(name: string) {
   return (first + parts[parts.length - 1][0]).toUpperCase();
 }
 
-type ServerUser = {
+export type ServerUser = {
   id: number | string;
   name: string;
   email: string;
   avatar?: string | null;
+  phone?: string | null;
   referral_code?: string | null;
   coins?: number;
   membership?: { active: boolean; ends_at: string | null };
 };
-const toUser = (u: ServerUser): AuthUser => ({
+export const toUser = (u: ServerUser): AuthUser => ({
   id: String(u.id),
   name: u.name,
   email: u.email,
   initials: initialsOf(u.name),
   avatar: u.avatar ?? null,
+  phone: u.phone ?? null,
   referralCode: u.referral_code ?? null,
   coins: u.coins ?? 0,
   membership: u.membership ? { active: u.membership.active, endsAt: u.membership.ends_at } : undefined,
@@ -195,12 +198,13 @@ export async function apiLogout(session: Session | null): Promise<void> {
 export type PasswordRule = { key: string; label: string; ok: boolean };
 export const PASSWORD_MAX = 100;
 
-export function passwordRules(pw: string, tempPassword?: string | null): PasswordRule[] {
+/** `other` = mật khẩu phải khác (mật khẩu tạm khi đặt lần đầu / mật khẩu hiện tại khi đổi trong Hồ sơ). */
+export function passwordRules(pw: string, other?: string | null, diffLabel = 'Khác mật khẩu tạm'): PasswordRule[] {
   return [
     { key: 'len', label: 'Ít nhất 8 ký tự', ok: pw.length >= 8 },
     { key: 'case', label: 'Có chữ hoa và chữ thường', ok: /[a-zà-ỹ]/.test(pw) && /[A-ZÀ-Ỹ]/.test(pw) },
     { key: 'digit', label: 'Có ít nhất 1 chữ số', ok: /\d/.test(pw) },
-    { key: 'diff', label: 'Khác mật khẩu tạm', ok: pw.length > 0 && pw !== tempPassword },
+    { key: 'diff', label: diffLabel, ok: pw.length > 0 && pw !== other },
   ];
 }
 
