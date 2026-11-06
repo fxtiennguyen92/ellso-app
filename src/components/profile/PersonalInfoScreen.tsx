@@ -12,6 +12,7 @@ import { UserAvatar } from '@/components/UserAvatar';
 import { apiDeleteAvatar, apiUpdateProfile, apiUploadAvatar, isValidPhone, normalizePhone } from '@/data/account';
 import { ApiError } from '@/lib/api';
 import { type AvatarSource, pickAvatar } from '@/lib/pickAvatar';
+import { useKeyboardForm } from '@/hooks/useKeyboardForm';
 import { useTheme } from '@/theme/ThemeProvider';
 import { illo } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
@@ -35,6 +36,7 @@ export function PersonalInfoScreen() {
   const [saving, setSaving] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  const form = useKeyboardForm();
   const [sheet, setSheet] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -105,10 +107,11 @@ export function PersonalInfoScreen() {
   ];
 
   return (
-    <KeyboardAvoidingView style={[styles.screen, { backgroundColor: colors.bg }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={[styles.screen, { backgroundColor: colors.bg }]} behavior="padding">
       <SubpageHeader title="Thông tin cá nhân" scrolled={scrolled} />
 
       <ScrollView
+        ref={form.scrollRef}
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
         onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)}
@@ -139,9 +142,11 @@ export function PersonalInfoScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.form}>
+        {/* cả khối form là một mốc cuộn: bấm ô nào cũng cuộn khối form lên đầu vùng nhìn thấy (2 ô ngắn, vừa màn) */}
+        <View style={styles.form} {...form.field('form').wrap}>
           <AuthField
             label="Họ và tên"
+            onFocus={form.field('form').onFocus}
             icon="user"
             value={name}
             onChangeText={(t) => {
@@ -169,6 +174,7 @@ export function PersonalInfoScreen() {
               setPhone(t);
               setErrors((x) => ({ ...x, phone: undefined, form: undefined }));
             }}
+            onFocus={form.field('form').onFocus}
             onBlur={() => setPhoneTouched(true)}
             error={errors.phone ?? (phoneTouched && !phoneOk ? 'Số điện thoại không hợp lệ (10 số, bắt đầu bằng 0).' : null)}
             placeholder="0912 345 678"
@@ -197,7 +203,7 @@ export function PersonalInfoScreen() {
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12), backgroundColor: colors.bg, borderTopColor: colors.line }]}>
+      <View style={[styles.footer, { paddingBottom: form.keyboardOpen ? 12 : Math.max(insets.bottom, 12), backgroundColor: colors.bg, borderTopColor: colors.line }]}>
         <PrimaryButton label={dirty ? 'Lưu thay đổi' : 'Chưa có thay đổi'} disabled={!canSave} loading={saving} onPress={save} />
       </View>
 

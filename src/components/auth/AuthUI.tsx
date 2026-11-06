@@ -31,7 +31,7 @@ export function AuthScreen({ children, footer, contentStyle }: { children: React
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <KeyboardAvoidingView style={[styles.flex, { backgroundColor: colors.bg }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={[styles.flex, { backgroundColor: colors.bg }]} behavior="padding">
       <ScrollView
         style={styles.flex}
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 28 }, contentStyle]}

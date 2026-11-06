@@ -10,6 +10,7 @@ import { SubpageHeader } from '@/components/SubpageHeader';
 import { apiUpdatePassword } from '@/data/account';
 import { PASSWORD_MAX, passwordRules, passwordStrength } from '@/data/auth';
 import { ApiError } from '@/lib/api';
+import { useKeyboardForm } from '@/hooks/useKeyboardForm';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
@@ -32,6 +33,7 @@ export function ChangePasswordScreen() {
   const [scrolled, setScrolled] = useState(false);
   const newRef = useRef<TextInputInstance>(null);
   const confirmRef = useRef<TextInputInstance>(null);
+  const form = useKeyboardForm();
 
   const rules = useMemo(() => passwordRules(pw, current, 'Khác mật khẩu hiện tại'), [pw, current]);
   const strength = passwordStrength(pw);
@@ -83,10 +85,11 @@ export function ChangePasswordScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={[styles.screen, { backgroundColor: colors.bg }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={[styles.screen, { backgroundColor: colors.bg }]} behavior="padding">
       <SubpageHeader title="Đổi mật khẩu" scrolled={scrolled} />
 
       <ScrollView
+        ref={form.scrollRef}
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
         onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)}
@@ -95,59 +98,65 @@ export function ChangePasswordScreen() {
       >
         <Note>Đổi xong, các thiết bị khác đang đăng nhập tài khoản này sẽ bị đăng xuất. Máy này vẫn giữ đăng nhập.</Note>
 
-        <AuthField
-          label="Mật khẩu hiện tại"
-          icon="lock"
-          password
-          value={current}
-          onChangeText={(t) => {
-            setCurrent(t);
-            setErrors((x) => ({ ...x, current: undefined, form: undefined }));
-          }}
-          error={errors.current}
-          placeholder="Nhập mật khẩu đang dùng"
-          autoCapitalize="none"
-          autoComplete="current-password"
-          textContentType="password"
-          maxLength={PASSWORD_MAX}
-          returnKeyType="next"
-          onSubmitEditing={() => newRef.current?.focus()}
-          submitBehavior="submit"
-        />
+        <View {...form.field('current').wrap}>
+          <AuthField
+            onFocus={form.field('current').onFocus}
+            label="Mật khẩu hiện tại"
+            icon="lock"
+            password
+            value={current}
+            onChangeText={(t) => {
+              setCurrent(t);
+              setErrors((x) => ({ ...x, current: undefined, form: undefined }));
+            }}
+            error={errors.current}
+            placeholder="Nhập mật khẩu đang dùng"
+            autoCapitalize="none"
+            autoComplete="current-password"
+            textContentType="password"
+            maxLength={PASSWORD_MAX}
+            returnKeyType="next"
+            onSubmitEditing={() => newRef.current?.focus()}
+            submitBehavior="submit"
+          />
+        </View>
 
         <View style={[styles.divider, { backgroundColor: colors.line }]} />
 
-        <AuthField
-          ref={newRef}
-          label="Mật khẩu mới"
-          icon="key"
-          password
-          value={pw}
-          onChangeText={(t) => {
-            setPw(t);
-            setErrors((x) => ({ ...x, pw: undefined, form: undefined }));
-          }}
-          error={errors.pw}
-          autoCapitalize="none"
-          autoComplete="new-password"
-          textContentType="newPassword"
-          maxLength={PASSWORD_MAX}
-          returnKeyType="next"
-          onSubmitEditing={() => confirmRef.current?.focus()}
-          submitBehavior="submit"
-          below={
-            pw ? (
-              <View style={styles.strength} accessible accessibilityLabel={`Độ mạnh mật khẩu: ${strength.label}`}>
-                <View style={styles.bars}>
-                  {[1, 2, 3, 4].map((i) => (
-                    <View key={i} style={[styles.bar, { backgroundColor: i <= strength.score ? strengthColor : colors.line }]} />
-                  ))}
+        <View {...form.field('new').wrap}>
+          <AuthField
+            ref={newRef}
+            onFocus={form.field('new').onFocus}
+            label="Mật khẩu mới"
+            icon="key"
+            password
+            value={pw}
+            onChangeText={(t) => {
+              setPw(t);
+              setErrors((x) => ({ ...x, pw: undefined, form: undefined }));
+            }}
+            error={errors.pw}
+            autoCapitalize="none"
+            autoComplete="new-password"
+            textContentType="newPassword"
+            maxLength={PASSWORD_MAX}
+            returnKeyType="next"
+            onSubmitEditing={() => confirmRef.current?.focus()}
+            submitBehavior="submit"
+            below={
+              pw ? (
+                <View style={styles.strength} accessible accessibilityLabel={`Độ mạnh mật khẩu: ${strength.label}`}>
+                  <View style={styles.bars}>
+                    {[1, 2, 3, 4].map((i) => (
+                      <View key={i} style={[styles.bar, { backgroundColor: i <= strength.score ? strengthColor : colors.line }]} />
+                    ))}
+                  </View>
+                  <Text style={[styles.strengthText, { color: strengthText }]}>{strength.label}</Text>
                 </View>
-                <Text style={[styles.strengthText, { color: strengthText }]}>{strength.label}</Text>
-              </View>
-            ) : null
-          }
-        />
+              ) : null
+            }
+          />
+        </View>
 
         <View style={[styles.rules, { backgroundColor: colors.card, borderColor: colors.line }]}>
           {rules.map((r) => (
@@ -162,27 +171,31 @@ export function ChangePasswordScreen() {
           ))}
         </View>
 
-        <AuthField
-          ref={confirmRef}
-          label="Nhập lại mật khẩu mới"
-          icon="key"
-          password
-          value={confirm}
-          onChangeText={setConfirm}
-          error={mismatch ? 'Mật khẩu nhập lại chưa khớp.' : null}
-          placeholder="Nhập lại mật khẩu mới"
-          autoCapitalize="none"
-          autoComplete="new-password"
-          textContentType="newPassword"
-          maxLength={PASSWORD_MAX}
-          returnKeyType="done"
-          onSubmitEditing={save}
-        />
+        <View {...form.field('confirm').wrap}>
+          <AuthField
+            ref={confirmRef}
+            onFocus={form.field('confirm').onFocus}
+            label="Nhập lại mật khẩu mới"
+            icon="key"
+            password
+            value={confirm}
+            onChangeText={setConfirm}
+            error={mismatch ? 'Mật khẩu nhập lại chưa khớp.' : null}
+            placeholder="Nhập lại mật khẩu mới"
+            autoCapitalize="none"
+            autoComplete="new-password"
+            textContentType="newPassword"
+            maxLength={PASSWORD_MAX}
+            returnKeyType="done"
+            onSubmitEditing={save}
+          />
+        </View>
 
         {errors.form ? <ErrorText text={errors.form} /> : null}
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12), backgroundColor: colors.bg, borderTopColor: colors.line }]}>
+      {/* KeyboardAvoidingView đẩy nút lên trên bàn phím; khi bàn phím mở thì bỏ khoảng home indicator */}
+      <View style={[styles.footer, { paddingBottom: form.keyboardOpen ? 12 : Math.max(insets.bottom, 12), backgroundColor: colors.bg, borderTopColor: colors.line }]}>
         <PrimaryButton label="Đổi mật khẩu" disabled={!canSave} loading={loading} onPress={save} />
       </View>
     </KeyboardAvoidingView>

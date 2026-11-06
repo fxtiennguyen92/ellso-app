@@ -44,7 +44,7 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose} statusBarTranslucent>
       {/* iOS: đẩy bảng lên khi bàn phím mở (bảng có ô nhập, vd mã giới thiệu) */}
-      <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.root} behavior="padding">
         <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: v }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Đóng" />
         </Animated.View>
