@@ -74,9 +74,9 @@ export function WorkshopCard({ workshop, onPress }: { workshop: HomeWorkshop; on
                   : { backgroundColor: colors.surfaceAlt, borderColor: 'transparent' },
               ]}
             >
-              <Text style={[type.eyebrow, styles.tileWeek, { color: first ? colors.workshopText : colors.ink600 }]}>{f.weekdayShort}</Text>
+              <Text style={[type.captionStrong, styles.tileWeek, { color: first ? colors.workshopText : colors.ink600 }]}>{f.weekday}</Text>
               <Text style={[styles.tileDay, { color: first ? colors.workshopDeep : colors.ink900 }]}>{f.day}</Text>
-              <Text style={[type.caption, styles.tileSmall, { color: first ? colors.workshopDeep : colors.ink600 }]}>{f.month}</Text>
+              <Text style={[type.caption, styles.tileSmall, { color: first ? colors.workshopDeep : colors.ink600 }]}>Tháng {new Date(s.start).getMonth() + 1}</Text>
               <View style={[styles.timePill, { backgroundColor: first ? colors.workshopText : colors.card }]}>
                 <Text style={[styles.timeText, { color: first ? colors.card : colors.ink900 }]}>{f.startTime}</Text>
               </View>
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   avatarText: { fontFamily: fonts.sans700, fontSize: 10 },
   tiles: { flexDirection: 'row', gap: 8 },
   tile: { flex: 1, alignItems: 'center', paddingTop: 10, paddingBottom: 10, borderRadius: 16, borderWidth: 1.5 },
-  tileWeek: { fontSize: 11, letterSpacing: 0.6 },
+  tileWeek: { fontSize: 12, lineHeight: 16 },
   tileDay: { fontFamily: fonts.display700, fontSize: 24, lineHeight: 30 },
   tileSmall: { fontSize: 12, lineHeight: 16 },
   timePill: { marginTop: 8, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9999 },

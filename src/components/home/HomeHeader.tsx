@@ -11,9 +11,11 @@ import { fonts, type } from '@/theme/typography';
 
 type Props = {
   student: { name: string; initials: string; unreadNotifications: number };
-  /** Đã cuộn nội dung → hiện đường kẻ mảnh dưới ô tìm kiếm. */
+  /** Đã cuộn nội dung → ô tìm kiếm đổ bóng đậm hơn (nội dung trượt bên dưới). */
   scrolled: boolean;
   topInset: number;
+  /** Chiều cao hero (để màn Home đặt khoảng đầu nội dung + vị trí chỉ báo làm mới). */
+  onHeroHeight?: (h: number) => void;
 };
 
 const WEEKDAYS = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
@@ -24,9 +26,11 @@ const todayLabel = (d = new Date()) => `${WEEKDAYS[d.getDay()]}, ${d.getDate()} 
  * - Nền hero vẽ bằng SVG: gradient chéo heroFrom → heroMid → heroTo, quầng sáng heroGlow (thở chậm),
  *   các vòng tròn đồng tâm + lưới chấm mảnh để có chiều sâu; bo 32 ở 2 góc dưới.
  * - Chữ trắng, avatar + chuông dạng kính mờ (heroGlass). Nhấn giữ avatar để đổi sáng / tối.
- * - Nội dung trang cuộn bên dưới header (kéo xuống để làm mới).
+ * - Lớp phủ: nội dung trang cuộn bên dưới, trượt vào dưới hero / ô tìm kiếm (kéo xuống để làm mới).
  */
-export function HomeHeader({ student, scrolled, topInset }: Props) {
+export const SEARCH_HEIGHT = 54;
+
+export function HomeHeader({ student, scrolled, topInset, onHeroHeight }: Props) {
   const { colors, toggle, scheme } = useTheme();
   const reveal = useRevealStyle(0, 12);
   const glow = useLoop(7000);
@@ -34,10 +38,15 @@ export function HomeHeader({ student, scrolled, topInset }: Props) {
   const gid = `hero-${scheme}`; // id gradient riêng theo theme (web: tránh dùng lại def cũ khi đổi theme)
 
   return (
-    <Animated.View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: scrolled ? colors.line : 'transparent' }, reveal]}>
+    // Lớp phủ trên cùng: hero + ô tìm kiếm; nội dung trang cuộn bên dưới (trượt vào dưới hero và ô tìm kiếm),
+    // không còn dải nền / đường kẻ ngăn giữa ô tìm kiếm và nội dung. box-none: chỗ trống hai bên ô tìm kiếm vẫn chạm được nội dung.
+    <Animated.View pointerEvents="box-none" style={[styles.header, reveal]}>
       <View
         style={[styles.hero, { paddingTop: topInset, backgroundColor: colors.heroMid }]}
-        onLayout={(e: LayoutChangeEvent) => setHero({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+        onLayout={(e: LayoutChangeEvent) => {
+          setHero({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height });
+          onHeroHeight?.(e.nativeEvent.layout.height);
+        }}
       >
         {hero.w > 0 && (
           <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -132,7 +141,7 @@ export function HomeHeader({ student, scrolled, topInset }: Props) {
           {
             backgroundColor: colors.card,
             borderColor: pressed || hovered ? colors.emerald500 : colors.line,
-            boxShadow: colors.shadowCard,
+            boxShadow: scrolled ? colors.navShadow : colors.shadowCard,
             transform: [{ scale: pressed ? 0.99 : 1 }],
           },
         ]}
@@ -169,10 +178,10 @@ function NotificationDot({ ring }: { ring: string }) {
   );
 }
 
-const SEARCH_H = 54;
+const SEARCH_H = SEARCH_HEIGHT;
 
 const styles = StyleSheet.create({
-  header: { zIndex: 10, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  header: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
   hero: {
     paddingHorizontal: 16,
     paddingBottom: SEARCH_H / 2 + 22,
