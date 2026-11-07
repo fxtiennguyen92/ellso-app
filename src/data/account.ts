@@ -9,7 +9,7 @@
  * - POST   /me/referrer  {code}                       → {data: user} — chỉ một lần, không đổi được
  * - GET    /me/devices                                → {data: Device[]} (máy đang dùng đứng đầu)
  * - DELETE /me/devices/{id}                           → đăng xuất tài khoản trên máy đó (không xoá được máy đang dùng)
- * - GET    /me/coins?cursor=                          → {balance, data: CoinTx[], next_cursor} (mới nhất trước, 20 / trang)
+ * - GET    /me/coins?cursor=                          → {balance, earned_month, spent_month, data: CoinTx[], next_cursor}
  * - GET    /me/referrals?cursor=                      → {total, data: Friend[], next_cursor}
  */
 import { Platform } from 'react-native';
@@ -105,15 +105,22 @@ export type CoinTx = { id: number; amount: number; balanceAfter: number; source:
 export type Friend = { id: number; name: string; avatar: string | null; joinedAt: string | null };
 export type Page<T> = { items: T[]; nextCursor: string | null };
 
-export async function apiCoinHistory(token: string, cursor?: string | null): Promise<Page<CoinTx> & { balance: number }> {
+export async function apiCoinHistory(
+  token: string,
+  cursor?: string | null,
+): Promise<Page<CoinTx> & { balance: number; earnedMonth: number; spentMonth: number }> {
   const q = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
   const r = await apiRequest<{
     balance: number;
+    earned_month?: number;
+    spent_month?: number;
     next_cursor: string | null;
     data: { id: number; amount: number; balance_after: number; source: string; source_label: string; description: string; created_at: string }[];
   }>('GET', `/me/coins${q}`, { token });
   return {
     balance: r.balance,
+    earnedMonth: r.earned_month ?? 0,
+    spentMonth: r.spent_month ?? 0,
     nextCursor: r.next_cursor,
     items: r.data.map((t) => ({
       id: t.id,

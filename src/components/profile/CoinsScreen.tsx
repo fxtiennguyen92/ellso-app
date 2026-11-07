@@ -1,17 +1,16 @@
-import { useCallback, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useRef } from 'react';
+import { Animated, FlatList, Platform, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { Icon, type IconName } from '@/components/Icon';
-import { SubpageHeader } from '@/components/SubpageHeader';
 import { apiCoinHistory, type CoinTx } from '@/data/account';
 import { groupThousands } from '@/data/profile';
 import { useCursorList } from '@/hooks/useCursorList';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
-import { CoinBalanceCard } from './CoinCard';
+import { COIN_HERO_BODY, COIN_HERO_BODY_MIN, COIN_HERO_ROW, CoinHero } from './CoinCard';
 import { DayHeader, dayLabel, hhmm, ListFooter } from './ListParts';
 
 const SOURCE_ICON: Record<string, IconName> = { referral: 'people', learning: 'courses', spend: 'cart', admin: 'verified' };
@@ -20,15 +19,16 @@ type Row = { kind: 'day'; key: string; label: string } | { kind: 'tx'; key: stri
 
 /**
  * Hồ sơ › Xu của tôi.
- * - Phần trên ĐỨNG YÊN: khối "Số xu hiện có" (phẳng, chỉ là thông tin) + tiêu đề "Biến động xu" → cuộn bao nhiêu vẫn thấy số xu.
- * - Chỉ danh sách bên dưới cuộn (GET /v1/me/coins): nhóm theo ngày (tiêu đề ngày dính trên đầu danh sách), mỗi lần
- *   cộng / trừ là một dòng phẳng có đường kẻ mảnh (không làm thẻ cho đỡ tốn chỗ); tải thêm 20 dòng khi gần cuối.
+ * - Hero vàng (CoinHero) phủ trên cùng, luôn thấy: số xu to + số liệu tháng; cuộn danh sách thì hero thu gọn theo
+ *   đúng quãng cuộn (dòng đầu luôn nằm ngay dưới hero), số xu thu nhỏ nhưng vẫn hiện.
+ * - Danh sách "Biến động xu" (GET /v1/me/coins): nhóm theo ngày, mỗi lần cộng / dùng xu là một hàng phẳng có đường kẻ
+ *   mảnh; tải thêm 20 dòng khi gần cuối.
  */
 export function CoinsScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { token, user, refreshUser } = useAuth();
-  const [scrolled, setScrolled] = useState(false);
+  const topInset = Platform.OS === 'web' ? 20 : insets.top + 8;
 
   const fetchPage = useCallback(
     (cursor: string | null) => {
@@ -41,46 +41,46 @@ export function CoinsScreen() {
   const list = useCursorList(fetchPage);
   const balance = list.meta?.balance ?? user?.coins ?? 0;
 
-  // Gom theo ngày: chèn dòng tiêu đề ngày (dính khi cuộn), dòng đầu nhóm không có đường kẻ trên
-  const { rows, sticky } = useMemo(() => {
+  // Hero thu gọn theo cuộn (chiều cao → không dùng native driver)
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const full = topInset + COIN_HERO_ROW + COIN_HERO_BODY;
+  const range = COIN_HERO_BODY - COIN_HERO_BODY_MIN;
+  const heroHeight = scrollY.interpolate({ inputRange: [0, range], outputRange: [full, full - range], extrapolate: 'clamp' });
+  const collapse = scrollY.interpolate({ inputRange: [0, range], outputRange: [0, 1], extrapolate: 'clamp' });
+
+  const rows = useMemo(() => {
     const out: Row[] = [];
-    const idx: number[] = [];
     let current = '';
     list.items.forEach((tx) => {
       const label = dayLabel(tx.createdAt);
       if (label !== current) {
         current = label;
-        idx.push(out.length);
         out.push({ kind: 'day', key: `d-${tx.id}`, label });
         out.push({ kind: 'tx', key: `t-${tx.id}`, tx, first: true });
       } else out.push({ kind: 'tx', key: `t-${tx.id}`, tx, first: false });
     });
-    return { rows: out, sticky: idx };
+    return out;
   }, [list.items]);
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <SubpageHeader title="Xu của tôi" />
-
-      {/* Phần cố định */}
-      <View style={[styles.fixed, { borderBottomColor: scrolled ? colors.line : 'transparent' }]}>
-        <CoinBalanceCard coins={balance} />
-        <Text accessibilityRole="header" style={[styles.sectionTitle, { color: colors.ink600 }]}>
-          Biến động xu
-        </Text>
-      </View>
-
       <FlatList
         style={styles.screen}
         data={rows}
         keyExtractor={(r) => r.key}
-        stickyHeaderIndices={sticky}
-        onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 2)}
+        // FlatList thường + setValue: Animated.FlatList trên web không tải thêm khối hàng khi cuộn
+        onScroll={(e) => scrollY.setValue(e.nativeEvent.contentOffset.y)}
+        initialNumToRender={20}
         scrollEventThrottle={16}
         onEndReached={list.loadMore}
         onEndReachedThreshold={0.4}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={{ paddingTop: full + 8, paddingBottom: insets.bottom + 24 }}
+        ListHeaderComponent={
+          <Text accessibilityRole="header" style={[styles.sectionTitle, { color: colors.ink600 }]}>
+            Biến động xu
+          </Text>
+        }
         ListEmptyComponent={
           !list.loading && !list.error ? (
             <View style={styles.empty}>
@@ -91,7 +91,7 @@ export function CoinsScreen() {
         }
         renderItem={({ item }) =>
           item.kind === 'day' ? (
-            <View style={[styles.dayWrap, { backgroundColor: colors.bg }]}>
+            <View style={styles.dayWrap}>
               <DayHeader label={item.label} />
             </View>
           ) : (
@@ -102,6 +102,16 @@ export function CoinsScreen() {
           <ListFooter loading={list.loading || list.loadingMore} error={list.error} done={!list.hasMore} empty={list.items.length === 0} onRetry={list.reload} />
         }
       />
+
+      <Animated.View style={[styles.hero, { height: heroHeight }]}>
+        <CoinHero
+          topInset={topInset}
+          coins={balance}
+          earnedMonth={list.meta ? list.meta.earnedMonth : null}
+          spentMonth={list.meta ? list.meta.spentMonth : null}
+          collapse={collapse}
+        />
+      </Animated.View>
     </View>
   );
 }
@@ -139,8 +149,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   grow: { flex: 1, minWidth: 0 },
   center: { textAlign: 'center' },
-  fixed: { paddingTop: 8, paddingHorizontal: 16, paddingBottom: 4, gap: 16, borderBottomWidth: StyleSheet.hairlineWidth },
-  sectionTitle: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18, textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 4 },
+  hero: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, borderBottomLeftRadius: 28, borderBottomRightRadius: 28, overflow: 'hidden' },
+  sectionTitle: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18, textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 20, paddingTop: 12 },
   dayWrap: { paddingHorizontal: 16 },
   empty: { alignItems: 'center', gap: 10, paddingVertical: 40, paddingHorizontal: 24 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 10 },
