@@ -1,12 +1,16 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
+import { useAuth } from '@/auth/AuthProvider';
 import { useToast } from '@/components/Toast';
 import { apiSetSaved, getAllDocs, type Doc } from '@/data/documents';
+import { apiRequest } from '@/lib/api';
 
 import { AccessSheet } from './AccessSheet';
 
 type Ctx = {
   docs: Doc[];
+  /** Trạng thái lưu hiện tại (đã tính các lần bấm lưu / bỏ lưu trên máy — Home, trang sách… dùng chung). */
+  isSaved: (doc: Doc) => boolean;
   toggleSave: (doc: Doc) => void;
   /** Bấm vào tài liệu: mở → trình xem; khoá → bảng "Cách mở tài liệu". */
   openDoc: (doc: Doc) => void;
@@ -22,19 +26,29 @@ const DocumentsContext = createContext<Ctx | null>(null);
 export function DocumentsProvider({ children, onView }: { children: ReactNode; onView: (doc: Doc) => void }) {
   const [docs, setDocs] = useState<Doc[]>(getAllDocs);
   const [lockedDoc, setLockedDoc] = useState<Doc | null>(null);
+  const [savedMap, setSavedMap] = useState<Record<string, boolean>>({});
   const [toast, showToast] = useToast();
+  const { token } = useAuth();
+
+  const isSaved = useCallback((doc: Doc) => savedMap[doc.id] ?? doc.saved, [savedMap]);
 
   const toggleSave = useCallback(
     (doc: Doc) => {
-      const next = !doc.saved;
-      setDocs((list) => list.map((d) => (d.id === doc.id ? { ...d, saved: next } : d)));
+      const next = !(savedMap[doc.id] ?? doc.saved);
+      const set = (v: boolean) => {
+        setSavedMap((m) => ({ ...m, [doc.id]: v }));
+        setDocs((list) => list.map((d) => (d.id === doc.id ? { ...d, saved: v } : d)));
+      };
+      set(next);
       showToast(next ? 'Đã lưu vào Tài liệu của tôi' : 'Đã bỏ lưu');
-      apiSetSaved(doc.id, next).catch(() => {
-        setDocs((list) => list.map((d) => (d.id === doc.id ? { ...d, saved: !next } : d)));
+      // Tài liệu thật (id số, từ API): POST / DELETE /documents/{id}/save; dữ liệu tạm của tab Tài liệu: giả lập
+      const call = /^\d+$/.test(doc.id) && token ? apiRequest(next ? 'POST' : 'DELETE', `/documents/${doc.id}/save`, { token }) : apiSetSaved(doc.id, next);
+      call.catch(() => {
+        set(!next);
         showToast('Không lưu được, thử lại sau');
       });
     },
-    [showToast],
+    [savedMap, showToast, token],
   );
 
   const openDoc = useCallback(
@@ -45,7 +59,7 @@ export function DocumentsProvider({ children, onView }: { children: ReactNode; o
     [onView],
   );
 
-  const value = useMemo(() => ({ docs, toggleSave, openDoc, showToast }), [docs, toggleSave, openDoc, showToast]);
+  const value = useMemo(() => ({ docs, isSaved, toggleSave, openDoc, showToast }), [docs, isSaved, toggleSave, openDoc, showToast]);
 
   return (
     <DocumentsContext.Provider value={value}>

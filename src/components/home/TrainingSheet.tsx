@@ -5,9 +5,9 @@ import { ActivityIndicator, Linking, Pressable, ScrollView, type ScrollViewInsta
 
 import { PrimaryButton } from '@/components/auth/AuthUI';
 import { BottomSheet } from '@/components/BottomSheet';
+import { InstructorTag } from '@/components/InstructorTag';
 import { Icon } from '@/components/Icon';
 import { useAuth } from '@/auth/AuthProvider';
-import { initialsOf } from '@/data/auth';
 import {
   type ContentBlock,
   dayMonth,
@@ -94,18 +94,13 @@ export function TrainingSheet({ training, onClose, onChanged }: { training: Home
   return (
     <BottomSheet visible={!!training} onClose={onClose} title="Chương trình huấn luyện">
       <View style={{ height: height * 0.78 }}>
-        {/* Đầu bảng: tên + HLV + tab (không cuộn) */}
+        {/* Đầu bảng: tên + người hướng dẫn + tab (không cuộn) */}
         <View style={styles.top}>
           <Text style={[type.h2, { color: colors.ink900 }]} numberOfLines={2}>
             {t.title}
           </Text>
           <View style={styles.person}>
-            <View style={[styles.avatar, { backgroundColor: colors.mint50, borderColor: colors.mint100 }]}>
-              <Text style={[styles.avatarText, { color: colors.emerald700 }]}>{initialsOf(t.trainer ?? 'Ellso')}</Text>
-            </View>
-            <Text style={[type.caption, { color: colors.ink600 }]}>
-              Huấn luyện viên <Text style={{ fontFamily: fonts.sans600, color: colors.ink900 }}>{t.trainer ?? 'Ellso'}</Text>
-            </Text>
+            <InstructorTag name={t.trainer ?? 'Ellso'} avatar={t.trainerAvatar} size={38} />
           </View>
           <View style={[styles.tabs, { borderBottomColor: colors.line }]} accessibilityRole="tablist">
             {(
@@ -351,8 +346,6 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   top: { gap: 8 },
   person: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  avatar: { width: 26, height: 26, borderRadius: 13, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontFamily: fonts.sans700, fontSize: 10 },
   tabs: { flexDirection: 'row', gap: 24, borderBottomWidth: 1, marginTop: 4 },
   tab: { paddingTop: 8, gap: 8 },
   tabLine: { height: 3, borderRadius: 2, marginBottom: -1 },

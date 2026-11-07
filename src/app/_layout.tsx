@@ -6,7 +6,7 @@ import {
 } from '@expo-google-fonts/be-vietnam-pro';
 import { Lexend_500Medium, Lexend_600SemiBold, Lexend_700Bold } from '@expo-google-fonts/lexend';
 import { useFonts } from 'expo-font';
-import { Stack, usePathname } from 'expo-router';
+import { router, Stack, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
@@ -16,6 +16,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/auth/AuthProvider';
 import { useAppSessionTracking } from '@/auth/useAppSessionTracking';
 import { AppFrame } from '@/components/AppFrame';
+import { DocumentsProvider } from '@/components/documents/DocumentsContext';
 import { RevealProvider } from '@/components/splash/RevealContext';
 import { SplashOverlay } from '@/components/splash/SplashOverlay';
 import { loadHomeFeed } from '@/data/home';
@@ -89,7 +90,9 @@ function AppShell() {
     <AppFrame>
       <RevealProvider revealed={revealed}>
         {ready && (
-          // Chặn theo trạng thái đăng nhập: đổi status (đăng nhập / đổi mật khẩu / đăng xuất) là router tự chuyển nhóm màn.
+          // DocumentsProvider: trạng thái đã lưu + bảng cách mở tài liệu dùng chung cho tab Tài liệu, Home và trang sách (ngoài tab)
+          <DocumentsProvider onView={(doc) => router.push(`/documents/view/${doc.id}`)}>
+          {/* Chặn theo trạng thái đăng nhập: đổi status (đăng nhập / đổi mật khẩu / đăng xuất) là router tự chuyển nhóm màn. */}
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
             <Stack.Protected guard={signedIn}>
               <Stack.Screen name="(tabs)" />
@@ -117,6 +120,7 @@ function AppShell() {
               <Stack.Screen name="forgot-sent" options={{ gestureEnabled: false }} />
             </Stack.Protected>
           </Stack>
+          </DocumentsProvider>
         )}
       </RevealProvider>
       {!splashDone && <SplashOverlay ready={ready} onExitStart={onExitStart} onFinish={onFinish} />}

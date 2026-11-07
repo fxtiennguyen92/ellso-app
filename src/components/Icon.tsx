@@ -163,9 +163,12 @@ type Props = {
   /** Tô nhạt phần thân icon (dùng cho tab đang chọn). */
   duotone?: boolean;
   opacity?: number;
+  /** Tô thân icon tuỳ ý (vd bookmark trên ảnh bìa: nền tối mờ để nổi trên mọi màu bìa). Ghi đè duotone. */
+  fill?: string;
+  fillOpacity?: number;
 };
 
-export function Icon({ name, size = 22, color, strokeWidth = 2, duotone = false, opacity = 1 }: Props) {
+export function Icon({ name, size = 22, color, strokeWidth = 2, duotone = false, opacity = 1, fill, fillOpacity }: Props) {
   const Glyph = ICONS[name];
   const filled = name === 'bookmarkFilled';
   return (
@@ -174,8 +177,8 @@ export function Icon({ name, size = 22, color, strokeWidth = 2, duotone = false,
       size={size}
       color={color}
       strokeWidth={strokeWidth}
-      fill={filled || duotone ? color : 'none'}
-      fillOpacity={filled ? 1 : duotone ? 0.22 : 0}
+      fill={fill ?? (filled || duotone ? color : 'none')}
+      fillOpacity={fillOpacity ?? (filled ? 1 : duotone ? 0.22 : 0)}
       opacity={opacity}
       pointerEvents="none"
     />

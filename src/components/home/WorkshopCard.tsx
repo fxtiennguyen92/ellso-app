@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { InstructorTag } from '@/components/InstructorTag';
 import { Icon } from '@/components/Icon';
-import { initialsOf } from '@/data/auth';
 import { feeLabel, formatSession, type HomeWorkshop } from '@/data/home';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
@@ -26,7 +26,7 @@ export function WorkshopCard({ workshop, onPress }: { workshop: HomeWorkshop; on
       accessibilityRole={onPress ? 'button' : undefined}
       disabled={!onPress}
       onPress={onPress}
-      accessibilityLabel={`Workshop online ${w.title}. Người dẫn ${host}. ${feeLabel(w.isFree, w.price)}. Các buổi sắp tới: ${shown
+      accessibilityLabel={`Workshop online ${w.title}. Người hướng dẫn ${host}. ${feeLabel(w.isFree, w.price)}. Các buổi sắp tới: ${shown
         .map((s) => {
           const f = formatSession(s);
           return `${f.weekday} ${f.day} ${f.month} lúc ${f.startTime}${s.registered ? ', đã đăng ký' : ''}`;
@@ -52,12 +52,7 @@ export function WorkshopCard({ workshop, onPress }: { workshop: HomeWorkshop; on
       </Text>
 
       <View style={styles.person}>
-        <View style={[styles.avatar, { backgroundColor: colors.workshopTint, borderColor: colors.workshopLine }]}>
-          <Text style={[styles.avatarText, { color: colors.workshopText }]}>{initialsOf(host)}</Text>
-        </View>
-        <Text style={[type.caption, { color: colors.ink600 }]} numberOfLines={1}>
-          Dẫn bởi <Text style={{ fontFamily: fonts.sans600, color: colors.ink900 }}>{host}</Text>
-        </Text>
+        <InstructorTag name={host} avatar={w.trainerAvatar} tone="workshop" />
       </View>
 
       <View style={styles.tiles}>
@@ -112,8 +107,6 @@ const styles = StyleSheet.create({
   badgeText: { fontFamily: fonts.sans700, fontSize: 11, letterSpacing: 0.8 },
   fee: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 9999 },
   person: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  avatar: { width: 26, height: 26, borderRadius: 13, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontFamily: fonts.sans700, fontSize: 10 },
   tiles: { flexDirection: 'row', gap: 8 },
   tile: { flex: 1, alignItems: 'center', paddingTop: 10, paddingBottom: 10, borderRadius: 16, borderWidth: 1.5 },
   tileWeek: { fontSize: 12, lineHeight: 16 },

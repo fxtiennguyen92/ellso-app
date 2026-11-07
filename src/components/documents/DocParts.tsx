@@ -42,11 +42,14 @@ export function LockOverlay({ size = 32 }: { size?: number }) {
   );
 }
 
-/** Nút lưu (bookmark). `variant="overlay"`: tròn mờ trên ảnh bìa · `"row"`: nằm cuối dòng. Bật = vàng. */
+/**
+ * Nút lưu (bookmark). `variant="overlay"`: nằm trên ảnh bìa — KHÔNG vòng tròn nền, icon to (≈ 0.72 × size), thân icon
+ * tô tối mờ + nét trắng để nổi trên mọi màu bìa · `"row"`: nằm cuối dòng. Bật = vàng (tô kín).
+ */
 export function SaveButton({ doc, variant, size = 36 }: { doc: Doc; variant: 'overlay' | 'row'; size?: number }) {
   const { colors } = useTheme();
-  const { toggleSave } = useDocuments();
-  const on = doc.saved;
+  const { toggleSave, isSaved } = useDocuments();
+  const on = isSaved(doc);
   const color = on ? colors.fav : variant === 'overlay' ? '#ffffff' : colors.ink400;
   return (
     <Pressable
@@ -56,11 +59,22 @@ export function SaveButton({ doc, variant, size = 36 }: { doc: Doc; variant: 'ov
       onPress={() => toggleSave(doc)}
       hitSlop={4}
       style={({ pressed }) => [
-        variant === 'overlay' ? [styles.saveOverlay, { width: size, height: size, borderRadius: size / 2 }] : styles.saveRow,
+        variant === 'overlay' ? [styles.saveOverlay, { width: size, height: size }] : styles.saveRow,
         { transform: [{ scale: pressed ? 0.88 : 1 }] },
       ]}
     >
-      <Icon name={on ? 'bookmarkFilled' : 'bookmark'} size={variant === 'overlay' ? Math.round(size * 0.44) : 20} strokeWidth={1.8} color={color} />
+      {variant === 'overlay' ? (
+        <Icon
+          name="bookmark"
+          size={Math.round(size * 0.72)}
+          strokeWidth={1.9}
+          color={on ? colors.fav : '#ffffff'}
+          fill={on ? colors.fav : '#0f172a'}
+          fillOpacity={on ? 1 : 0.35}
+        />
+      ) : (
+        <Icon name={on ? 'bookmarkFilled' : 'bookmark'} size={20} strokeWidth={1.8} color={color} />
+      )}
     </Pressable>
   );
 }
@@ -286,7 +300,7 @@ const styles = StyleSheet.create({
 
   scrim: { backgroundColor: illo.scrim, alignItems: 'center', justifyContent: 'center' },
   lockDot: { backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' },
-  saveOverlay: { backgroundColor: illo.saveBg, alignItems: 'center', justifyContent: 'center' },
+  saveOverlay: { alignItems: 'center', justifyContent: 'center' },
   saveRow: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 
   videoCover: { borderRadius: 0, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },

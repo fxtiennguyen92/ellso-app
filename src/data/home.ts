@@ -49,6 +49,7 @@ export type HomeTraining = {
   summary: string | null;
   bannerUrl: string | null;
   trainer: string | null;
+  trainerAvatar: string | null;
   isFree: boolean;
   price: number;
   seatsLeft: number | null;
@@ -67,7 +68,7 @@ export type ContentBlock =
   | { type: 'bullets' | 'steps'; title: string | null; items: string[] }
   | { type: 'image'; url: string; caption: string | null }
   | { type: 'callout'; tone: 'info' | 'warning'; title: string | null; text: string }
-  | { type: 'promo_code'; code: string };
+  | { type: 'promo_code'; code: string; description?: string | null; discount?: string | null; ends_at?: string | null; note?: string | null };
 
 /** Chi tiết chương trình (bottom sheet): nội dung + địa điểm, ghi chú từng buổi. */
 export type TrainingDetail = HomeTraining & {
@@ -83,6 +84,7 @@ export type HomeWorkshop = {
   id: string;
   title: string;
   trainer: string | null;
+  trainerAvatar: string | null;
   isFree: boolean;
   price: number;
   /** Số chỗ mỗi buổi; null = không giới hạn. */
@@ -124,7 +126,7 @@ type ApiTraining = {
   schedule?: ApiSlot[];
   sessions?: ApiSession[];
   blocks?: ContentBlock[];
-  trainer: { name: string } | null;
+  trainer: { name: string; avatar?: string | null } | null;
   price: number;
   is_free: boolean;
   seats_left: number | null;
@@ -135,7 +137,7 @@ type ApiTraining = {
 type ApiWorkshop = {
   id: Id;
   title: string;
-  trainer: { name: string } | null;
+  trainer: { name: string; avatar?: string | null } | null;
   price: number;
   is_free: boolean;
   capacity: number | null;
@@ -164,6 +166,7 @@ const toTraining = (t: ApiTraining): HomeTraining | null =>
         registrationOpen: t.registration_open,
         schedule: (t.schedule ?? t.sessions ?? []).map(toSlot),
         trainer: t.trainer?.name ?? null,
+        trainerAvatar: t.trainer?.avatar ?? null,
         isFree: t.is_free,
         price: t.price,
         seatsLeft: t.seats_left,
@@ -184,6 +187,7 @@ const toWorkshop = (w: ApiWorkshop): HomeWorkshop | null =>
         id: String(w.id),
         title: w.title,
         trainer: w.trainer?.name ?? null,
+        trainerAvatar: w.trainer?.avatar ?? null,
         isFree: w.is_free,
         price: w.price,
         capacity: w.capacity,
@@ -300,3 +304,26 @@ export const feeParts = (isFree: boolean, price: number) => (isFree ? { main: 'M
 
 /** Phí tham gia: 0 = miễn phí với học viên có gói thành viên. */
 export const feeLabel = (isFree: boolean, price: number) => (isFree ? 'Miễn phí cho thành viên' : formatVnd(price));
+
+// ---------- Chiến dịch (Khuyến mãi): chi tiết ----------
+
+export type CampaignCta = { type: 'url'; label: string; url: string } | { type: 'course'; label: string; courseId: string } | null;
+export type CampaignDetail = HomeCampaign & { startsAt: string; blocks: ContentBlock[]; cta: CampaignCta };
+
+/** GET /campaigns/{id} (public) — 404 khi chiến dịch đã ẩn / hết hạn. */
+export async function loadCampaign(id: string): Promise<CampaignDetail> {
+  const { data } = await apiRequest<{
+    data: ApiCampaign & {
+      starts_at: string;
+      blocks?: ContentBlock[];
+      cta: { type: 'url'; label: string | null; url: string } | { type: 'course'; label: string | null; course_id: Id } | null;
+    };
+  }>('GET', `/campaigns/${id}`);
+  const cta: CampaignCta =
+    data.cta?.type === 'url'
+      ? { type: 'url', label: data.cta.label || 'Xem thêm', url: data.cta.url }
+      : data.cta?.type === 'course'
+        ? { type: 'course', label: data.cta.label || 'Xem khoá học', courseId: String(data.cta.course_id) }
+        : null;
+  return { ...toCampaign(data), startsAt: data.starts_at, blocks: data.blocks ?? [], cta };
+}

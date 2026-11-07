@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { InstructorTag } from '@/components/InstructorTag';
 import { Icon } from '@/components/Icon';
-import { initialsOf } from '@/data/auth';
 import { dayMonth, feeParts, formatSession, type HomeTraining } from '@/data/home';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
@@ -25,7 +25,7 @@ export function TrainingCard({ training, onPress }: { training: HomeTraining; on
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${t.title}. Huấn luyện viên ${trainer}. Bắt đầu ${f.weekday} ${dayMonth(first.start)}, ${f.startTime}. ${total} buổi${last ? `, đến ${dayMonth(last.start)}` : ''}. ${fee.main}${fee.sub ? ` ${fee.sub}` : ''}.${t.registered ? ' Đã đăng ký.' : full ? ' Hết chỗ.' : ''} Xem chi tiết`}
+      accessibilityLabel={`${t.title}. Người hướng dẫn ${trainer}. Bắt đầu ${f.weekday} ${dayMonth(first.start)}, ${f.startTime}. ${total} buổi${last ? `, đến ${dayMonth(last.start)}` : ''}. ${fee.main}${fee.sub ? ` ${fee.sub}` : ''}.${t.registered ? ' Đã đăng ký.' : full ? ' Hết chỗ.' : ''} Xem chi tiết`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
@@ -37,12 +37,7 @@ export function TrainingCard({ training, onPress }: { training: HomeTraining; on
       </Text>
 
       <View style={styles.person}>
-        <View style={[styles.avatar, { backgroundColor: colors.mint50, borderColor: colors.mint100 }]}>
-          <Text style={[styles.avatarText, { color: colors.emerald700 }]}>{initialsOf(trainer)}</Text>
-        </View>
-        <Text style={[type.caption, { color: colors.ink600 }]} numberOfLines={1}>
-          HLV <Text style={{ fontFamily: fonts.sans600, color: colors.ink900 }}>{trainer}</Text>
-        </Text>
+        <InstructorTag name={trainer} avatar={t.trainerAvatar} />
       </View>
 
       <View style={[styles.panel, { backgroundColor: colors.mint50 }]}>
@@ -96,8 +91,6 @@ const styles = StyleSheet.create({
   title: { paddingRight: 72 }, // chừa chỗ badge góc
   grow: { flex: 1 },
   person: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: -4 },
-  avatar: { width: 26, height: 26, borderRadius: 13, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontFamily: fonts.sans700, fontSize: 10 },
   panel: { flexDirection: 'row', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 14 },
   cell: { flex: 1.4, gap: 2 },
   cellCount: { flex: 1, paddingLeft: 14 },
