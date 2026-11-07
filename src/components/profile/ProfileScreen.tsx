@@ -13,7 +13,7 @@ import { Icon } from '@/components/Icon';
 import { QrCode } from '@/components/QrCode';
 import { useToast } from '@/components/Toast';
 import { UserAvatar } from '@/components/UserAvatar';
-import { daysUntil, displayLink, dmy, getProfile, type ProfileSection } from '@/data/profile';
+import { daysUntil, displayLink, dmy, getProfile, groupThousands, type ProfileSection } from '@/data/profile';
 import { NATIVE_DRIVER } from '@/hooks/useLoop';
 import { appVersionLabel } from '@/lib/appVersion';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -22,9 +22,18 @@ import { fonts, type } from '@/theme/typography';
 
 import { RowIcon, SettingsGroup, SettingsRow, settingsStyles, ThemeSegment, Toggle } from './SettingsParts';
 
-// Thông tin cá nhân / Mật khẩu & Bảo mật là màn riêng ngoài tab (/account/…); các trang còn lại vẫn là trang tạm /profile/…
-const go = (section: ProfileSection) =>
-  section === 'thong-tin' ? router.push('/account/info') : section === 'doi-mat-khau' ? router.push('/account/password') : router.push(`/profile/${section}`);
+// Các mục tài khoản là màn riêng ngoài tab (/account/…); các trang còn lại vẫn là trang tạm /profile/…
+const ACCOUNT_ROUTES = {
+  'thong-tin': '/account/info',
+  'mat-khau': '/account/password',
+  'thiet-bi': '/account/devices',
+  'nguoi-gioi-thieu': '/account/referrer',
+  xu: '/account/coins',
+} as const;
+const go = (section: ProfileSection) => {
+  const route = ACCOUNT_ROUTES[section as keyof typeof ACCOUNT_ROUTES];
+  router.push(route ?? `/profile/${section}`);
+};
 
 const COMPACT_H = 52;
 /** Khoảng đệm dưới hàng nội dung của thanh thu gọn. */
@@ -237,7 +246,10 @@ export function ProfileScreen() {
         {/* ---------- Cài đặt ---------- */}
         <SettingsGroup title="Tài khoản">
           <SettingsRow first icon={<RowIcon name="user" />} label="Thông tin cá nhân" onPress={() => go('thong-tin')} />
-          <SettingsRow icon={<RowIcon name="lock" />} label="Mật khẩu & Bảo mật" onPress={() => go('doi-mat-khau')} />
+          <SettingsRow icon={<RowIcon name="lock" />} label="Mật khẩu" onPress={() => go('mat-khau')} />
+          <SettingsRow icon={<RowIcon name="phone" />} label="Thiết bị" onPress={() => go('thiet-bi')} />
+          <SettingsRow icon={<RowIcon name="userPlus" />} label="Người giới thiệu" value={user?.referrer ? user.referrer.name : 'Chưa có'} onPress={() => go('nguoi-gioi-thieu')} />
+          <SettingsRow icon={<RowIcon name="coins" />} label="Xu của bạn" value={`${groupThousands(user?.coins ?? 0)} xu`} onPress={() => go('xu')} />
           <SettingsRow icon={<RowIcon name="receipt" />} label="Lịch sử thanh toán" onPress={() => go('lich-su-mua-hang')} />
         </SettingsGroup>
 

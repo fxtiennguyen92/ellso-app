@@ -63,7 +63,10 @@ export const displayLink = (url: string) => url.replace(/^https?:\/\//, '');
 /** Các trang con của Hồ sơ (đang là màn tạm) — key = đường dẫn /profile/<key>. */
 export const profileSections = {
   'thong-tin': 'Thông tin cá nhân',
-  'doi-mat-khau': 'Mật khẩu & Bảo mật',
+  'mat-khau': 'Mật khẩu',
+  'thiet-bi': 'Thiết bị',
+  'nguoi-gioi-thieu': 'Người giới thiệu',
+  xu: 'Xu của bạn',
   'lich-su-mua-hang': 'Lịch sử thanh toán',
   'quan-ly-goi': 'Quản lý gói',
   'lich-su-credit': 'Lịch sử xu',

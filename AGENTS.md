@@ -56,7 +56,7 @@ Màn hình / bottom sheet nào có `TextInput` thì phải xử lý bàn phím v
 - Luôn làm dạng **nổi trên nội dung**: dùng `<FloatingAction>` (`src/components/FloatingAction.tsx`) — nút có bóng, lề 20, cách đáy safe area; **không** làm thanh footer có nền / đường kẻ ngăn.
 - Đặt `FloatingAction` trong một `View flex:1` cùng với ScrollView (bên trong KeyboardAvoidingView nếu màn có ô nhập), ScrollView chừa `paddingBottom: floatingActionSpace(insets.bottom)` để nút không che dòng cuối.
 - Bottom sheet cũng theo kiểu nổi (vd `home/TrainingSheet.tsx`).
-- Ngoại lệ: màn có nhiều khối (vd Mật khẩu & Bảo mật: Đổi mật khẩu + Thiết bị đăng nhập) thì nút của từng khối đặt cuối khối đó, không nổi.
+- Ngoại lệ: màn có nhiều khối, mỗi khối có nút riêng, thì nút đặt cuối khối đó, không nổi.
 
 ## Branding
 

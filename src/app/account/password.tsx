@@ -1,6 +1,6 @@
-import { SecurityScreen } from '@/components/profile/SecurityScreen';
+import { PasswordScreen } from '@/components/profile/PasswordScreen';
 
-/** Hồ sơ › Mật khẩu & Bảo mật: đổi mật khẩu + thiết bị đăng nhập (ngoài tab). */
+/** Hồ sơ › Mật khẩu (đổi mật khẩu, ngoài tab). */
 export default function AccountPasswordRoute() {
-  return <SecurityScreen />;
+  return <PasswordScreen />;
 }
