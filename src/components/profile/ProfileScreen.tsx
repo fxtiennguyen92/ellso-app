@@ -458,7 +458,8 @@ const styles = StyleSheet.create({
   version: { fontFamily: fonts.sans400, fontSize: 12, lineHeight: 16 },
 
   topBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, paddingHorizontal: 16 },
-  topBarBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderBottomLeftRadius: 20, borderBottomRightRadius: 20, overflow: 'hidden' },
+  // nền thanh thu gọn dài xuống thêm 10px dưới hàng nội dung → khoảng đệm dưới, không làm xê dịch tiêu đề / nút
+  topBarBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: -10, borderBottomLeftRadius: 20, borderBottomRightRadius: 20, overflow: 'hidden' },
   topBarRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   topTitle: { position: 'absolute', left: 0, right: 108 },
   compactIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
