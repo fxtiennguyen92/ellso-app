@@ -98,6 +98,8 @@ function AppShell() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="search" />
               <Stack.Screen name="campaign/[id]" />
+              <Stack.Screen name="books/[id]/index" />
+              <Stack.Screen name="books/[id]/read" />
               <Stack.Screen name="placement-test" />
               {/* Màn con của Hồ sơ không có thanh tab (đường dẫn /profile/…, file trong nhóm (account)) */}
               <Stack.Screen name="(account)/profile/personal-info/index" />

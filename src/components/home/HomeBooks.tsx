@@ -7,7 +7,7 @@ import type { Doc } from '@/data/documents';
 
 import { SectionTitle } from './SectionTitle';
 
-/** Mục Sách cuối Home (GET /v1/documents?type=book, mới nhất trước): 6 cuốn, 2 hàng × 3 cột (BookCard của tab Tài liệu). */
+/** Mục Sách cuối Home (GET /v1/documents?type=book, mới nhất trước): 6 cuốn, 2 hàng × 3 cột. Bấm sách → trang thông tin /books/[id]. */
 export function HomeBooks({ books: all }: { books: Doc[] }) {
   const reveal = useRevealStyle(4);
   const books = all.slice(0, 6);
@@ -18,7 +18,7 @@ export function HomeBooks({ books: all }: { books: Doc[] }) {
       <SectionTitle title="Sách" subtitle="Sách mới trên Ellso" action={{ label: 'Xem tất cả', onPress: () => router.push('/documents/books') }} />
       <Grid columns={3} rowGap={24}>
         {books.map((d) => (
-          <BookCard key={d.id} doc={d} />
+          <BookCard key={d.id} doc={d} onOpen={(b) => router.push(`/books/${b.id}`)} />
         ))}
       </Grid>
     </Animated.View>

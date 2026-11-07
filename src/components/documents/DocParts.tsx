@@ -199,12 +199,13 @@ export function PdfRow({ doc }: { doc: Doc }) {
   );
 }
 
-export function BookCard({ doc }: { doc: Doc }) {
+/** `onOpen`: thay hành vi bấm mặc định (vd Trang chủ mở trang thông tin sách /books/[id]). */
+export function BookCard({ doc, onOpen }: { doc: Doc; onOpen?: (doc: Doc) => void }) {
   const { colors } = useTheme();
   const { openDoc } = useDocuments();
   return (
     <View style={styles.cardCol}>
-      <Pressable accessibilityRole="link" accessibilityLabel={a11yDoc(doc)} onPress={() => openDoc(doc)} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
+      <Pressable accessibilityRole="link" accessibilityLabel={a11yDoc(doc)} onPress={() => (onOpen ? onOpen(doc) : openDoc(doc))} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
         <View style={styles.bookWrap}>
           <BookCover doc={doc} />
         </View>
