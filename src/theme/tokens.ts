@@ -326,6 +326,8 @@ export const illo = {
   scrim: 'rgba(15,23,42,0.55)',
   durBg: 'rgba(15,23,42,0.7)',
   saveBg: 'rgba(15,23,42,0.45)',
+  /** Nhãn giá trên ảnh bìa sách (nền trắng gần đặc, giống hai chế độ). */
+  badgeLight: 'rgba(255,255,255,0.95)',
   typeVideo: '#3d6896',
   typePdf: '#a9553a',
   typeBook: '#76508a',

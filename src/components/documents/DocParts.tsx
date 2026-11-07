@@ -208,18 +208,37 @@ export function BookCard({ doc, onOpen }: { doc: Doc; onOpen?: (doc: Doc) => voi
       <Pressable accessibilityRole="link" accessibilityLabel={a11yDoc(doc)} onPress={() => (onOpen ? onOpen(doc) : openDoc(doc))} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
         <View style={styles.bookWrap}>
           <BookCover doc={doc} />
+          <PriceBadge doc={doc} />
         </View>
+        {/* Luôn chừa đủ 1 dòng tác giả + 2 dòng tên sách để các thẻ trong lưới thẳng hàng */}
         <Text style={[styles.bookAuthor, { color: colors.ink600 }]} numberOfLines={1}>
-          {doc.author}
+          {doc.author || ' '}
         </Text>
         <Text style={[styles.bookTitle, { color: colors.ink900 }]} numberOfLines={2}>
           {doc.title}
         </Text>
-        <AccessChip doc={doc} small />
       </Pressable>
       <View style={styles.saveCornerBook}>
         <SaveButton doc={doc} variant="overlay" size={34} />
       </View>
+    </View>
+  );
+}
+
+/**
+ * Nhãn giá / quyền xem dạng chữ nhật nằm ở góc dưới bên trái ảnh bìa sách (thay chip dưới tên):
+ * nền trắng, chữ màu theo màu bìa đã chọn (bán riêng) hoặc màu của quyền xem (miễn phí, thành viên…).
+ */
+function PriceBadge({ doc }: { doc: Doc }) {
+  const { colors } = useTheme();
+  const a = primaryAccess(doc);
+  const s = accessStyle(a, !!doc.bought, colors);
+  const fg = a.kind === 'buy' && !doc.bought ? chapterPalette[doc.cover].edge : s.fg;
+  return (
+    <View style={[styles.priceBadge, { backgroundColor: a.kind === 'buy' && !doc.bought ? illo.badgeLight : s.bg }]} pointerEvents="none">
+      <Text style={[styles.priceBadgeText, { color: fg }]} numberOfLines={1}>
+        {s.short}
+      </Text>
     </View>
   );
 }
@@ -328,8 +347,10 @@ const styles = StyleSheet.create({
   // Tác giả luôn nằm trên tên tài liệu (thống nhất mọi màn Tài liệu)
   author: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16, marginBottom: 4 },
   cardTitle: { fontFamily: fonts.sans600, fontSize: 15, lineHeight: 21 },
-  bookAuthor: { fontFamily: fonts.sans500, fontSize: 11, lineHeight: 15, marginBottom: 3 },
-  bookTitle: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18 },
+  bookAuthor: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16, height: 16, marginBottom: 2 },
+  bookTitle: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18, minHeight: 36 },
+  priceBadge: { position: 'absolute', left: 6, bottom: 6, maxWidth: '86%', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  priceBadgeText: { fontFamily: fonts.sans700, fontSize: 11, lineHeight: 15 },
   saveCorner: { position: 'absolute', right: 4, top: 4 },
   saveCornerBook: { position: 'absolute', right: 2, top: 2 },
 

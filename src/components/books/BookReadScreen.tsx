@@ -30,7 +30,7 @@ export function BookReadScreen() {
   const [book, setBook] = useState<BookDetail | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
+  const [progress, setProgress] = useState<{ current: number; total: number; page?: number; pages?: number } | null>(null);
   const [ended, setEnded] = useState(false);
 
   const topInset = Platform.OS === 'web' ? 12 : insets.top + 4;
@@ -56,7 +56,7 @@ export function BookReadScreen() {
 
   const onMessage = useCallback((m: ReaderMessage) => {
     if (m.type === 'ready') setProgress({ current: 1, total: m.total });
-    else if (m.type === 'progress') setProgress({ current: m.current, total: m.total });
+    else if (m.type === 'progress') setProgress({ current: m.current, total: m.total, page: m.page, pages: m.pages });
     else if (m.type === 'end') setEnded(true);
     else if (m.type === 'error') setError(m.message);
   }, []);
@@ -64,7 +64,12 @@ export function BookReadScreen() {
   const back = () => (router.canGoBack() ? router.back() : router.replace(`/books/${id}`));
   const unit = unitLabel(book?.format ?? null);
   const label = mode === 'preview' ? 'Đọc thử' : 'Đang đọc';
-  const sub = progress ? `${label} · ${unit === 'chương' ? 'Chương' : 'Trang'} ${progress.current} / ${progress.total}` : label;
+  // EPUB không có trang cố định: hiện chương + trang trong chương (theo khổ màn hình)
+  const sub = progress
+    ? unit === 'chương'
+      ? `${label} · Chương ${progress.current} / ${progress.total}${progress.pages ? ` · trang ${progress.page} / ${progress.pages}` : ''}`
+      : `${label} · Trang ${progress.current} / ${progress.total}`
+    : label;
   const showUnlock = mode === 'preview' && ended && book && !book.unlocked;
 
   return (

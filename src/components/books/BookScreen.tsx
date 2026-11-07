@@ -7,11 +7,10 @@ import Svg, { Circle, Defs, LinearGradient, Pattern, Rect, Stop } from 'react-na
 
 import { useAuth } from '@/auth/AuthProvider';
 import { PrimaryButton, SecondaryButton } from '@/components/auth/AuthUI';
-import { AccessChip } from '@/components/documents/DocParts';
+import { accessStyle, primaryAccess } from '@/components/documents/docAccess';
 import { useDocuments } from '@/components/documents/DocumentsContext';
 import { FloatingAction, floatingActionSpace } from '@/components/FloatingAction';
 import { Icon } from '@/components/Icon';
-import { InstructorTag } from '@/components/InstructorTag';
 import { apiBook, apiBooks, type BookDetail, fileSize, unitLabel } from '@/data/books';
 import { formatPrice } from '@/data/courses';
 import type { Doc } from '@/data/documents';
@@ -30,7 +29,7 @@ import { fonts, type } from '@/theme/typography';
  * - Thanh trên: quay lại + lưu (bookmark to, không vòng tròn); cuộn qua hero thì hiện nền + tên sách.
  */
 export function BookScreen() {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const insets = useSafeAreaInsets();
   const { width: winW } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -157,19 +156,16 @@ export function BookScreen() {
             </View>
           ) : book ? (
             <View style={styles.body}>
-              <View style={styles.center}>
-                <Text accessibilityRole="header" style={[styles.title, { color: colors.ink900 }]}>
-                  {book.title}
-                </Text>
-                {book.teacher ? null : book.author ? <Text style={[styles.author, { color: colors.ink600 }]}>{book.author}</Text> : null}
-                <View style={styles.chips}>
-                  <AccessChip doc={book} long />
-                  {book.topic ? (
-                    <View style={[styles.topic, { backgroundColor: colors.surfaceAlt }]}>
-                      <Text style={[styles.topicText, { color: colors.ink600 }]}>{book.topic}</Text>
-                    </View>
-                  ) : null}
+              {/* Tên + tác giả bên trái · giá (hoặc quyền xem) bên phải, chữ màu theo màu bìa đã chọn, không icon.
+                  Chủ đề không hiện ở đây (chỉ dùng để lọc ở tab Tài liệu). */}
+              <View style={styles.headRow}>
+                <View style={styles.grow}>
+                  <Text accessibilityRole="header" style={[styles.title, { color: colors.ink900 }]}>
+                    {book.title}
+                  </Text>
+                  {book.author ? <Text style={[styles.author, { color: colors.ink600 }]}>{book.author}</Text> : null}
                 </View>
+                <Text style={[styles.price, { color: scheme === 'dark' ? pal.inkDark : pal.base }]}>{accessStyle(primaryAccess(book), !!book.bought, colors).long}</Text>
               </View>
 
               {/* Dải thông tin (phẳng) */}
@@ -181,11 +177,6 @@ export function BookScreen() {
                 <Stat label="Đọc thử" value={book.preview.available && book.preview.count ? `${book.preview.count}` : '—'} sub={book.preview.available ? `${unit} đầu` : 'Chưa có'} />
               </View>
 
-              {book.teacher ? (
-                <View style={[styles.teacher, { borderColor: colors.line }]}>
-                  <InstructorTag name={book.teacher.name} avatar={book.teacher.avatar} size={40} label="Tác giả" />
-                </View>
-              ) : null}
 
               {book.description ? (
                 <View style={styles.section}>
@@ -266,21 +257,12 @@ export function BookScreen() {
       </View>
 
       {book ? (
-        <FloatingAction>
-          {book.unlocked ? (
-            <PrimaryButton label="Đọc sách" onPress={() => read('full')} />
-          ) : (
-            <View style={styles.actions}>
-              {book.preview.available ? (
-                <View style={styles.grow}>
-                  <SecondaryButton label="Đọc thử" icon="bookOpen" onPress={() => read('preview')} />
-                </View>
-              ) : null}
-              <View style={styles.grow}>
-                <PrimaryButton label={buy && buy.kind === 'buy' && book.access.length === 1 ? `Mua · ${formatPrice(buy.price)}` : 'Mở khoá'} onPress={() => openDoc(book)} />
-              </View>
-            </View>
-          )}
+        <FloatingAction row>
+          {book.unlocked ? <PrimaryButton label="Đọc sách" onPress={() => read('full')} /> : null}
+          {!book.unlocked && book.preview.available ? <SecondaryButton label="Đọc thử" icon="bookOpen" onPress={() => read('preview')} /> : null}
+          {!book.unlocked ? (
+            <PrimaryButton label={buy && buy.kind === 'buy' && book.access.length === 1 ? `Mua · ${formatPrice(buy.price)}` : 'Mở khoá'} onPress={() => openDoc(book)} />
+          ) : null}
         </FloatingAction>
       ) : null}
     </View>
@@ -320,18 +302,16 @@ const styles = StyleSheet.create({
   loading: { paddingVertical: 80, alignItems: 'center' },
   errorBox: { alignItems: 'center', gap: 12, paddingVertical: 60, paddingHorizontal: 32 },
   body: { paddingTop: 24, paddingHorizontal: 20, gap: 22 },
-  title: { fontFamily: fonts.display700, fontSize: 26, lineHeight: 34, textAlign: 'center' },
-  author: { fontFamily: fonts.sans500, fontSize: 15, lineHeight: 22, marginTop: 4, textAlign: 'center' },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 12 },
-  topic: { paddingHorizontal: 10, height: 24, borderRadius: 9999, justifyContent: 'center' },
-  topicText: { fontFamily: fonts.sans600, fontSize: 12, lineHeight: 16 },
+  headRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
+  title: { fontFamily: fonts.display700, fontSize: 24, lineHeight: 32 },
+  author: { fontFamily: fonts.sans500, fontSize: 15, lineHeight: 22, marginTop: 4 },
+  price: { fontFamily: fonts.display700, fontSize: 20, lineHeight: 32, flexShrink: 0 },
   stats: { flexDirection: 'row', alignItems: 'stretch', borderRadius: 18, borderWidth: 1, paddingVertical: 14 },
   stat: { flex: 1, alignItems: 'center', gap: 2 },
   statLabel: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16 },
   statValue: { fontFamily: fonts.display600, fontSize: 20, lineHeight: 26 },
   statSub: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16 },
   statDivider: { width: StyleSheet.hairlineWidth },
-  teacher: { paddingVertical: 14, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth },
   section: { gap: 10 },
   othersScroll: { marginHorizontal: -20 },
   othersRow: { paddingHorizontal: 20, gap: 14, paddingBottom: 8 },
@@ -345,5 +325,4 @@ const styles = StyleSheet.create({
   blurImg: { transform: [{ scale: 1.3 }] },
   barTitle: { flex: 1, fontFamily: fonts.display600, fontSize: 17, lineHeight: 24 },
   save: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  actions: { flexDirection: 'row', gap: 10 },
 });
