@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { type ReactNode, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,6 +14,7 @@ import { fonts, type } from '@/theme/typography';
 
 import { AddReferrerSheet } from './AddReferrerSheet';
 import { CoinCard } from './CoinCard';
+import { InfoSection } from './InfoSection';
 
 /** "0912345678" → "0912 345 678" */
 const formatPhone = (p: string) => (/^\d{10}$/.test(p) ? `${p.slice(0, 4)} ${p.slice(4, 7)} ${p.slice(7)}` : p);
@@ -53,7 +54,7 @@ export function AccountInfoScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* 1. Thông tin cá nhân */}
-        <Section
+        <InfoSection
           title="Thông tin cá nhân"
           action={
             <Pressable
@@ -84,10 +85,10 @@ export function AccountInfoScreen() {
             <InfoRow icon="phone" label="Số điện thoại" value={user.phone ? formatPhone(user.phone) : null} empty="Chưa cập nhật" />
             <InfoRow icon="mail" label="Email" value={user.email} />
           </View>
-        </Section>
+        </InfoSection>
 
         {/* 2. Người giới thiệu */}
-        <Section title="Người giới thiệu">
+        <InfoSection title="Người giới thiệu">
           {referrer ? (
             <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.line }]}>
               <View style={styles.identity}>
@@ -128,12 +129,12 @@ export function AccountInfoScreen() {
               </Pressable>
             </View>
           )}
-        </Section>
+        </InfoSection>
 
         {/* 3. Xu */}
-        <Section title="Xu của bạn">
+        <InfoSection title="Xu của bạn">
           <CoinCard coins={user.coins ?? 0} onHistory={() => router.push('/profile/lich-su-credit')} />
-        </Section>
+        </InfoSection>
       </ScrollView>
 
       <AddReferrerSheet
@@ -145,21 +146,6 @@ export function AccountInfoScreen() {
         }}
       />
       {toast}
-    </View>
-  );
-}
-
-function Section({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
-  const { colors } = useTheme();
-  return (
-    <View style={styles.section}>
-      <View style={styles.sectionHead}>
-        <Text accessibilityRole="header" style={[styles.sectionTitle, { color: colors.ink600 }]}>
-          {title}
-        </Text>
-        {action}
-      </View>
-      {children}
     </View>
   );
 }
@@ -181,9 +167,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   grow: { flex: 1, minWidth: 0 },
   content: { paddingTop: 8, paddingHorizontal: 16, gap: 24 },
-  section: { gap: 10 },
-  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 32, paddingHorizontal: 4 },
-  sectionTitle: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18, textTransform: 'uppercase', letterSpacing: 0.6 },
   action: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, height: 32, borderRadius: 9999 },
   card: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },

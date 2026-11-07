@@ -39,6 +39,7 @@ import Mail from 'lucide-react-native/icons/mail';
 import MapIcon from 'lucide-react-native/icons/map';
 import MapPin from 'lucide-react-native/icons/map-pin';
 import MessageCircle from 'lucide-react-native/icons/message-circle';
+import Monitor from 'lucide-react-native/icons/monitor';
 import Moon from 'lucide-react-native/icons/moon';
 import Palette from 'lucide-react-native/icons/palette';
 import Pencil from 'lucide-react-native/icons/pencil';
@@ -123,6 +124,7 @@ const ICONS = {
   sun: Sun,
   moon: Moon,
   phone: Smartphone,
+  monitor: Monitor,
   shield: ShieldCheck,
   logout: LogOut,
   close: X,

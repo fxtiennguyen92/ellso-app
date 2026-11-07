@@ -27,11 +27,14 @@ const go = (section: ProfileSection) =>
   section === 'thong-tin' ? router.push('/account/info') : section === 'doi-mat-khau' ? router.push('/account/password') : router.push(`/profile/${section}`);
 
 const COMPACT_H = 52;
+/** Khoảng đệm dưới hàng nội dung của thanh thu gọn. */
+const BAR_PAD = 10;
+const HERO_RADIUS = 32;
 
 /**
  * Tab Hồ sơ.
  * - Hero emerald (cùng kiểu Home): tiêu đề + nút QR, avatar lớn (bấm → Thông tin cá nhân), tên, email, loại tài khoản:
- *   chưa có gói → pill trắng "Tài khoản cơ bản" + nút "Nâng cấp"; có gói → pill vàng "Tài khoản thành viên", bấm mở sheet
+ *   chưa có gói → pill kính mờ (chữ trắng) "Tài khoản cơ bản" + nút "Nâng cấp"; có gói → pill vàng "Tài khoản thành viên", bấm mở sheet
  *   (ngày bắt đầu, ngày hết hạn, nút Gia hạn). Số xu đã chuyển sang màn Thông tin cá nhân.
  * - Các nhóm cài đặt: icon một kiểu (Lucide, ô mint). Giao diện Sáng / Tối / Hệ thống lưu trên máy.
  * - Cuộn: thanh trên cùng luôn cố định (tiêu đề + QR). Khối tên trên hero mờ dần / thu nhỏ khi cuộn; tới khoảng
@@ -91,6 +94,10 @@ export function ProfileScreen() {
   const barTo = barFrom + Math.max(40, heroH * 0.2);
   const barIn = scrollY.interpolate({ inputRange: [barFrom, barTo], outputRange: [0, 1], extrapolate: 'clamp' });
   const barOut = scrollY.interpolate({ inputRange: [barFrom, barTo], outputRange: [1, 0], extrapolate: 'clamp' });
+  // Nền thanh thu gọn chỉ hiện khi mép dưới hero chạm mép dưới thanh (hero "thu" vào thanh) → không có 2 lớp nền chồng nhau.
+  const barH = topInset + COMPACT_H + BAR_PAD;
+  const bgAt = Math.max(2, heroH - barH);
+  const barBg = scrollY.interpolate({ inputRange: [bgAt - 1, bgAt], outputRange: [0, 1], extrapolate: 'clamp' });
   const onScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
     useNativeDriver: NATIVE_DRIVER,
     listener: (e: { nativeEvent: { contentOffset: { y: number } } }) => {
@@ -206,9 +213,9 @@ export function ProfileScreen() {
             ) : (
               // Cơ bản: pill trắng + nút Nâng cấp kế bên
               <View style={styles.accountRow}>
-                <View accessible accessibilityLabel="Tài khoản cơ bản" style={[styles.basicPill, { backgroundColor: colors.heroOn }]}>
-                  <Icon name="basicAccount" size={16} strokeWidth={2.2} color={colors.heroMid} />
-                  <Text style={[styles.pillText, { color: colors.heroMid }]}>Tài khoản cơ bản</Text>
+                <View accessible accessibilityLabel="Tài khoản cơ bản" style={[styles.basicPill, { backgroundColor: colors.heroGlass, borderColor: colors.heroGlassLine }]}>
+                  <Icon name="basicAccount" size={16} strokeWidth={2.2} color={colors.heroOn} />
+                  <Text style={[styles.pillText, { color: colors.heroOn }]}>Tài khoản cơ bản</Text>
                 </View>
                 <Pressable
                   accessibilityRole="button"
@@ -232,8 +239,6 @@ export function ProfileScreen() {
           <SettingsRow first icon={<RowIcon name="user" />} label="Thông tin cá nhân" onPress={() => go('thong-tin')} />
           <SettingsRow icon={<RowIcon name="lock" />} label="Mật khẩu & Bảo mật" onPress={() => go('doi-mat-khau')} />
           <SettingsRow icon={<RowIcon name="receipt" />} label="Lịch sử thanh toán" onPress={() => go('lich-su-mua-hang')} />
-          <SettingsRow icon={<RowIcon name="crown" />} label="Gói thành viên" value={membership ? `đến ${dmy(membership.endsAt)}` : 'Chưa có'} onPress={() => go('quan-ly-goi')} />
-          <SettingsRow icon={<RowIcon name="ticket" />} label="Nhập mã kích hoạt" onPress={() => go('ma-kich-hoat')} />
         </SettingsGroup>
 
         <SettingsGroup title="Ứng dụng">
@@ -275,7 +280,7 @@ export function ProfileScreen() {
       <View pointerEvents="box-none" style={[styles.topBar, { paddingTop: topInset, height: topInset + COMPACT_H }]}>
         <Animated.View
           pointerEvents="none"
-          style={[styles.topBarBg, { backgroundColor: colors.heroMid, boxShadow: colors.navShadow, opacity: barIn }]}
+          style={[styles.topBarBg, { backgroundColor: colors.heroMid, boxShadow: colors.navShadow, opacity: barBg }]}
         >
           <HeroBackground id="profile-bar" ringsY={0} glow={false} />
         </Animated.View>
@@ -464,7 +469,7 @@ const styles = StyleSheet.create({
   onTop: { position: 'relative', zIndex: 1 },
   overscroll: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%' },
 
-  hero: { paddingHorizontal: 16, paddingBottom: 32, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
+  hero: { paddingHorizontal: 16, paddingBottom: 32, borderBottomLeftRadius: HERO_RADIUS, borderBottomRightRadius: HERO_RADIUS, overflow: 'hidden' },
   heroTop: { height: COMPACT_H },
   glassBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   identity: { alignItems: 'center', paddingTop: 8 },
@@ -473,7 +478,7 @@ const styles = StyleSheet.create({
   name: { fontFamily: fonts.display600, fontSize: 24, lineHeight: 32, maxWidth: '100%' },
   email: { fontFamily: fonts.sans500, fontSize: 14, lineHeight: 20, marginTop: 2 },
   accountRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 },
-  basicPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 9999 },
+  basicPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 9999, borderWidth: 1 },
   upgrade: { height: 34, borderRadius: 9999, overflow: 'hidden', justifyContent: 'center' },
   memberPill: { marginTop: 14, height: 36, borderRadius: 9999, overflow: 'hidden', justifyContent: 'center' },
   pillInner: { position: 'relative', zIndex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14 },
@@ -500,8 +505,9 @@ const styles = StyleSheet.create({
   version: { fontFamily: fonts.sans400, fontSize: 12, lineHeight: 16 },
 
   topBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, paddingHorizontal: 16 },
-  // nền thanh thu gọn dài xuống thêm 10px dưới hàng nội dung → khoảng đệm dưới, không làm xê dịch tiêu đề / nút
-  topBarBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: -10, borderBottomLeftRadius: 20, borderBottomRightRadius: 20, overflow: 'hidden' },
+  // nền thanh thu gọn dài xuống thêm BAR_PAD dưới hàng nội dung (khoảng đệm dưới, không xê dịch tiêu đề / nút);
+  // bo góc bằng hero để lúc hero "thu" vào thanh hai mép trùng nhau
+  topBarBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: -BAR_PAD, borderBottomLeftRadius: HERO_RADIUS, borderBottomRightRadius: HERO_RADIUS, overflow: 'hidden' },
   topBarRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   topTitle: { position: 'absolute', left: 0, right: 108 },
   compactIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },

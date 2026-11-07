@@ -65,7 +65,6 @@ export const profileSections = {
   'thong-tin': 'Thông tin cá nhân',
   'doi-mat-khau': 'Mật khẩu & Bảo mật',
   'lich-su-mua-hang': 'Lịch sử thanh toán',
-  'ma-kich-hoat': 'Nhập mã kích hoạt',
   'quan-ly-goi': 'Quản lý gói',
   'lich-su-credit': 'Lịch sử xu',
   'tro-giup': 'Trung tâm trợ giúp',

@@ -1,26 +1,30 @@
-import { router } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, type TextInputInstance, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { AuthField, ErrorText, PrimaryButton } from '@/components/auth/AuthUI';
-import { FloatingAction, floatingActionSpace } from '@/components/FloatingAction';
 import { Icon } from '@/components/Icon';
 import { SubpageHeader } from '@/components/SubpageHeader';
+import { useToast } from '@/components/Toast';
 import { apiUpdatePassword } from '@/data/account';
 import { PASSWORD_MAX, passwordRules, passwordStrength } from '@/data/auth';
 import { ApiError } from '@/lib/api';
 import { useKeyboardForm } from '@/hooks/useKeyboardForm';
 import { useTheme } from '@/theme/ThemeProvider';
-import { fonts, type } from '@/theme/typography';
+import { fonts } from '@/theme/typography';
+
+import { DevicesSection, type DevicesSectionHandle } from './DevicesSection';
+import { InfoSection } from './InfoSection';
 
 /**
- * Hồ sơ › Đổi mật khẩu (POST /v1/me/password).
- * Cùng quy tắc với màn đặt mật khẩu lần đầu: ≥ 8 ký tự, chữ hoa + chữ thường, có số, tối đa 100;
- * thêm: phải khác mật khẩu hiện tại. Đổi xong server đăng xuất các thiết bị khác, máy này giữ đăng nhập.
+ * Hồ sơ › Mật khẩu & Bảo mật. Hai khối:
+ * 1. Đổi mật khẩu (POST /v1/me/password): cùng quy tắc với đặt mật khẩu lần đầu (≥ 8 ký tự, hoa + thường, có số,
+ *    tối đa 100) + khác mật khẩu hiện tại. Đổi xong server đăng xuất các thiết bị khác → làm mới danh sách thiết bị.
+ *    Nút "Đổi mật khẩu" nằm cuối khối (không nổi ở đáy màn vì bên dưới còn khối Thiết bị).
+ * 2. Thiết bị đăng nhập (DevicesSection): lần dùng cuối, xoá = đăng xuất tài khoản trên máy đó.
  */
-export function ChangePasswordScreen() {
+export function SecurityScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { token } = useAuth();
@@ -30,7 +34,8 @@ export function ChangePasswordScreen() {
   const [confirm, setConfirm] = useState('');
   const [errors, setErrors] = useState<{ current?: string; pw?: string; form?: string }>({});
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
+  const [toast, showToast] = useToast();
+  const devicesRef = useRef<DevicesSectionHandle>(null);
   const [scrolled, setScrolled] = useState(false);
   const newRef = useRef<TextInputInstance>(null);
   const confirmRef = useRef<TextInputInstance>(null);
@@ -51,7 +56,11 @@ export function ChangePasswordScreen() {
     setErrors({});
     try {
       await apiUpdatePassword(token, current, pw);
-      setDone(true);
+      setCurrent('');
+      setPw('');
+      setConfirm('');
+      showToast('Đã đổi mật khẩu. Các thiết bị khác đã được đăng xuất.');
+      devicesRef.current?.reload();
     } catch (e) {
       if (e instanceof ApiError) {
         const c = e.field('current_password');
@@ -63,41 +72,20 @@ export function ChangePasswordScreen() {
     }
   };
 
-  if (done) {
-    return (
-      <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-        <SubpageHeader title="Đổi mật khẩu" />
-        <View style={[styles.doneWrap, { paddingBottom: floatingActionSpace(insets.bottom) }]}>
-          <View style={[styles.doneIcon, { backgroundColor: colors.mint50 }]}>
-            <Icon name="shield" size={40} strokeWidth={1.8} color={colors.emerald700} />
-          </View>
-          <Text accessibilityRole="header" style={[type.sectionTitle, styles.center, { color: colors.ink900 }]}>
-            Đã đổi mật khẩu
-          </Text>
-          <Text style={[type.body, styles.center, { color: colors.ink600 }]}>
-            Lần đăng nhập sau hãy dùng mật khẩu mới. Các thiết bị khác đã được đăng xuất để giữ an toàn cho tài khoản.
-          </Text>
-        </View>
-        <FloatingAction>
-          <PrimaryButton label="Về Hồ sơ" onPress={() => (router.canGoBack() ? router.back() : router.replace('/profile'))} />
-        </FloatingAction>
-      </View>
-    );
-  }
-
   return (
     <KeyboardAvoidingView style={[styles.screen, { backgroundColor: colors.bg }]} behavior="padding">
-      <SubpageHeader title="Đổi mật khẩu" scrolled={scrolled} />
+      <SubpageHeader title="Mật khẩu & Bảo mật" scrolled={scrolled} />
 
-      <View style={styles.screen}>
       <ScrollView
         ref={form.scrollRef}
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
         onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)}
-        contentContainerStyle={[styles.content, { paddingBottom: floatingActionSpace(insets.bottom) }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}
         showsVerticalScrollIndicator={false}
       >
+        <InfoSection title="Đổi mật khẩu">
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.line }]}>
         <View {...form.field('current').wrap}>
           <AuthField
             onFocus={form.field('current').onFocus}
@@ -159,7 +147,7 @@ export function ChangePasswordScreen() {
           />
         </View>
 
-        <View style={[styles.rules, { backgroundColor: colors.card, borderColor: colors.line }]}>
+        <View style={[styles.rules, { backgroundColor: colors.bg, borderColor: colors.line }]}>
           {rules.map((r) => (
             <View key={r.key} style={styles.rule} accessible accessibilityLabel={`${r.label}: ${r.ok ? 'đạt' : 'chưa đạt'}`}>
               {r.ok ? (
@@ -193,21 +181,23 @@ export function ChangePasswordScreen() {
         </View>
 
         {errors.form ? <ErrorText text={errors.form} /> : null}
-      </ScrollView>
-
-      {/* Nút nổi trên nội dung; khung co theo bàn phím (KeyboardAvoidingView) → nút luôn ngay trên bàn phím */}
-      <FloatingAction keyboardOpen={form.keyboardOpen}>
         <PrimaryButton label="Đổi mật khẩu" disabled={!canSave} loading={loading} onPress={save} />
-      </FloatingAction>
-      </View>
+        </View>
+        </InfoSection>
+
+        <InfoSection title="Thiết bị đăng nhập">
+          <DevicesSection ref={devicesRef} onToast={showToast} />
+        </InfoSection>
+      </ScrollView>
+      {toast}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  center: { textAlign: 'center' },
-  content: { paddingTop: 8, paddingHorizontal: 20, paddingBottom: 32, gap: 18 },
+  content: { paddingTop: 8, paddingHorizontal: 16, gap: 24 },
+  card: { padding: 16, borderRadius: 20, borderWidth: 1, gap: 18 },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
   strength: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   bars: { flex: 1, flexDirection: 'row', gap: 4 },
@@ -217,6 +207,4 @@ const styles = StyleSheet.create({
   rule: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 15, height: 15, borderRadius: 8, borderWidth: 2, marginHorizontal: 0.5 },
   ruleText: { fontFamily: fonts.sans400, fontSize: 13, lineHeight: 18 },
-  doneWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 },
-  doneIcon: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
 });

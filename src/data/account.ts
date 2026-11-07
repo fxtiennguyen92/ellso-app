@@ -7,6 +7,8 @@
  *   Đổi xong server đăng xuất mọi thiết bị khác, máy này giữ đăng nhập.
  * - GET    /me/referrer/preview?code=                → {data: {name, email, referral_code}}
  * - POST   /me/referrer  {code}                       → {data: user} — chỉ một lần, không đổi được
+ * - GET    /me/devices                                → {data: Device[]} (máy đang dùng đứng đầu)
+ * - DELETE /me/devices/{id}                           → đăng xuất tài khoản trên máy đó (không xoá được máy đang dùng)
  */
 import { Platform } from 'react-native';
 
@@ -58,6 +60,43 @@ export async function apiPreviewReferrer(token: string, code: string): Promise<R
 export async function apiSetReferrer(token: string, code: string): Promise<AuthUser> {
   const r = await apiRequest<{ data: ServerUser }>('POST', '/me/referrer', { token, body: { code: code.trim().toUpperCase() } });
   return toUser(r.data);
+}
+
+export type Device = {
+  id: number;
+  name: string;
+  platform: 'ios' | 'android' | 'web' | null;
+  osVersion: string | null;
+  appVersion: string | null;
+  lastUsedAt: string | null;
+  current: boolean;
+};
+
+type ServerDevice = {
+  id: number;
+  name: string;
+  platform: Device['platform'];
+  os_version: string | null;
+  app_version: string | null;
+  last_used_at: string | null;
+  current: boolean;
+};
+
+export async function apiListDevices(token: string): Promise<Device[]> {
+  const r = await apiRequest<{ data: ServerDevice[] }>('GET', '/me/devices', { token });
+  return r.data.map((d) => ({
+    id: d.id,
+    name: d.name,
+    platform: d.platform,
+    osVersion: d.os_version,
+    appVersion: d.app_version,
+    lastUsedAt: d.last_used_at,
+    current: d.current,
+  }));
+}
+
+export async function apiRevokeDevice(token: string, id: number): Promise<void> {
+  await apiRequest('DELETE', `/me/devices/${id}`, { token });
 }
 
 /** SĐT Việt Nam (khớp server): bỏ khoảng trắng / dấu chấm / gạch, +84 → 0; hợp lệ = 10 số bắt đầu bằng 0. */
