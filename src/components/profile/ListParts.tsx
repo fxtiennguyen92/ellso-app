@@ -52,5 +52,5 @@ export function DayHeader({ label }: { label: string }) {
 
 const styles = StyleSheet.create({
   footer: { minHeight: 56, alignItems: 'center', justifyContent: 'center' },
-  day: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18, paddingTop: 16, paddingBottom: 8, paddingHorizontal: 4 },
+  day: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18, paddingTop: 12, paddingBottom: 6, paddingHorizontal: 4 },
 });

@@ -60,6 +60,13 @@ Màn hình / bottom sheet nào có `TextInput` thì phải xử lý bàn phím v
 - Bottom sheet cũng theo kiểu nổi (vd `home/TrainingSheet.tsx`).
 - Ngoại lệ: màn có nhiều khối, mỗi khối có nút riêng, thì nút đặt cuối khối đó, không nổi.
 
+## Thông tin khác nút bấm (không làm thứ không bấm được trông như bấm được)
+
+- Khối chỉ để **hiển thị thông tin** (số dư, thống kê, trạng thái, nhãn…) phải **phẳng**: nền nhạt + viền mảnh hoặc không viền; **không** bóng đổ, **không** mép 3D (`boxShadow: 0px Npx 0px …`), không icon / chevron gợi ý bấm, không hiệu ứng nhấn.
+- Mép 3D, bóng nổi, chevron, scale khi nhấn **chỉ dành cho thứ bấm được** (nút, thẻ mở màn khác, pill có hành động).
+- Danh sách dài (lịch sử, giao dịch, bạn bè…): mỗi dòng là **hàng phẳng** có đường kẻ mảnh, không làm mỗi dòng một thẻ (tốn chỗ).
+- Thông tin chính của màn có danh sách cuộn (vd số xu ở Xu của tôi) đặt ở **phần cố định** phía trên, chỉ danh sách cuộn.
+
 ## Branding
 
 Cố gắng follow theo bộ nhận diện đã thiết kế trong `branding_readme.md` (nằm trong Project docs của Ellso) cho mọi màn hình và component mới. Tóm tắt các điểm chính:

@@ -12,16 +12,17 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
 import { CoinBalanceCard } from './CoinCard';
-import { InfoSection } from './InfoSection';
 import { DayHeader, dayLabel, hhmm, ListFooter } from './ListParts';
 
 const SOURCE_ICON: Record<string, IconName> = { referral: 'people', learning: 'courses', spend: 'cart', admin: 'verified' };
 
-type Row = { kind: 'day'; key: string; label: string } | { kind: 'tx'; key: string; tx: CoinTx; first: boolean; last: boolean };
+type Row = { kind: 'day'; key: string; label: string } | { kind: 'tx'; key: string; tx: CoinTx; first: boolean };
 
 /**
- * Hồ sơ › Xu của tôi: thẻ số dư + lịch sử cộng / trừ xu ngay bên dưới (GET /v1/me/coins), nhóm theo ngày,
- * tải thêm 20 dòng khi cuộn gần cuối.
+ * Hồ sơ › Xu của tôi.
+ * - Phần trên ĐỨNG YÊN: khối "Số xu hiện có" (phẳng, chỉ là thông tin) + tiêu đề "Biến động xu" → cuộn bao nhiêu vẫn thấy số xu.
+ * - Chỉ danh sách bên dưới cuộn (GET /v1/me/coins): nhóm theo ngày (tiêu đề ngày dính trên đầu danh sách), mỗi lần
+ *   cộng / trừ là một dòng phẳng có đường kẻ mảnh (không làm thẻ cho đỡ tốn chỗ); tải thêm 20 dòng khi gần cuối.
  */
 export function CoinsScreen() {
   const { colors } = useTheme();
@@ -40,48 +41,63 @@ export function CoinsScreen() {
   const list = useCursorList(fetchPage);
   const balance = list.meta?.balance ?? user?.coins ?? 0;
 
-  // Gom theo ngày: chèn dòng tiêu đề ngày, đánh dấu dòng đầu / cuối nhóm để bo góc khối
-  const rows = useMemo(() => {
+  // Gom theo ngày: chèn dòng tiêu đề ngày (dính khi cuộn), dòng đầu nhóm không có đường kẻ trên
+  const { rows, sticky } = useMemo(() => {
     const out: Row[] = [];
+    const idx: number[] = [];
     let current = '';
-    list.items.forEach((tx, i) => {
+    list.items.forEach((tx) => {
       const label = dayLabel(tx.createdAt);
-      const next = list.items[i + 1];
       if (label !== current) {
         current = label;
+        idx.push(out.length);
         out.push({ kind: 'day', key: `d-${tx.id}`, label });
-      }
-      const prev = out[out.length - 1];
-      out.push({ kind: 'tx', key: `t-${tx.id}`, tx, first: prev.kind === 'day', last: !next || dayLabel(next.createdAt) !== label });
+        out.push({ kind: 'tx', key: `t-${tx.id}`, tx, first: true });
+      } else out.push({ kind: 'tx', key: `t-${tx.id}`, tx, first: false });
     });
-    return out;
+    return { rows: out, sticky: idx };
   }, [list.items]);
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <SubpageHeader title="Xu của tôi" scrolled={scrolled} />
+      <SubpageHeader title="Xu của tôi" />
+
+      {/* Phần cố định */}
+      <View style={[styles.fixed, { borderBottomColor: scrolled ? colors.line : 'transparent' }]}>
+        <CoinBalanceCard coins={balance} />
+        <Text accessibilityRole="header" style={[styles.sectionTitle, { color: colors.ink600 }]}>
+          Biến động xu
+        </Text>
+      </View>
+
       <FlatList
+        style={styles.screen}
         data={rows}
         keyExtractor={(r) => r.key}
-        onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)}
+        stickyHeaderIndices={sticky}
+        onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 2)}
         scrollEventThrottle={16}
         onEndReached={list.loadMore}
         onEndReachedThreshold={0.4}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <CoinBalanceCard coins={balance} />
-            <InfoSection title="Lịch sử">{null}</InfoSection>
-            {!list.loading && !list.error && list.items.length === 0 ? (
-              <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.line }]}>
-                <Icon name="history" size={28} color={colors.ink400} />
-                <Text style={[type.body, styles.center, { color: colors.ink600 }]}>Chưa có lần cộng / trừ xu nào.</Text>
-              </View>
-            ) : null}
-          </View>
+        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+        ListEmptyComponent={
+          !list.loading && !list.error ? (
+            <View style={styles.empty}>
+              <Icon name="history" size={28} color={colors.ink400} />
+              <Text style={[type.body, styles.center, { color: colors.ink600 }]}>Chưa có lần cộng / dùng xu nào.</Text>
+            </View>
+          ) : undefined
         }
-        renderItem={({ item }) => (item.kind === 'day' ? <DayHeader label={item.label} /> : <TxRow tx={item.tx} first={item.first} last={item.last} />)}
+        renderItem={({ item }) =>
+          item.kind === 'day' ? (
+            <View style={[styles.dayWrap, { backgroundColor: colors.bg }]}>
+              <DayHeader label={item.label} />
+            </View>
+          ) : (
+            <TxRow tx={item.tx} first={item.first} />
+          )
+        }
         ListFooterComponent={
           <ListFooter loading={list.loading || list.loadingMore} error={list.error} done={!list.hasMore} empty={list.items.length === 0} onRetry={list.reload} />
         }
@@ -90,27 +106,21 @@ export function CoinsScreen() {
   );
 }
 
-function TxRow({ tx, first, last }: { tx: CoinTx; first: boolean; last: boolean }) {
+function TxRow({ tx, first }: { tx: CoinTx; first: boolean }) {
   const { colors } = useTheme();
   const plus = tx.amount > 0;
   return (
     <View
-      style={[
-        styles.row,
-        { backgroundColor: colors.card, borderColor: colors.line },
-        first && styles.rowFirst,
-        last && styles.rowLast,
-        !first && { borderTopWidth: 0 },
-      ]}
+      style={styles.row}
       accessible
-      accessibilityLabel={`${tx.description}, ${plus ? 'cộng' : 'trừ'} ${groupThousands(Math.abs(tx.amount))} xu, lúc ${hhmm(tx.createdAt)}`}
+      accessibilityLabel={`${tx.description}, ${plus ? 'cộng' : 'dùng'} ${groupThousands(Math.abs(tx.amount))} xu, lúc ${hhmm(tx.createdAt)}`}
     >
       {!first && <View style={[styles.divider, { backgroundColor: colors.line }]} />}
       <View style={[styles.icon, { backgroundColor: plus ? colors.mint50 : colors.surfaceAlt }]}>
-        <Icon name={SOURCE_ICON[tx.source] ?? 'coins'} size={18} color={plus ? colors.emerald700 : colors.ink600} />
+        <Icon name={SOURCE_ICON[tx.source] ?? 'coins'} size={16} color={plus ? colors.emerald700 : colors.ink600} />
       </View>
       <View style={styles.grow}>
-        <Text style={[styles.desc, { color: colors.ink900 }]} numberOfLines={2}>
+        <Text style={[styles.desc, { color: colors.ink900 }]} numberOfLines={1}>
           {tx.description}
         </Text>
         <Text style={[type.caption, { color: colors.ink400 }]} numberOfLines={1}>
@@ -129,14 +139,13 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   grow: { flex: 1, minWidth: 0 },
   center: { textAlign: 'center' },
-  content: { paddingTop: 8, paddingHorizontal: 16 },
-  header: { gap: 20, marginBottom: -12 },
-  empty: { alignItems: 'center', gap: 10, padding: 24, borderRadius: 20, borderWidth: 1, marginTop: 12 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12, borderLeftWidth: 1, borderRightWidth: 1 },
-  rowFirst: { borderTopWidth: 1, borderTopLeftRadius: 18, borderTopRightRadius: 18 },
-  rowLast: { borderBottomWidth: 1, borderBottomLeftRadius: 18, borderBottomRightRadius: 18 },
-  divider: { position: 'absolute', top: 0, left: 62, right: 14, height: StyleSheet.hairlineWidth },
-  icon: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  fixed: { paddingTop: 8, paddingHorizontal: 16, paddingBottom: 4, gap: 16, borderBottomWidth: StyleSheet.hairlineWidth },
+  sectionTitle: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18, textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: 4 },
+  dayWrap: { paddingHorizontal: 16 },
+  empty: { alignItems: 'center', gap: 10, paddingVertical: 40, paddingHorizontal: 24 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 10 },
+  divider: { position: 'absolute', top: 0, left: 64, right: 20, height: StyleSheet.hairlineWidth },
+  icon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   desc: { fontFamily: fonts.sans500, fontSize: 15, lineHeight: 21 },
   amount: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
 });
