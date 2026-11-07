@@ -27,6 +27,8 @@ Run lint and typecheck before declaring any task done.
 
 - Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
 - Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
+- **Đường dẫn (route) luôn bằng tiếng Anh** (vd `/profile/wallet`, `/books/12/read`), không dùng tiếng Việt không dấu. Màn con cần ẩn thanh tab thì đặt trong nhóm ngoài `(tabs)` (vd `(account)`) nhưng giữ đường dẫn theo tab (`/profile/...`).
+- Người hướng dẫn / giáo viên hiển thị bằng `<InstructorTag>` (avatar + "Người hướng dẫn" / tên); không ghi "HLV", "Huấn luyện viên" trước tên.
 - Docs: https://docs.expo.dev/router/introduction.md
 
 ## Building with EAS
@@ -48,7 +50,7 @@ Màn hình / bottom sheet nào có `TextInput` thì phải xử lý bàn phím v
 - Nội dung form nằm trong `ScrollView` với `keyboardShouldPersistTaps="handled"`; dùng `useKeyboardForm()` (`src/hooks/useKeyboardForm.ts`): gắn `scrollRef`, bọc từng ô bằng `field(key).wrap` + `onFocus={field(key).onFocus}` để ô đang nhập luôn được cuộn lên trên bàn phím.
 - Nút chính ở đáy màn dùng `<FloatingAction keyboardOpen={form.keyboardOpen}>` (xem mục Nút chính ở đáy màn) — nổi ngay trên bàn phím.
 - Chuỗi ô nhập: `returnKeyType="next"` + `onSubmitEditing` focus ô kế tiếp; ô cuối `returnKeyType="done"` gọi submit.
-- Màn form đặt ngoài nhóm `(tabs)` (vd `src/app/account/*`) để thanh tab dưới không che ô nhập.
+- Màn form đặt ngoài nhóm `(tabs)` (vd nhóm `src/app/(account)/profile/*`) để thanh tab dưới không che ô nhập.
 - **Bottom sheet có ô nhập** (vd AddReferrerSheet, ReferralSheet) cũng bắt buộc: luôn thử khi bàn phím đang mở — ô nhập, lỗi và nút xác nhận phải còn nhìn thấy, không bị bàn phím che.
 - Kiểm tra: tối thiểu giả lập trên web (thu nhỏ chiều cao viewport, focus từng ô, chụp màn hình xem ô đang nhập + nút chính còn thấy), sau đó thử trên máy Android/iOS thật. Ghi rõ trong báo cáo nếu chưa thử được trên máy thật.
 
