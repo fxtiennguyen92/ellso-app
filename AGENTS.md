@@ -65,7 +65,8 @@ Màn hình / bottom sheet nào có `TextInput` thì phải xử lý bàn phím v
 - Khối chỉ để **hiển thị thông tin** (số dư, thống kê, trạng thái, nhãn…) phải **phẳng**: nền nhạt + viền mảnh hoặc không viền; **không** bóng đổ, **không** mép 3D (`boxShadow: 0px Npx 0px …`), không icon / chevron gợi ý bấm, không hiệu ứng nhấn.
 - Mép 3D, bóng nổi, chevron, scale khi nhấn **chỉ dành cho thứ bấm được** (nút, thẻ mở màn khác, pill có hành động).
 - Danh sách dài (lịch sử, giao dịch, bạn bè…): mỗi dòng là **hàng phẳng** có đường kẻ mảnh, không làm mỗi dòng một thẻ (tốn chỗ).
-- Thông tin chính của màn có danh sách cuộn (vd số xu ở Xu của tôi) đặt ở **phần cố định** phía trên, chỉ danh sách cuộn.
+- Thông tin chính của màn có danh sách cuộn (vd số xu ở Xu của tôi) đặt ở **phần cố định** phía trên (có thể thu gọn khi cuộn nhưng luôn còn thấy), chỉ danh sách cuộn.
+- Phẳng **không có nghĩa là nhạt**: khối thông tin chính vẫn phải có điểm nhấn "wow" (gradient, hoa văn, chữ số lớn, chuyển động nhẹ như đếm số / vệt sáng) — chỉ tránh bóng nổi, mép 3D, chevron.
 
 ## Branding
 
