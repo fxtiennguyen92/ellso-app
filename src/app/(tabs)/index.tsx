@@ -120,7 +120,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Hero + ô tìm kiếm phủ lên trên; nội dung cuộn trượt vào bên dưới (không có dải nền / đường kẻ ngăn) */}
-        <HomeHeader student={student} scrolled={scrolled} topInset={topInset} onHeroHeight={setHeroH} />
+        <HomeHeader student={student} tagline={feed.tagline} scrolled={scrolled} topInset={topInset} onHeroHeight={setHeroH} />
 
         <TrainingSheet training={openTraining} onClose={() => setOpenTraining(null)} onChanged={refresh} />
       </View>

@@ -98,11 +98,14 @@ export type HomeFeed = {
   trainings: HomeTraining[];
   workshops: HomeWorkshop[];
   books: Doc[];
+  /** Câu chào cạnh ngày hôm nay (CMS › Cấu hình hệ thống › home_tagline); null = dùng mặc định. */
+  tagline: string | null;
   /** Có ít nhất một nguồn tải lỗi (hiện thông báo nhẹ + kéo để tải lại). */
   failed: boolean;
 };
 
-export const emptyFeed: HomeFeed = { campaigns: [], trainings: [], workshops: [], books: [], failed: false };
+export const DEFAULT_TAGLINE = 'Hôm nay học gì cùng Ellso?';
+export const emptyFeed: HomeFeed = { campaigns: [], trainings: [], workshops: [], books: [], tagline: null, failed: false };
 
 // ---------- Định dạng từ API ----------
 
@@ -207,11 +210,12 @@ export function cachedHomeFeed(token: string | null): HomeFeed | null {
 }
 
 export async function loadHomeFeed(token: string): Promise<HomeFeed> {
-  const [campaigns, trainings, workshops, books] = await Promise.allSettled([
+  const [campaigns, trainings, workshops, books, config] = await Promise.allSettled([
     apiRequest<{ data: ApiCampaign[] }>('GET', '/campaigns'),
     apiRequest<{ data: ApiTraining[] }>('GET', '/trainings', { token }),
     apiRequest<{ data: ApiWorkshop[] }>('GET', '/workshops', { token }),
     apiRequest<{ data: ApiDoc[] }>('GET', '/documents?type=book', { token }),
+    apiRequest<{ data: { home_tagline?: string } }>('GET', '/app-config'),
   ]);
 
   const feed: HomeFeed = {
@@ -219,6 +223,7 @@ export async function loadHomeFeed(token: string): Promise<HomeFeed> {
     trainings: trainings.status === 'fulfilled' ? trainings.value.data.map(toTraining).filter(nonNull) : [],
     workshops: workshops.status === 'fulfilled' ? workshops.value.data.map(toWorkshop).filter(nonNull) : [],
     books: books.status === 'fulfilled' ? books.value.data.map(fromApiDoc) : [],
+    tagline: config.status === 'fulfilled' ? config.value.data.home_tagline?.trim() || null : (cache?.feed.tagline ?? null),
     failed: [campaigns, trainings, workshops, books].some((r) => r.status === 'rejected'),
   };
   cache = { token, feed };

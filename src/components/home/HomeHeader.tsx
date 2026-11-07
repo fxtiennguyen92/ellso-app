@@ -5,12 +5,15 @@ import { HeroBackground } from '@/components/HeroBackground';
 import { Icon } from '@/components/Icon';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useRevealStyle } from '@/components/splash/RevealContext';
+import { DEFAULT_TAGLINE } from '@/data/home';
 import { useLoop } from '@/hooks/useLoop';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
 type Props = {
   student: { name: string; initials: string; avatar?: string | null; unreadNotifications: number };
+  /** Câu chào cạnh ngày (CMS); null → DEFAULT_TAGLINE. */
+  tagline?: string | null;
   /** Đã cuộn nội dung → ô tìm kiếm đổ bóng đậm hơn (nội dung trượt bên dưới). */
   scrolled: boolean;
   topInset: number;
@@ -30,7 +33,7 @@ const todayLabel = (d = new Date()) => `${WEEKDAYS[d.getDay()]}, ${d.getDate()} 
  */
 export const SEARCH_HEIGHT = 54;
 
-export function HomeHeader({ student, scrolled, topInset, onHeroHeight }: Props) {
+export function HomeHeader({ student, tagline, scrolled, topInset, onHeroHeight }: Props) {
   const { colors, toggle } = useTheme();
   const reveal = useRevealStyle(0, 12);
 
@@ -76,7 +79,7 @@ export function HomeHeader({ student, scrolled, topInset, onHeroHeight }: Props)
             <Text style={[styles.todayText, { color: colors.heroOn }]}>{todayLabel()}</Text>
           </View>
           <Text style={[styles.slogan, { color: colors.heroOnMuted }]} numberOfLines={1}>
-            Hôm nay học gì cùng Ellso?
+            {tagline || DEFAULT_TAGLINE}
           </Text>
         </View>
       </View>
