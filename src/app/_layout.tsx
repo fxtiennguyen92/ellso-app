@@ -100,7 +100,7 @@ function AppShell() {
               <Stack.Screen name="account/edit" />
               <Stack.Screen name="account/password" />
               <Stack.Screen name="account/devices" />
-              <Stack.Screen name="account/referrer" />
+              <Stack.Screen name="account/friends" />
               <Stack.Screen name="account/coins" />
             </Stack.Protected>
             {/* Đăng nhập bằng mật khẩu tạm: chỉ còn màn đặt mật khẩu mới (không vuốt lui được) */}

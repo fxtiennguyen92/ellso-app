@@ -27,7 +27,7 @@ const ACCOUNT_ROUTES = {
   'thong-tin': '/account/info',
   'mat-khau': '/account/password',
   'thiet-bi': '/account/devices',
-  'nguoi-gioi-thieu': '/account/referrer',
+  'ban-be': '/account/friends',
   xu: '/account/coins',
 } as const;
 const go = (section: ProfileSection) => {
@@ -251,8 +251,8 @@ export function ProfileScreen() {
           <SettingsRow first icon={<RowIcon name="user" />} label="Thông tin cá nhân" onPress={() => go('thong-tin')} />
           <SettingsRow icon={<RowIcon name="lock" />} label="Mật khẩu" onPress={() => go('mat-khau')} />
           <SettingsRow icon={<RowIcon name="phone" />} label="Thiết bị" onPress={() => go('thiet-bi')} />
-          <SettingsRow icon={<RowIcon name="userPlus" />} label="Người giới thiệu" value={user?.referrer ? user.referrer.name : 'Chưa có'} onPress={() => go('nguoi-gioi-thieu')} />
-          <SettingsRow icon={<RowIcon name="coins" />} label="Xu của bạn" value={`${groupThousands(user?.coins ?? 0)} xu`} onPress={() => go('xu')} />
+          <SettingsRow icon={<RowIcon name="people" />} label="Bạn bè" onPress={() => go('ban-be')} />
+          <SettingsRow icon={<RowIcon name="coins" />} label="Xu của tôi" value={`${groupThousands(user?.coins ?? 0)} xu`} onPress={() => go('xu')} />
           <SettingsRow icon={<RowIcon name="receipt" />} label="Lịch sử thanh toán" onPress={() => go('lich-su-mua-hang')} />
         </SettingsGroup>
 

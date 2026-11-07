@@ -1,66 +1,58 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { Icon } from '@/components/Icon';
 import { groupThousands } from '@/data/profile';
-import { useTheme } from '@/theme/ThemeProvider';
 import { illo } from '@/theme/tokens';
-import { fonts, type } from '@/theme/typography';
+import { fonts } from '@/theme/typography';
 
-/** Thẻ "Xu của bạn": đồng xu vàng + số xu (không quy đổi tiền, không dùng chữ "credit") + nút Lịch sử. */
-export function CoinCard({ coins, onHistory }: { coins: number; onHistory: () => void }) {
-  const { colors } = useTheme();
+/**
+ * Thẻ số dư "Xu của tôi": nền vàng gradient + đồng xu lớn, số xu to (không quy đổi tiền, không dùng chữ "credit").
+ * Lịch sử nằm ngay bên dưới thẻ (CoinsScreen) nên thẻ không còn nút Lịch sử.
+ */
+export function CoinBalanceCard({ coins }: { coins: number }) {
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.line }]}>
-      <CoinBadge />
-      <View style={styles.grow}>
-        <Text style={[type.caption, { color: colors.ink600 }]}>Số xu đang có</Text>
-        <Text style={[styles.value, { color: colors.ink900 }]} numberOfLines={1} accessibilityLabel={`${groupThousands(coins)} xu`}>
-          {groupThousands(coins)}
-          <Text style={[styles.unit, { color: colors.ink600 }]}> xu</Text>
-        </Text>
-      </View>
-      <Pressable
-        accessibilityRole="link"
-        accessibilityLabel="Xem lịch sử xu"
-        onPress={onHistory}
-        hitSlop={6}
-        style={({ pressed }) => [styles.history, { backgroundColor: colors.mint50, opacity: pressed ? 0.75 : 1 }]}
-      >
-        <Icon name="history" size={15} color={colors.emerald700} />
-        <Text style={[type.captionStrong, { color: colors.emerald700 }]}>Lịch sử</Text>
-      </Pressable>
-    </View>
-  );
-}
-
-/** Đồng xu vàng (gradient) chứa icon Lucide "coins". */
-function CoinBadge() {
-  return (
-    <View style={[styles.coin, { boxShadow: `0px 4px 0px ${illo.goldEdge}` }]}>
-      <Svg width={52} height={52} style={StyleSheet.absoluteFill}>
+    <View style={[styles.card, { boxShadow: `0px 5px 0px ${illo.goldEdge}` }]} accessible accessibilityLabel={`Bạn đang có ${groupThousands(coins)} xu`}>
+      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} preserveAspectRatio="none">
         <Defs>
-          <LinearGradient id="coinBg" x1="0.15" y1="0" x2="0.85" y2="1">
+          <LinearGradient id="coinCardBg" x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor={illo.goldHi} />
+            <Stop offset="0.55" stopColor={illo.goldMid} />
             <Stop offset="1" stopColor={illo.goldLo} />
           </LinearGradient>
         </Defs>
-        <Circle cx="26" cy="26" r="26" fill="url(#coinBg)" />
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#coinCardBg)" />
       </Svg>
-      {/* bọc để icon nằm trên lớp gradient (web vẽ lớp absolute đè phần tử thường) */}
-      <View style={styles.onTop}>
-        <Icon name="coins" size={24} strokeWidth={2.2} color={illo.goldEdge} />
+      {/* vòng trang trí góc phải */}
+      <Svg width={220} height={220} style={styles.rings} pointerEvents="none">
+        {[50, 80, 110].map((r) => (
+          <Circle key={r} cx={160} cy={60} r={r} stroke={illo.goldHi} strokeOpacity={0.55} strokeWidth={1.4} fill="none" />
+        ))}
+      </Svg>
+
+      <View style={styles.row}>
+        <View style={styles.grow}>
+          <Text style={[styles.label, { color: illo.goldInk }]}>Số xu hiện có</Text>
+          <Text style={[styles.value, { color: illo.goldInk }]} numberOfLines={1} adjustsFontSizeToFit>
+            {groupThousands(coins)}
+            <Text style={styles.unit}> xu</Text>
+          </Text>
+        </View>
+        <View style={[styles.coin, { backgroundColor: illo.goldHi, borderColor: illo.goldEdge }]}>
+          <Icon name="coins" size={30} strokeWidth={2.2} color={illo.goldEdge} />
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 20, borderWidth: 1 },
+  card: { borderRadius: 24, overflow: 'hidden', paddingHorizontal: 20, paddingVertical: 22 },
+  rings: { position: 'absolute', top: -30, right: -40 },
+  row: { position: 'relative', zIndex: 1, flexDirection: 'row', alignItems: 'center', gap: 16 },
   grow: { flex: 1, minWidth: 0 },
-  coin: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  onTop: { position: 'relative', zIndex: 1 },
-  value: { fontFamily: fonts.display700, fontSize: 28, lineHeight: 34 },
-  unit: { fontFamily: fonts.sans600, fontSize: 15 },
-  history: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, height: 34, borderRadius: 9999 },
+  label: { fontFamily: fonts.sans600, fontSize: 14, lineHeight: 20 },
+  value: { fontFamily: fonts.display700, fontSize: 40, lineHeight: 50 },
+  unit: { fontFamily: fonts.sans700, fontSize: 18 },
+  coin: { width: 64, height: 64, borderRadius: 32, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
 });

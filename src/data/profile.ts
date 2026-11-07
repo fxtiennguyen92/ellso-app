@@ -65,11 +65,10 @@ export const profileSections = {
   'thong-tin': 'Thông tin cá nhân',
   'mat-khau': 'Mật khẩu',
   'thiet-bi': 'Thiết bị',
-  'nguoi-gioi-thieu': 'Người giới thiệu',
-  xu: 'Xu của bạn',
+  'ban-be': 'Bạn bè',
+  xu: 'Xu của tôi',
   'lich-su-mua-hang': 'Lịch sử thanh toán',
   'quan-ly-goi': 'Quản lý gói',
-  'lich-su-credit': 'Lịch sử xu',
   'tro-giup': 'Trung tâm trợ giúp',
   'dieu-khoan': 'Điều khoản & quyền riêng tư',
 } as const;

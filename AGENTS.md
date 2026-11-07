@@ -49,11 +49,13 @@ Màn hình / bottom sheet nào có `TextInput` thì phải xử lý bàn phím v
 - Nút chính ở đáy màn dùng `<FloatingAction keyboardOpen={form.keyboardOpen}>` (xem mục Nút chính ở đáy màn) — nổi ngay trên bàn phím.
 - Chuỗi ô nhập: `returnKeyType="next"` + `onSubmitEditing` focus ô kế tiếp; ô cuối `returnKeyType="done"` gọi submit.
 - Màn form đặt ngoài nhóm `(tabs)` (vd `src/app/account/*`) để thanh tab dưới không che ô nhập.
+- **Bottom sheet có ô nhập** (vd AddReferrerSheet, ReferralSheet) cũng bắt buộc: luôn thử khi bàn phím đang mở — ô nhập, lỗi và nút xác nhận phải còn nhìn thấy, không bị bàn phím che.
 - Kiểm tra: tối thiểu giả lập trên web (thu nhỏ chiều cao viewport, focus từng ô, chụp màn hình xem ô đang nhập + nút chính còn thấy), sau đó thử trên máy Android/iOS thật. Ghi rõ trong báo cáo nếu chưa thử được trên máy thật.
 
 ## Nút chính ở đáy màn (Lưu, Đổi mật khẩu, Đăng ký…)
 
-- Luôn làm dạng **nổi trên nội dung**: dùng `<FloatingAction>` (`src/components/FloatingAction.tsx`) — nút có bóng, lề 20, cách đáy safe area; **không** làm thanh footer có nền / đường kẻ ngăn.
+- Luôn làm dạng **nổi trên nội dung**: dùng `<FloatingAction>` (`src/components/FloatingAction.tsx`) — nút có bóng; **không** làm thanh footer có nền / đường kẻ ngăn.
+- Khoảng cách: lề trái = lề phải = cách mép dưới = **20px** (`FLOATING_EDGE`). Máy có thanh home (safe area dưới > 20) thì cách mép dưới = safe area dưới. Bàn phím mở: cách mép trên bàn phím 20px.
 - Đặt `FloatingAction` trong một `View flex:1` cùng với ScrollView (bên trong KeyboardAvoidingView nếu màn có ô nhập), ScrollView chừa `paddingBottom: floatingActionSpace(insets.bottom)` để nút không che dòng cuối.
 - Bottom sheet cũng theo kiểu nổi (vd `home/TrainingSheet.tsx`).
 - Ngoại lệ: màn có nhiều khối, mỗi khối có nút riêng, thì nút đặt cuối khối đó, không nổi.
