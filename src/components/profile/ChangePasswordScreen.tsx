@@ -4,7 +4,8 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, type Text
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
-import { AuthField, ErrorText, Note, PrimaryButton } from '@/components/auth/AuthUI';
+import { AuthField, ErrorText, PrimaryButton } from '@/components/auth/AuthUI';
+import { FloatingAction, floatingActionSpace } from '@/components/FloatingAction';
 import { Icon } from '@/components/Icon';
 import { SubpageHeader } from '@/components/SubpageHeader';
 import { apiUpdatePassword } from '@/data/account';
@@ -66,7 +67,7 @@ export function ChangePasswordScreen() {
     return (
       <View style={[styles.screen, { backgroundColor: colors.bg }]}>
         <SubpageHeader title="Đổi mật khẩu" />
-        <View style={styles.doneWrap}>
+        <View style={[styles.doneWrap, { paddingBottom: floatingActionSpace(insets.bottom) }]}>
           <View style={[styles.doneIcon, { backgroundColor: colors.mint50 }]}>
             <Icon name="shield" size={40} strokeWidth={1.8} color={colors.emerald700} />
           </View>
@@ -77,9 +78,9 @@ export function ChangePasswordScreen() {
             Lần đăng nhập sau hãy dùng mật khẩu mới. Các thiết bị khác đã được đăng xuất để giữ an toàn cho tài khoản.
           </Text>
         </View>
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 12), borderTopColor: colors.line }]}>
+        <FloatingAction>
           <PrimaryButton label="Về Hồ sơ" onPress={() => (router.canGoBack() ? router.back() : router.replace('/profile'))} />
-        </View>
+        </FloatingAction>
       </View>
     );
   }
@@ -88,16 +89,15 @@ export function ChangePasswordScreen() {
     <KeyboardAvoidingView style={[styles.screen, { backgroundColor: colors.bg }]} behavior="padding">
       <SubpageHeader title="Đổi mật khẩu" scrolled={scrolled} />
 
+      <View style={styles.screen}>
       <ScrollView
         ref={form.scrollRef}
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
         onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: floatingActionSpace(insets.bottom) }]}
         showsVerticalScrollIndicator={false}
       >
-        <Note>Đổi xong, các thiết bị khác đang đăng nhập tài khoản này sẽ bị đăng xuất. Máy này vẫn giữ đăng nhập.</Note>
-
         <View {...form.field('current').wrap}>
           <AuthField
             onFocus={form.field('current').onFocus}
@@ -136,6 +136,7 @@ export function ChangePasswordScreen() {
               setErrors((x) => ({ ...x, pw: undefined, form: undefined }));
             }}
             error={errors.pw}
+            placeholder="Nhập mật khẩu mới"
             autoCapitalize="none"
             autoComplete="new-password"
             textContentType="newPassword"
@@ -194,9 +195,10 @@ export function ChangePasswordScreen() {
         {errors.form ? <ErrorText text={errors.form} /> : null}
       </ScrollView>
 
-      {/* KeyboardAvoidingView đẩy nút lên trên bàn phím; khi bàn phím mở thì bỏ khoảng home indicator */}
-      <View style={[styles.footer, { paddingBottom: form.keyboardOpen ? 12 : Math.max(insets.bottom, 12), backgroundColor: colors.bg, borderTopColor: colors.line }]}>
+      {/* Nút nổi trên nội dung; khung co theo bàn phím (KeyboardAvoidingView) → nút luôn ngay trên bàn phím */}
+      <FloatingAction keyboardOpen={form.keyboardOpen}>
         <PrimaryButton label="Đổi mật khẩu" disabled={!canSave} loading={loading} onPress={save} />
+      </FloatingAction>
       </View>
     </KeyboardAvoidingView>
   );
@@ -215,7 +217,6 @@ const styles = StyleSheet.create({
   rule: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 15, height: 15, borderRadius: 8, borderWidth: 2, marginHorizontal: 0.5 },
   ruleText: { fontFamily: fonts.sans400, fontSize: 13, lineHeight: 18 },
-  footer: { paddingTop: 12, paddingHorizontal: 20, borderTopWidth: StyleSheet.hairlineWidth },
   doneWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 },
   doneIcon: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
 });

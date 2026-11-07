@@ -46,10 +46,16 @@ Màn hình / bottom sheet nào có `TextInput` thì phải xử lý bàn phím v
 
 - Bọc màn bằng `KeyboardAvoidingView behavior="padding"` cho **cả iOS và Android** (app Expo chạy edge-to-edge nên Android không tự resize). Không để `behavior` undefined trên Android, không đặt `softwareKeyboardLayoutMode: "pan"`.
 - Nội dung form nằm trong `ScrollView` với `keyboardShouldPersistTaps="handled"`; dùng `useKeyboardForm()` (`src/hooks/useKeyboardForm.ts`): gắn `scrollRef`, bọc từng ô bằng `field(key).wrap` + `onFocus={field(key).onFocus}` để ô đang nhập luôn được cuộn lên trên bàn phím.
-- Nút chính (Lưu / Gửi…) đặt ở footer ngoài ScrollView để luôn nằm ngay trên bàn phím; khi `keyboardOpen` thì bỏ khoảng home indicator (`paddingBottom: 12`).
+- Nút chính ở đáy màn dùng `<FloatingAction keyboardOpen={form.keyboardOpen}>` (xem mục Nút chính ở đáy màn) — nổi ngay trên bàn phím.
 - Chuỗi ô nhập: `returnKeyType="next"` + `onSubmitEditing` focus ô kế tiếp; ô cuối `returnKeyType="done"` gọi submit.
 - Màn form đặt ngoài nhóm `(tabs)` (vd `src/app/account/*`) để thanh tab dưới không che ô nhập.
 - Kiểm tra: tối thiểu giả lập trên web (thu nhỏ chiều cao viewport, focus từng ô, chụp màn hình xem ô đang nhập + nút chính còn thấy), sau đó thử trên máy Android/iOS thật. Ghi rõ trong báo cáo nếu chưa thử được trên máy thật.
+
+## Nút chính ở đáy màn (Lưu, Đổi mật khẩu, Đăng ký…)
+
+- Luôn làm dạng **nổi trên nội dung**: dùng `<FloatingAction>` (`src/components/FloatingAction.tsx`) — nút có bóng, lề 20, cách đáy safe area; **không** làm thanh footer có nền / đường kẻ ngăn.
+- Đặt `FloatingAction` trong một `View flex:1` cùng với ScrollView (bên trong KeyboardAvoidingView nếu màn có ô nhập), ScrollView chừa `paddingBottom: floatingActionSpace(insets.bottom)` để nút không che dòng cuối.
+- Bottom sheet cũng theo kiểu nổi (vd `home/TrainingSheet.tsx`).
 
 ## Branding
 

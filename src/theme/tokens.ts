@@ -96,6 +96,8 @@ export const lightColors = {
   navPillGlow: 'rgba(16,185,129,0.35)',
   navOn: '#ffffff',
   navShadow: '0px 12px 32px rgba(15,23,42,0.28), 0px 2px 6px rgba(15,23,42,0.18)',
+  /** Nút chính nổi trên nội dung (FloatingAction) */
+  floatShadow: '0px 10px 24px rgba(4,120,87,0.26), 0px 2px 6px rgba(15,23,42,0.10)',
   /** Workshop trên Home (màu nhấn cam, phân biệt với Lịch huấn luyện violet). */
   workshopTint: '#fff7ed',
   workshopText: '#c2410c',
@@ -192,6 +194,7 @@ export const darkColors: ColorTokens = {
   navPillGlow: 'rgba(16,185,129,0.30)',
   navOn: '#ffffff',
   navShadow: '0px 12px 32px rgba(0,0,0,0.55)',
+  floatShadow: '0px 10px 24px rgba(0,0,0,0.55)',
   workshopTint: '#26190f',
   workshopText: '#fdba74',
   workshopDeep: '#fed7aa',

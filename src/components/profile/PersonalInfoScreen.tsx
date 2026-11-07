@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/auth/AuthProvider';
 import { AuthField, ErrorText, PrimaryButton } from '@/components/auth/AuthUI';
 import { BottomSheet } from '@/components/BottomSheet';
+import { FloatingAction, floatingActionSpace } from '@/components/FloatingAction';
 import { Icon, type IconName } from '@/components/Icon';
 import { SubpageHeader } from '@/components/SubpageHeader';
 import { useToast } from '@/components/Toast';
@@ -110,12 +111,13 @@ export function PersonalInfoScreen() {
     <KeyboardAvoidingView style={[styles.screen, { backgroundColor: colors.bg }]} behavior="padding">
       <SubpageHeader title="Thông tin cá nhân" scrolled={scrolled} />
 
+      <View style={styles.screen}>
       <ScrollView
         ref={form.scrollRef}
         keyboardShouldPersistTaps="handled"
         scrollEventThrottle={16}
         onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: floatingActionSpace(insets.bottom) }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Ảnh đại diện */}
@@ -203,8 +205,10 @@ export function PersonalInfoScreen() {
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: form.keyboardOpen ? 12 : Math.max(insets.bottom, 12), backgroundColor: colors.bg, borderTopColor: colors.line }]}>
+      {/* Nút chính nổi trên nội dung; nằm trong khung co theo bàn phím → luôn ngay trên bàn phím */}
+      <FloatingAction keyboardOpen={form.keyboardOpen}>
         <PrimaryButton label={dirty ? 'Lưu thay đổi' : 'Chưa có thay đổi'} disabled={!canSave} loading={saving} onPress={save} />
+      </FloatingAction>
       </View>
 
       <BottomSheet visible={sheet} onClose={() => setSheet(false)} title="Ảnh đại diện">
@@ -245,7 +249,6 @@ const styles = StyleSheet.create({
   readonly: { gap: 8 },
   readonlyBox: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 52, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1 },
   readonlyText: { flex: 1, minWidth: 0, fontFamily: fonts.sans500, fontSize: 15 },
-  footer: { paddingTop: 12, paddingHorizontal: 20, borderTopWidth: StyleSheet.hairlineWidth },
   sheetList: { borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
   sheetRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingHorizontal: 14 },
   sheetIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
