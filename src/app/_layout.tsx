@@ -96,12 +96,13 @@ function AppShell() {
               <Stack.Screen name="search" />
               <Stack.Screen name="campaign/[id]" />
               <Stack.Screen name="placement-test" />
-              <Stack.Screen name="account/info" />
-              <Stack.Screen name="account/edit" />
-              <Stack.Screen name="account/password" />
-              <Stack.Screen name="account/devices" />
-              <Stack.Screen name="account/friends" />
-              <Stack.Screen name="account/coins" />
+              {/* Màn con của Hồ sơ không có thanh tab (đường dẫn /profile/…, file trong nhóm (account)) */}
+              <Stack.Screen name="(account)/profile/personal-info/index" />
+              <Stack.Screen name="(account)/profile/personal-info/edit" />
+              <Stack.Screen name="(account)/profile/password" />
+              <Stack.Screen name="(account)/profile/devices" />
+              <Stack.Screen name="(account)/profile/friends" />
+              <Stack.Screen name="(account)/profile/wallet" />
             </Stack.Protected>
             {/* Đăng nhập bằng mật khẩu tạm: chỉ còn màn đặt mật khẩu mới (không vuốt lui được) */}
             <Stack.Protected guard={status === 'mustChangePassword'}>

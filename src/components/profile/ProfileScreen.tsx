@@ -22,18 +22,9 @@ import { fonts, type } from '@/theme/typography';
 
 import { RowIcon, SettingsGroup, SettingsRow, settingsStyles, ThemeSegment, Toggle } from './SettingsParts';
 
-// Các mục tài khoản là màn riêng ngoài tab (/account/…); các trang còn lại vẫn là trang tạm /profile/…
-const ACCOUNT_ROUTES = {
-  'thong-tin': '/account/info',
-  'mat-khau': '/account/password',
-  'thiet-bi': '/account/devices',
-  'ban-be': '/account/friends',
-  xu: '/account/coins',
-} as const;
-const go = (section: ProfileSection) => {
-  const route = ACCOUNT_ROUTES[section as keyof typeof ACCOUNT_ROUTES];
-  router.push(route ?? `/profile/${section}`);
-};
+// Trang con của Hồ sơ: /profile/<key> (tên tiếng Anh). Màn đã làm nằm ngoài thanh tab (nhóm (account)),
+// các key còn lại là trang tạm (tabs)/profile/[section].
+const go = (section: ProfileSection) => router.push(`/profile/${section}`);
 
 const COMPACT_H = 52;
 /** Khoảng đệm dưới hàng nội dung của thanh thu gọn. */
@@ -197,7 +188,7 @@ export function ProfileScreen() {
               },
             ]}
           >
-            <Pressable accessibilityRole="link" accessibilityLabel={`${name}. Xem thông tin cá nhân`} onPress={() => go('thong-tin')} style={styles.avatarPress}>
+            <Pressable accessibilityRole="link" accessibilityLabel={`${name}. Xem thông tin cá nhân`} onPress={() => go('personal-info')} style={styles.avatarPress}>
               <BigAvatar initials={initials} uri={user?.avatar} />
             </Pressable>
             <Text style={[styles.name, { color: colors.heroOn }]} numberOfLines={1}>
@@ -232,7 +223,7 @@ export function ProfileScreen() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Nâng cấp lên tài khoản thành viên"
-                  onPress={() => go('quan-ly-goi')}
+                  onPress={() => go('membership')}
                   style={({ pressed }) => [styles.upgrade, { boxShadow: `0px 3px 0px ${illo.goldEdge}`, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
                 >
                   <GoldFill id="upgrade-btn" />
@@ -248,12 +239,12 @@ export function ProfileScreen() {
 
         {/* ---------- Cài đặt ---------- */}
         <SettingsGroup title="Tài khoản">
-          <SettingsRow first icon={<RowIcon name="user" />} label="Thông tin cá nhân" onPress={() => go('thong-tin')} />
-          <SettingsRow icon={<RowIcon name="lock" />} label="Mật khẩu" onPress={() => go('mat-khau')} />
-          <SettingsRow icon={<RowIcon name="phone" />} label="Thiết bị" onPress={() => go('thiet-bi')} />
-          <SettingsRow icon={<RowIcon name="people" />} label="Bạn bè" onPress={() => go('ban-be')} />
-          <SettingsRow icon={<RowIcon name="coins" />} label="Xu của tôi" value={`${groupThousands(user?.coins ?? 0)} xu`} onPress={() => go('xu')} />
-          <SettingsRow icon={<RowIcon name="receipt" />} label="Lịch sử thanh toán" onPress={() => go('lich-su-mua-hang')} />
+          <SettingsRow first icon={<RowIcon name="user" />} label="Thông tin cá nhân" onPress={() => go('personal-info')} />
+          <SettingsRow icon={<RowIcon name="lock" />} label="Mật khẩu" onPress={() => go('password')} />
+          <SettingsRow icon={<RowIcon name="phone" />} label="Thiết bị" onPress={() => go('devices')} />
+          <SettingsRow icon={<RowIcon name="people" />} label="Bạn bè" onPress={() => go('friends')} />
+          <SettingsRow icon={<RowIcon name="coins" />} label="Xu của tôi" value={`${groupThousands(user?.coins ?? 0)} xu`} onPress={() => go('wallet')} />
+          <SettingsRow icon={<RowIcon name="receipt" />} label="Lịch sử thanh toán" onPress={() => go('payments')} />
         </SettingsGroup>
 
         <SettingsGroup title="Ứng dụng">
@@ -272,8 +263,8 @@ export function ProfileScreen() {
         </SettingsGroup>
 
         <SettingsGroup title="Hỗ trợ">
-          <SettingsRow first icon={<RowIcon name="help" />} label="Trung tâm trợ giúp" onPress={() => go('tro-giup')} />
-          <SettingsRow icon={<RowIcon name="shield" />} label="Điều khoản & quyền riêng tư" onPress={() => go('dieu-khoan')} />
+          <SettingsRow first icon={<RowIcon name="help" />} label="Trung tâm trợ giúp" onPress={() => go('help')} />
+          <SettingsRow icon={<RowIcon name="shield" />} label="Điều khoản & quyền riêng tư" onPress={() => go('terms')} />
         </SettingsGroup>
 
         <View style={styles.footer}>
@@ -389,7 +380,7 @@ export function ProfileScreen() {
               accessibilityRole="button"
               onPress={() => {
                 setMemberOpen(false);
-                go('quan-ly-goi');
+                go('membership');
               }}
               style={({ pressed }) => [styles.primary, { backgroundColor: pressed ? colors.emerald800 : colors.emerald700 }]}
             >

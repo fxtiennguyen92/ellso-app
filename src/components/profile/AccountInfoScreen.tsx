@@ -51,7 +51,7 @@ export function AccountInfoScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Thay đổi thông tin cá nhân"
-              onPress={() => router.push('/account/edit')}
+              onPress={() => router.push('/profile/personal-info/edit')}
               hitSlop={6}
               style={({ pressed }) => [styles.action, { backgroundColor: colors.mint50, opacity: pressed ? 0.75 : 1 }]}
             >

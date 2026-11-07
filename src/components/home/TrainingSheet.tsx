@@ -147,7 +147,7 @@ export function TrainingSheet({ training, onClose, onChanged }: { training: Home
                   accessibilityRole="link"
                   onPress={() => {
                     onClose();
-                    setTimeout(() => router.push('/profile/quan-ly-goi'), 250);
+                    setTimeout(() => router.push('/profile/membership'), 250);
                   }}
                 >
                   <Text style={[type.label, { color: colors.emerald700 }]}>Xem gói thành viên</Text>

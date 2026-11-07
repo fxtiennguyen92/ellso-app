@@ -27,7 +27,7 @@ export function AccessSheet({ doc, onClose, onNotice }: { doc: Doc | null; onClo
   const option = (a: Access): Option => {
     switch (a.kind) {
       case 'plus':
-        return { title: 'Có gói thành viên', desc: 'Mở mọi tài liệu thuộc gói khi gói còn hạn.', action: 'Nâng cấp gói', icon: 'crown', run: () => go('/profile/quan-ly-goi') };
+        return { title: 'Có gói thành viên', desc: 'Mở mọi tài liệu thuộc gói khi gói còn hạn.', action: 'Nâng cấp gói', icon: 'crown', run: () => go('/profile/membership') };
       case 'buy':
         return {
           title: 'Mua riêng tài liệu này',

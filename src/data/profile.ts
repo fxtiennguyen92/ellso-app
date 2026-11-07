@@ -60,17 +60,17 @@ export const groupThousands = (n: number) => String(Math.max(0, Math.floor(n))).
 /** Link hiển thị gọn (bỏ https://) */
 export const displayLink = (url: string) => url.replace(/^https?:\/\//, '');
 
-/** Các trang con của Hồ sơ (đang là màn tạm) — key = đường dẫn /profile/<key>. */
+/** Trang con của Hồ sơ — key = đường dẫn /profile/<key> (tiếng Anh). */
 export const profileSections = {
-  'thong-tin': 'Thông tin cá nhân',
-  'mat-khau': 'Mật khẩu',
-  'thiet-bi': 'Thiết bị',
-  'ban-be': 'Bạn bè',
-  xu: 'Xu của tôi',
-  'lich-su-mua-hang': 'Lịch sử thanh toán',
-  'quan-ly-goi': 'Quản lý gói',
-  'tro-giup': 'Trung tâm trợ giúp',
-  'dieu-khoan': 'Điều khoản & quyền riêng tư',
+  'personal-info': 'Thông tin cá nhân',
+  password: 'Mật khẩu',
+  devices: 'Thiết bị',
+  friends: 'Bạn bè',
+  wallet: 'Xu của tôi',
+  payments: 'Lịch sử thanh toán',
+  membership: 'Gói thành viên',
+  help: 'Trung tâm trợ giúp',
+  terms: 'Điều khoản & quyền riêng tư',
 } as const;
 
 export type ProfileSection = keyof typeof profileSections;
