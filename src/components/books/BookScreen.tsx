@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle, Defs, LinearGradient, Pattern, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { PrimaryButton, SecondaryButton } from '@/components/auth/AuthUI';
@@ -19,10 +20,12 @@ import { chapterPalette, WEB_MAX_WIDTH } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
 
 /**
- * Sách › thông tin (/books/[id]) — bố cục theo trang sách của Amazon (bản di động):
- * 1. Tác giả · tên sách · định dạng.
- * 2. Khung ảnh nền nhạt, bìa lớn ở giữa (bấm = đọc), nút "Đọc thử" ngay dưới bìa.
- * 3. Khối mua: giá to (màu theo màu bìa), nút chính (Mua ngay / Mở khoá / Đọc sách), nút Đọc thử, "Lưu vào Tài liệu của tôi".
+ * Sách › thông tin (/books/[id]) — bố cục theo trang sách của Amazon (bản di động), phần đầu làm riêng:
+ * 1+2. Hero tràn viền theo MÀU ĐÃ CHỌN của sách (gradient, lưới chấm, vòng tròn + quầng sáng sau bìa): bìa lớn bên phải
+ *      (bấm = đọc), cụm [Tác giả · Tên sách · Sách điện tử] nổi ở góc dưới bên trái. Nút quay lại kính mờ; cuộn qua hero
+ *      thì thanh trên hiện nền + tên sách.
+ * 3. Khối mua: giá to bên phải (màu đã chọn), nút chính (Mua ngay + giỏ hàng / Mở khoá / Đọc sách), Đọc thử miễn phí,
+ *    "Lưu vào Tài liệu của tôi".
  * 4. Giới thiệu sách (thu gọn / xem thêm) · Thông tin sách (bảng) · Có thể bạn cũng thích (cuộn ngang).
  * Không hiện số chương / số trang đọc thử. Màn nhiều khối nên các nút nằm trong khối mua (không nổi ở đáy).
  */
@@ -41,7 +44,10 @@ export function BookScreen() {
 
   const width = Platform.OS === 'web' ? Math.min(winW, WEB_MAX_WIDTH) : winW;
   const topInset = Platform.OS === 'web' ? 12 : insets.top + 4;
-  const coverW = Math.min(190, Math.round(width * 0.46));
+  const coverW = Math.min(160, Math.round(width * 0.4));
+  const coverH = Math.round(coverW * 1.5);
+  const barH = topInset + 52;
+  const heroH = barH + coverH + 32;
 
   const load = useCallback(() => {
     if (!token || !id) return;
@@ -58,7 +64,8 @@ export function BookScreen() {
   const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
   const read = (mode: 'preview' | 'full') => book && router.push({ pathname: '/books/[id]/read', params: { id: book.id, mode } });
 
-  const titleIn = scrollY.interpolate({ inputRange: [60, 110], outputRange: [0, 1], extrapolate: 'clamp' });
+  const titleIn = scrollY.interpolate({ inputRange: [heroH - barH - 50, heroH - barH - 10], outputRange: [0, 1], extrapolate: 'clamp' });
+  const coverShift = scrollY.interpolate({ inputRange: [-160, 0, heroH], outputRange: [30, 0, -heroH * 0.2], extrapolate: 'clamp' });
 
   const pal = chapterPalette[book?.cover ?? 'teal'];
   const accent = scheme === 'dark' ? pal.inkDark : pal.base;
@@ -72,22 +79,6 @@ export function BookScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      {/* Thanh trên: quay lại + tên sách hiện khi cuộn */}
-      <View style={[styles.topBar, { paddingTop: topInset, backgroundColor: colors.bg }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Quay lại"
-          onPress={back}
-          hitSlop={6}
-          style={({ pressed }) => [styles.back, { backgroundColor: colors.card, borderColor: colors.line, opacity: pressed ? 0.8 : 1 }]}
-        >
-          <Icon name="chevronLeft" size={22} color={colors.ink900} />
-        </Pressable>
-        <Animated.Text numberOfLines={1} style={[styles.barTitle, { color: colors.ink900, opacity: titleIn }]}>
-          {book?.title ?? ''}
-        </Animated.Text>
-      </View>
-
       <Animated.ScrollView
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: NATIVE_DRIVER })}
@@ -95,11 +86,11 @@ export function BookScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
       >
         {!book && !error ? (
-          <View style={styles.loading}>
+          <View style={[styles.loading, { paddingTop: barH + 80 }]}>
             <ActivityIndicator color={colors.emerald700} />
           </View>
         ) : error ? (
-          <View style={styles.errorBox}>
+          <View style={[styles.errorBox, { paddingTop: barH + 60 }]}>
             <Icon name="book" size={34} strokeWidth={1.7} color={colors.ink400} />
             <Text style={[type.body, styles.centerText, { color: colors.ink600 }]}>{error}</Text>
             <Pressable accessibilityRole="button" onPress={load} hitSlop={8}>
@@ -108,56 +99,73 @@ export function BookScreen() {
           </View>
         ) : book ? (
           <View>
-            {/* 1. Tác giả · tên · định dạng */}
-            <View style={styles.head}>
-              {book.author ? (
-                <Text style={[styles.byline, { color: colors.ink600 }]}>
-                  Tác giả: <Text style={{ fontFamily: fonts.sans600, color: colors.emerald700 }}>{book.author}</Text>
-                </Text>
-              ) : null}
-              <Text accessibilityRole="header" style={[styles.title, { color: colors.ink900 }]}>
-                {book.title}
-              </Text>
-              <Text style={[type.caption, { color: colors.ink600 }]}>Sách điện tử{formatName ? ` · ${formatName}` : ''}</Text>
-            </View>
+            {/* 1+2. Hero theo màu đã chọn: bìa bên phải, cụm thông tin góc dưới trái */}
+            <View style={[styles.hero, { height: heroH, backgroundColor: pal.edge }]}>
+              <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
+                <Defs>
+                  <LinearGradient id={`bookHero-${book.cover}`} x1="0" y1="0" x2="1" y2="1">
+                    <Stop offset="0" stopColor={pal.base} />
+                    <Stop offset="1" stopColor={pal.edge} />
+                  </LinearGradient>
+                  <RadialGradient id={`bookGlow-${book.cover}`} cx="50%" cy="50%" r="50%">
+                    <Stop offset="0" stopColor="#ffffff" stopOpacity={0.28} />
+                    <Stop offset="1" stopColor="#ffffff" stopOpacity={0} />
+                  </RadialGradient>
+                  <Pattern id="bookDots" width={16} height={16} patternUnits="userSpaceOnUse">
+                    <Circle cx={2} cy={2} r={1} fill="#ffffff" fillOpacity={0.12} />
+                  </Pattern>
+                </Defs>
+                <Rect width="100%" height="100%" fill={`url(#bookHero-${book.cover})`} />
+                <Rect width="100%" height="100%" fill="url(#bookDots)" />
+                {[60, 105, 150, 195, 240].map((r) => (
+                  <Circle key={r} cx={width - 20 - coverW / 2} cy={barH + coverH / 2} r={r} stroke="#ffffff" strokeOpacity={0.12} strokeWidth={1.2} fill="none" />
+                ))}
+                <Circle cx={width - 20 - coverW / 2} cy={barH + coverH / 2} r={coverW * 1.05} fill={`url(#bookGlow-${book.cover})`} />
+              </Svg>
 
-            {/* 2. Khung ảnh */}
-            <View style={[styles.gallery, { backgroundColor: colors.surfaceAlt }]}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={book.unlocked ? 'Đọc sách' : canPreview ? 'Đọc thử' : `Bìa sách ${book.title}`}
-                disabled={!book.unlocked && !canPreview}
-                onPress={() => read(book.unlocked ? 'full' : 'preview')}
-                style={({ pressed }) => [{ width: coverW, transform: [{ scale: pressed ? 0.98 : 1 }] }]}
-              >
-                <BookCover doc={{ ...book, unlocked: true }} />
-              </Pressable>
-              {canPreview || book.unlocked ? (
+              <Animated.View style={[styles.heroCover, { top: barH, width: coverW, transform: [{ translateY: coverShift }] }]}>
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel={book.unlocked ? 'Đọc sách' : canPreview ? 'Đọc thử' : `Bìa sách ${book.title}`}
+                  disabled={!book.unlocked && !canPreview}
                   onPress={() => read(book.unlocked ? 'full' : 'preview')}
-                  hitSlop={6}
-                  style={({ pressed }) => [styles.lookInside, { backgroundColor: colors.card, borderColor: colors.line, opacity: pressed ? 0.8 : 1 }]}
+                  style={({ pressed }) => [styles.coverShadow, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
                 >
-                  <Icon name="bookOpen" size={16} color={colors.emerald700} />
-                  <Text style={[type.label, { color: colors.emerald700 }]}>{book.unlocked ? 'Đọc sách' : 'Đọc thử'}</Text>
+                  <BookCover doc={{ ...book, unlocked: true }} />
                 </Pressable>
-              ) : null}
+              </Animated.View>
+
+              <View style={[styles.heroInfo, { right: coverW + 36 }]}>
+                {book.author ? (
+                  <Text style={styles.heroAuthor} numberOfLines={1}>
+                    {book.author}
+                  </Text>
+                ) : null}
+                <Text accessibilityRole="header" style={styles.heroTitle} numberOfLines={4}>
+                  {book.title}
+                </Text>
+                <View style={styles.heroTag}>
+                  <Icon name="book" size={12} strokeWidth={2.2} color="#ffffff" />
+                  <Text style={styles.heroTagText}>Sách điện tử{formatName ? ` · ${formatName}` : ''}</Text>
+                </View>
+              </View>
             </View>
 
             {/* 3. Khối mua */}
             <View style={styles.buyBox}>
               {access ? (
                 <View style={styles.priceRow}>
-                  <Text style={[styles.price, { color: book.unlocked && access.kind !== 'buy' ? colors.emerald700 : accent }]}>
-                    {access.kind === 'buy' && !book.bought ? formatPrice(access.price) : accessStyle(access, !!book.bought, colors).long}
-                  </Text>
                   {book.unlocked ? (
                     <View style={[styles.owned, { backgroundColor: colors.mint50 }]}>
                       <Icon name="check" size={13} strokeWidth={3} color={colors.emerald700} />
                       <Text style={[styles.ownedText, { color: colors.emerald700 }]}>Bạn đã có thể đọc</Text>
                     </View>
-                  ) : null}
+                  ) : (
+                    <Text style={[type.caption, { color: colors.ink600 }]}>{access.kind === 'buy' ? 'Giá sách điện tử' : 'Quyền đọc'}</Text>
+                  )}
+                  <Text style={[styles.price, { color: book.unlocked && access.kind !== 'buy' ? colors.emerald700 : accent }]}>
+                    {access.kind === 'buy' && !book.bought ? formatPrice(access.price) : accessStyle(access, !!book.bought, colors).long}
+                  </Text>
                 </View>
               ) : null}
               {!book.unlocked && book.access.length > 1 ? (
@@ -168,7 +176,7 @@ export function BookScreen() {
                 {book.unlocked ? (
                   <PrimaryButton label="Đọc sách" onPress={() => read('full')} />
                 ) : (
-                  <PrimaryButton label={onlyBuy && buy?.kind === 'buy' ? `Mua ngay · ${formatPrice(buy.price)}` : 'Mở khoá sách'} onPress={() => openDoc(book)} />
+                  <PrimaryButton label={onlyBuy ? 'Mua ngay' : 'Mở khoá sách'} icon={onlyBuy ? 'cart' : 'lock'} onPress={() => openDoc(book)} />
                 )}
                 {canPreview ? <SecondaryButton label="Đọc thử miễn phí" icon="bookOpen" onPress={() => read('preview')} /> : null}
               </View>
@@ -214,7 +222,6 @@ export function BookScreen() {
                 <Row label="Định dạng" value={formatName ? `Sách điện tử (${formatName})` : 'Sách điện tử'} />
                 {book.size ? <Row label="Dung lượng" value={fileSize(book.size) ?? '—'} /> : null}
                 {book.format === 'pdf' && book.length ? <Row label="Số trang" value={`${book.length} trang`} /> : null}
-                <Row label="Đọc trên" value="Ứng dụng Ellso" />
               </View>
             </View>
 
@@ -248,6 +255,27 @@ export function BookScreen() {
           </View>
         ) : null}
       </Animated.ScrollView>
+
+      {/* Thanh trên (phủ lên hero): quay lại kính mờ; cuộn qua hero thì hiện nền + tên sách */}
+      <View pointerEvents="box-none" style={[styles.topBar, { paddingTop: topInset, height: barH }]}>
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.topBarBg, { backgroundColor: colors.bg, borderBottomColor: colors.line, opacity: titleIn }]} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Quay lại"
+          onPress={back}
+          hitSlop={6}
+          style={({ pressed }) => [styles.back, { opacity: pressed ? 0.75 : 1 }]}
+        >
+          <Animated.View style={[StyleSheet.absoluteFill, styles.backSolid, { backgroundColor: colors.card, borderColor: colors.line, opacity: titleIn }]} />
+          <Icon name="chevronLeft" size={22} color={book ? '#ffffff' : colors.ink900} />
+          <Animated.View style={[StyleSheet.absoluteFill, styles.backIcon, { opacity: titleIn }]}>
+            <Icon name="chevronLeft" size={22} color={colors.ink900} />
+          </Animated.View>
+        </Pressable>
+        <Animated.Text numberOfLines={1} style={[styles.barTitle, { color: colors.ink900, opacity: titleIn }]}>
+          {book?.title ?? ''}
+        </Animated.Text>
+      </View>
     </View>
   );
 }
@@ -265,18 +293,36 @@ function Row({ label, value, first }: { label: string; value: string; first?: bo
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   centerText: { textAlign: 'center' },
-  topBar: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 8, zIndex: 2 },
-  back: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  topBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
+  topBarBg: { borderBottomWidth: StyleSheet.hairlineWidth },
+  back: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15,23,42,0.28)', overflow: 'hidden' },
+  backSolid: { borderRadius: 12, borderWidth: 1 },
+  backIcon: { alignItems: 'center', justifyContent: 'center' },
+  hero: { overflow: 'hidden' },
+  heroCover: { position: 'absolute', right: 20 },
+  coverShadow: { borderRadius: 6, boxShadow: '0px 18px 34px rgba(0,0,0,0.38), 0px 4px 10px rgba(0,0,0,0.22)' },
+  heroInfo: { position: 'absolute', left: 20, bottom: 26, gap: 6 },
+  heroAuthor: { color: 'rgba(255,255,255,0.82)', fontFamily: fonts.sans600, fontSize: 14, lineHeight: 20 },
+  heroTitle: { color: '#ffffff', fontFamily: fonts.display700, fontSize: 24, lineHeight: 31 },
+  heroTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    marginTop: 4,
+    paddingHorizontal: 10,
+    height: 26,
+    borderRadius: 9999,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  heroTagText: { color: '#ffffff', fontFamily: fonts.sans600, fontSize: 12, lineHeight: 16 },
   barTitle: { flex: 1, fontFamily: fonts.display600, fontSize: 17, lineHeight: 24 },
   loading: { paddingVertical: 100, alignItems: 'center' },
   errorBox: { alignItems: 'center', gap: 12, paddingVertical: 80, paddingHorizontal: 32 },
-  head: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 14, gap: 4 },
-  byline: { fontFamily: fonts.sans500, fontSize: 14, lineHeight: 20 },
-  title: { fontFamily: fonts.display700, fontSize: 24, lineHeight: 32 },
-  gallery: { alignItems: 'center', paddingVertical: 28, gap: 18 },
-  lookInside: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, height: 38, borderRadius: 9999, borderWidth: 1 },
   buyBox: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, gap: 10 },
-  priceRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 },
+  priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   price: { fontFamily: fonts.display700, fontSize: 28, lineHeight: 36 },
   owned: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 26, borderRadius: 9999 },
   ownedText: { fontFamily: fonts.sans600, fontSize: 12, lineHeight: 16 },

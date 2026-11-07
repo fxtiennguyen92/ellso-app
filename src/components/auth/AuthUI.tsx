@@ -140,11 +140,14 @@ export function PrimaryButton({
   onPress,
   disabled = false,
   loading = false,
+  icon,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
+  /** Icon bên trái chữ (vd giỏ hàng cho nút Mua ngay). */
+  icon?: IconName;
 }) {
   const { colors } = useTheme();
   const off = disabled || loading;
@@ -168,7 +171,10 @@ export function PrimaryButton({
       {loading ? (
         <ActivityIndicator color={colors.onEmerald} />
       ) : (
-        <Text style={[styles.primaryText, { color: disabled ? colors.ink600 : colors.onEmerald }]}>{label}</Text>
+        <View style={styles.primaryInner}>
+          {icon ? <Icon name={icon} size={20} strokeWidth={2.1} color={disabled ? colors.ink600 : colors.onEmerald} /> : null}
+          <Text style={[styles.primaryText, { color: disabled ? colors.ink600 : colors.onEmerald }]}>{label}</Text>
+        </View>
       )}
     </Pressable>
   );
@@ -325,6 +331,7 @@ const styles = StyleSheet.create({
   errorRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
   errorText: { flex: 1, fontFamily: fonts.sans500, fontSize: 13, lineHeight: 18 },
 
+  primaryInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primary: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   primaryText: { fontFamily: fonts.sans600, fontSize: 16, lineHeight: 22 },
   secondary: { height: 52, borderRadius: 16, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
