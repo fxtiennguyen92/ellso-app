@@ -31,13 +31,15 @@ export function AccessChip({ doc, long = false, small = false }: { doc: Doc; lon
 
 // ------------------------------------------------------------------ Lớp phủ & nút lưu
 
-/** Lớp tối + ổ khoá cho tài liệu chưa mở. */
+/**
+ * Dấu khoá cho tài liệu chưa mở: một nhãn nhỏ kính tối ở góc trên bên trái bìa (không phủ tối cả bìa,
+ * không vòng tròn trắng giữa bìa) → bìa vẫn đẹp, vẫn nhận ra là đang khoá. Góc phải trên dành cho nút lưu.
+ */
 export function LockOverlay({ size = 32 }: { size?: number }) {
+  const tag = Math.round(size * 0.78);
   return (
-    <View style={[StyleSheet.absoluteFill, styles.scrim]} pointerEvents="none">
-      <View style={[styles.lockDot, { width: size, height: size, borderRadius: size / 2 }]}>
-        <Icon name="lock" size={Math.round(size * 0.46)} strokeWidth={2.2} color={illo.lockInk} />
-      </View>
+    <View pointerEvents="none" style={[styles.lockTag, { width: tag, height: tag, borderRadius: Math.round(tag * 0.32) }]}>
+      <Icon name="lock" size={Math.round(tag * 0.54)} strokeWidth={2.4} color="#ffffff" />
     </View>
   );
 }
@@ -318,8 +320,16 @@ const styles = StyleSheet.create({
   chipText: { fontFamily: fonts.sans700, fontSize: 11, lineHeight: 16, flexShrink: 1 },
   chipTextSmall: { fontFamily: fonts.sans700, fontSize: 10, lineHeight: 16, flexShrink: 1 },
 
-  scrim: { backgroundColor: illo.scrim, alignItems: 'center', justifyContent: 'center' },
-  lockDot: { backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' },
+  lockTag: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: illo.saveBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: illo.onCoverLine,
+  },
   saveOverlay: { alignItems: 'center', justifyContent: 'center' },
   saveRow: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 

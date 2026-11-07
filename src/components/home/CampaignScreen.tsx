@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { PrimaryButton } from '@/components/auth/AuthUI';
 import { ContentBlocks, RichText } from '@/components/content/ContentBlocks';
@@ -19,12 +20,11 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
 /**
- * Khuyến mãi › chi tiết (/campaign/[id], GET /v1/campaigns/{id}) — bám "Xem trước trên app" ở CMS:
- * - Banner 16:9 tràn viền lên tận status bar (kéo quá đầu thì phóng to), nút quay lại kính mờ.
- * - Khối nội dung bo tròn đè lên mép dưới banner: nhãn "Khuyến mãi", tiêu đề, thời hạn (còn n ngày), tóm tắt,
- *   rồi các khối CMS (ContentBlocks: các bước, điều kiện, mã khuyến mãi có nút Sao chép…).
- * - Cuộn qua banner: thanh trên cùng hiện nền + tiêu đề rút gọn.
- * - Nút hành động (cta) nổi ở đáy: mở link hoặc khoá học.
+ * Khuyến mãi › chi tiết (/campaign/[id], GET /v1/campaigns/{id}):
+ * - Banner luôn hiện TRỌN VẸN (16:9, đúng khổ CMS 1280×720), là một thẻ bo góc nổi trên nền "ambient":
+ *   chính banner phóng to + làm mờ phủ phần đầu màn, mờ dần vào màu nền → không cắt, không đè chữ lên hình.
+ * - Dưới banner: nhãn "Khuyến mãi" + còn n ngày, tiêu đề, tóm tắt, rồi các khối CMS (ContentBlocks).
+ * - Cuộn: thanh trên cùng hiện nền + tiêu đề rút gọn. Nút hành động (cta) nổi ở đáy: mở link hoặc khoá học.
  */
 export function CampaignScreen() {
   const { colors } = useTheme();
@@ -37,9 +37,10 @@ export function CampaignScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
 
   const width = Platform.OS === 'web' ? Math.min(winW, WEB_MAX_WIDTH) : winW;
-  const bannerH = Math.round((width * 9) / 16);
+  const bannerH = Math.round(((width - 32) * 9) / 16);
   const topInset = Platform.OS === 'web' ? 12 : insets.top + 4;
   const barH = topInset + 52;
+  const ambientH = barH + bannerH + 60;
 
   const load = useCallback(() => {
     if (!id) return;
@@ -57,9 +58,8 @@ export function CampaignScreen() {
     else router.push(`/courses/${data.cta.courseId}`);
   };
 
-  const barIn = scrollY.interpolate({ inputRange: [bannerH - barH - 40, bannerH - barH], outputRange: [0, 1], extrapolate: 'clamp' });
-  const bannerScale = scrollY.interpolate({ inputRange: [-200, 0], outputRange: [1.6, 1], extrapolateRight: 'clamp' });
-  const bannerShift = scrollY.interpolate({ inputRange: [-200, 0, bannerH], outputRange: [-100, 0, bannerH * 0.4], extrapolate: 'clamp' });
+  const barIn = scrollY.interpolate({ inputRange: [bannerH - 60, bannerH - 10], outputRange: [0, 1], extrapolate: 'clamp' });
+  const ambientShift = scrollY.interpolate({ inputRange: [-200, 0, ambientH], outputRange: [-100, 0, ambientH * 0.5], extrapolate: 'clamp' });
 
   const left = data ? daysUntil(data.endsAt) : 0;
 
@@ -71,15 +71,41 @@ export function CampaignScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: data?.cta ? floatingActionSpace(insets.bottom) : insets.bottom + 32 }}
       >
-        {/* Banner */}
-        <Animated.View style={[styles.banner, { height: bannerH, backgroundColor: colors.heroMid, transform: [{ translateY: bannerShift }, { scale: bannerScale }] }]}>
+        {/* Nền ambient: banner làm mờ, mờ dần vào màu nền */}
+        <Animated.View pointerEvents="none" style={[styles.ambient, { height: ambientH, transform: [{ translateY: ambientShift }] }]}>
           {data?.bannerUrl ? (
-            <Image source={{ uri: data.bannerUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} accessibilityIgnoresInvertColors />
-          ) : null}
+            <Image source={{ uri: data.bannerUrl }} style={[StyleSheet.absoluteFill, styles.ambientImg]} contentFit="cover" blurRadius={40} />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.mint50 }]} />
+          )}
+          <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+            <Defs>
+              <LinearGradient id="campFade" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={colors.bg} stopOpacity={0.15} />
+                <Stop offset="0.55" stopColor={colors.bg} stopOpacity={0.45} />
+                <Stop offset="1" stopColor={colors.bg} stopOpacity={1} />
+              </LinearGradient>
+            </Defs>
+            <Rect width="100%" height="100%" fill="url(#campFade)" />
+          </Svg>
         </Animated.View>
 
-        {/* Nội dung đè lên mép dưới banner */}
-        <View style={[styles.sheet, { backgroundColor: colors.bg }]}>
+        {/* Banner trọn vẹn */}
+        <View style={[styles.bannerCard, { marginTop: barH + 4, height: bannerH, backgroundColor: colors.surfaceAlt, boxShadow: colors.shadowCard }]}>
+          {data?.bannerUrl ? (
+            <Image
+              source={{ uri: data.bannerUrl }}
+              style={StyleSheet.absoluteFill}
+              contentFit="contain"
+              transition={200}
+              accessibilityLabel={data.title}
+              accessibilityIgnoresInvertColors
+            />
+          ) : null}
+        </View>
+
+        {/* Nội dung */}
+        <View style={styles.sheet}>
           {!data && !error ? (
             <View style={styles.loading}>
               <ActivityIndicator color={colors.emerald700} />
@@ -150,11 +176,13 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   grow: { flex: 1 },
   center: { textAlign: 'center' },
-  banner: { width: '100%', overflow: 'hidden' },
-  sheet: { marginTop: -28, borderTopLeftRadius: 28, borderTopRightRadius: 28, minHeight: 320 },
+  ambient: { position: 'absolute', top: 0, left: 0, right: 0, overflow: 'hidden' },
+  ambientImg: { transform: [{ scale: 1.4 }] },
+  bannerCard: { marginHorizontal: 16, borderRadius: 20, overflow: 'hidden' },
+  sheet: { minHeight: 320 },
   loading: { paddingVertical: 80, alignItems: 'center' },
   errorBox: { alignItems: 'center', gap: 12, paddingVertical: 60, paddingHorizontal: 32 },
-  body: { paddingTop: 22, paddingHorizontal: 20, gap: 14 },
+  body: { paddingTop: 20, paddingHorizontal: 20, gap: 14 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   eyebrow: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 26, borderRadius: 9999 },
   eyebrowText: { fontFamily: fonts.sans600, fontSize: 12, lineHeight: 16 },
