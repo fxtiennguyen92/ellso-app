@@ -46,8 +46,8 @@ const HERO_RADIUS = 32;
  *   chưa có gói → pill kính mờ (chữ trắng) "Tài khoản cơ bản" + nút "Nâng cấp"; có gói → pill vàng "Tài khoản thành viên", bấm mở sheet
  *   (ngày bắt đầu, ngày hết hạn, nút Gia hạn). Số xu đã chuyển sang màn Thông tin cá nhân.
  * - Các nhóm cài đặt: icon một kiểu (Lucide, ô mint). Giao diện Sáng / Tối / Hệ thống lưu trên máy.
- * - Cuộn: thanh trên cùng luôn cố định (tiêu đề + QR). Khối tên trên hero mờ dần / thu nhỏ khi cuộn; tới khoảng
- *   giữa hero thì thanh trên cùng hiện nền hero và đổi tiêu đề thành avatar nhỏ + tên + loại tài khoản. Nút làm mới (bên trái QR) tải lại số xu / gói / ảnh; mỗi lần vào tab cũng tự làm mới.
+ * - Cuộn: hàng tiêu đề + nút luôn cố định; hero cuộn lên rồi dính lại làm nền thanh thu gọn (một lớp nền liền mạch),
+ *   tiêu đề đổi chéo thành avatar nhỏ + tên + loại tài khoản (chi tiết ở phần "Thu gọn header"). Nút làm mới (bên trái QR) tải lại số xu / gói / ảnh; mỗi lần vào tab cũng tự làm mới.
  * - Phiên bản lấy từ bản cài (appVersionLabel), không đặt cứng.
  */
 export function ProfileScreen() {
@@ -98,19 +98,27 @@ export function ProfileScreen() {
     showToast('Đã cập nhật hồ sơ');
   };
 
-  // Thanh trên cùng đổi chéo khi khối tên trên hero đã mờ gần hết (≈ 25% → 45% chiều cao hero)
-  const barFrom = Math.max(1, heroH * 0.25);
-  const barTo = barFrom + Math.max(40, heroH * 0.2);
-  const barIn = scrollY.interpolate({ inputRange: [barFrom, barTo], outputRange: [0, 1], extrapolate: 'clamp' });
-  const barOut = scrollY.interpolate({ inputRange: [barFrom, barTo], outputRange: [1, 0], extrapolate: 'clamp' });
-  // Nền thanh thu gọn chỉ hiện khi mép dưới hero chạm mép dưới thanh (hero "thu" vào thanh) → không có 2 lớp nền chồng nhau.
+  // Thu gọn header — mọi chuyển động theo cùng một mốc `collapse` (= cuộn bao nhiêu thì hero còn đúng bằng thanh thu gọn):
+  // - Hero cuộn lên bình thường. Nền thanh thu gọn là bản sao nền hero vẽ CÙNG kích thước và CÙNG vị trí với phần đáy hero,
+  //   chỉ bật đúng lúc mép dưới hero chạm mép dưới thanh → hai lớp trùng khít từng điểm, chuyển đổi không nhìn thấy.
+  //   (Không "dính" hero bằng transform trong ScrollView: trên web lớp SVG bên trong có lúc trễ, lệch nền.)
+  // - Khối tên trên hero trôi chậm (parallax), thu nhỏ và mờ dần trong nửa đầu quãng thu gọn.
+  // - Tiêu đề "Hồ sơ" mờ hẳn rồi avatar nhỏ + tên mới trượt vào (nối tiếp, không chồng chữ lên nhau).
+  // - Bóng đổ của thanh hiện dần quanh mốc dính.
   const barH = topInset + COMPACT_H + BAR_PAD;
-  const bgAt = Math.max(2, heroH - barH);
-  const barBg = scrollY.interpolate({ inputRange: [bgAt - 1, bgAt], outputRange: [0, 1], extrapolate: 'clamp' });
+  const collapse = Math.max(1, heroH - barH);
+  const at = (f: number) => collapse * f;
+  const barBg = scrollY.interpolate({ inputRange: [collapse - 0.5, collapse], outputRange: [0, 1], extrapolate: 'clamp' });
+  const barShadow = scrollY.interpolate({ inputRange: [collapse, collapse + 28], outputRange: [0, 1], extrapolate: 'clamp' });
+  const identityOpacity = scrollY.interpolate({ inputRange: [0, at(0.45)], outputRange: [1, 0], extrapolate: 'clamp' });
+  const identityShift = scrollY.interpolate({ inputRange: [-120, 0, collapse], outputRange: [-30, 0, collapse * 0.45], extrapolate: 'clamp' });
+  const identityScale = scrollY.interpolate({ inputRange: [-120, 0, collapse], outputRange: [1.08, 1, 0.85], extrapolate: 'clamp' });
+  const titleOut = scrollY.interpolate({ inputRange: [at(0.3), at(0.55)], outputRange: [1, 0], extrapolate: 'clamp' });
+  const compactIn = scrollY.interpolate({ inputRange: [at(0.6), at(0.95)], outputRange: [0, 1], extrapolate: 'clamp' });
   const onScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
     useNativeDriver: NATIVE_DRIVER,
     listener: (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-      const on = e.nativeEvent.contentOffset.y > (barFrom + barTo) / 2;
+      const on = e.nativeEvent.contentOffset.y > at(0.75);
       setCompact((c) => (c === on ? c : on));
     },
   });
@@ -184,13 +192,8 @@ export function ProfileScreen() {
             style={[
               styles.identity,
               {
-                // mờ hết trước khi thanh trên cùng đổi chéo (≈ 25% hero) → không chồng lên tiêu đề
-                opacity: scrollY.interpolate({ inputRange: [0, Math.max(1, heroH * 0.24)], outputRange: [1, 0], extrapolate: 'clamp' }),
-                transform: [
-                  // trôi chậm hơn nội dung (gần như đứng yên) để không trượt lên vùng tiêu đề
-                  { translateY: scrollY.interpolate({ inputRange: [-120, 0, 300], outputRange: [-30, 0, 240], extrapolate: 'clamp' }) },
-                  { scale: scrollY.interpolate({ inputRange: [-120, 0, 200], outputRange: [1.08, 1, 0.8], extrapolate: 'clamp' }) },
-                ],
+                opacity: identityOpacity,
+                transform: [{ translateY: identityShift }, { scale: identityScale }],
               },
             ]}
           >
@@ -287,20 +290,21 @@ export function ProfileScreen() {
       </Animated.ScrollView>
 
       {/* ---------- Thanh trên cùng cố định ----------
-          Đầu trang: trong suốt, chỉ có tiêu đề "Hồ sơ" + nút QR nằm trên hero.
-          Cuộn xuống: nền hero hiện dần, tiêu đề chuyển thành avatar nhỏ + tên + số xu (đổi chéo, không có khoảng trống). */}
+          Luôn trong suốt (nền là chính hero đã dính lại). Đầu trang: tiêu đề "Hồ sơ" + nút làm mới / QR;
+          cuộn xuống: tiêu đề đổi chéo thành avatar nhỏ + tên + loại tài khoản. */}
       <View pointerEvents="box-none" style={[styles.topBar, { paddingTop: topInset, height: topInset + COMPACT_H }]}>
-        <Animated.View
-          pointerEvents="none"
-          style={[styles.topBarBg, { backgroundColor: colors.heroMid, boxShadow: colors.navShadow, opacity: barBg }]}
-        >
-          <HeroBackground id="profile-bar" ringsY={0} glow={false} />
+        {/* bóng đổ hiện dần sau khi thanh đã có nền (lớp đặc nằm dưới nền thanh, chỉ lộ phần bóng) */}
+        <Animated.View pointerEvents="none" style={[styles.topBarBg, { height: barH, backgroundColor: colors.heroMid, boxShadow: colors.navShadow, opacity: barShadow }]} />
+        <Animated.View pointerEvents="none" style={[styles.topBarBg, { height: barH, backgroundColor: colors.heroMid, opacity: barBg }]}>
+          {/* nền hero đầy đủ, dịch lên để phần đáy khớp đúng vị trí đáy hero lúc thu gọn */}
+          <View style={[styles.barHero, { top: -collapse, height: heroH }]}>
+            <HeroBackground id="profile-bar" ringsY={topInset + 30} glow={false} />
+          </View>
         </Animated.View>
-
         <View style={styles.topBarRow} pointerEvents="box-none">
           <Animated.Text
             accessibilityRole="header"
-            style={[type.screenTitle, styles.topTitle, { color: colors.heroOn, opacity: barOut }]}
+            style={[type.screenTitle, styles.topTitle, { color: colors.heroOn, opacity: titleOut }]}
             numberOfLines={1}
           >
             Hồ sơ
@@ -311,7 +315,7 @@ export function ProfileScreen() {
             importantForAccessibility={compact ? 'auto' : 'no-hide-descendants'}
             style={[
               styles.compactIdentity,
-              { opacity: barIn, transform: [{ translateY: barIn.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }] },
+              { opacity: compactIn, transform: [{ translateY: compactIn.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] },
             ]}
           >
             <UserAvatar uri={user?.avatar} initials={initials} size={36} bg={colors.mint100} fg={colors.emerald800} borderColor={colors.heroGlassLine} borderWidth={2} />
@@ -517,9 +521,9 @@ const styles = StyleSheet.create({
   version: { fontFamily: fonts.sans400, fontSize: 12, lineHeight: 16 },
 
   topBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, paddingHorizontal: 16 },
-  // nền thanh thu gọn dài xuống thêm BAR_PAD dưới hàng nội dung (khoảng đệm dưới, không xê dịch tiêu đề / nút);
-  // bo góc bằng hero để lúc hero "thu" vào thanh hai mép trùng nhau
-  topBarBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: -BAR_PAD, borderBottomLeftRadius: HERO_RADIUS, borderBottomRightRadius: HERO_RADIUS, overflow: 'hidden' },
+  // nền thanh thu gọn: cao = topInset + hàng nội dung + BAR_PAD, bo góc bằng hero để mép trùng nhau
+  topBarBg: { position: 'absolute', top: 0, left: 0, right: 0, borderBottomLeftRadius: HERO_RADIUS, borderBottomRightRadius: HERO_RADIUS, overflow: 'hidden' },
+  barHero: { position: 'absolute', left: 0, right: 0 },
   topBarRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
   topTitle: { position: 'absolute', left: 0, right: 108 },
   compactIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },

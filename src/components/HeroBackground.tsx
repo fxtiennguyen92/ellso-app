@@ -24,7 +24,8 @@ export function HeroBackground({ id, ringsY = 40, glow = true }: { id: string; r
     >
       {size.w > 0 && (
         <>
-          <Svg width={size.w} height={size.h}>
+          {/* 100%: luôn phủ kín khối cha kể cả khi khối cao thêm sau lần đo đầu (vd hero thêm dòng gói) */}
+          <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
             <Defs>
               <LinearGradient id={`${gid}-bg`} x1="0" y1="0" x2="1" y2="1">
                 <Stop offset="0" stopColor={colors.heroFrom} />
@@ -35,8 +36,8 @@ export function HeroBackground({ id, ringsY = 40, glow = true }: { id: string; r
                 <Circle cx={2} cy={2} r={1} fill={colors.heroLine} />
               </Pattern>
             </Defs>
-            <Rect width={size.w} height={size.h} fill={`url(#${gid}-bg)`} />
-            <Rect width={size.w} height={size.h} fill={`url(#${gid}-dots)`} />
+            <Rect width="100%" height="100%" fill={`url(#${gid}-bg)`} />
+            <Rect width="100%" height="100%" fill={`url(#${gid}-dots)`} />
             {[60, 110, 160, 210].map((r) => (
               <Circle key={r} cx={size.w - 24} cy={ringsY} r={r} stroke={colors.heroLine} strokeWidth={1.2} fill="none" />
             ))}
