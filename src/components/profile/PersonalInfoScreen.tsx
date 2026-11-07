@@ -109,7 +109,7 @@ export function PersonalInfoScreen() {
 
   return (
     <KeyboardAvoidingView style={[styles.screen, { backgroundColor: colors.bg }]} behavior="padding">
-      <SubpageHeader title="Thông tin cá nhân" scrolled={scrolled} />
+      <SubpageHeader title="Sửa thông tin cá nhân" scrolled={scrolled} />
 
       <View style={styles.screen}>
       <ScrollView

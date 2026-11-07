@@ -3,7 +3,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
@@ -13,7 +13,7 @@ import { Icon } from '@/components/Icon';
 import { QrCode } from '@/components/QrCode';
 import { useToast } from '@/components/Toast';
 import { UserAvatar } from '@/components/UserAvatar';
-import { displayLink, getProfile, type ProfileSection } from '@/data/profile';
+import { daysUntil, displayLink, dmy, getProfile, type ProfileSection } from '@/data/profile';
 import { NATIVE_DRIVER } from '@/hooks/useLoop';
 import { appVersionLabel } from '@/lib/appVersion';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -22,28 +22,20 @@ import { fonts, type } from '@/theme/typography';
 
 import { RowIcon, SettingsGroup, SettingsRow, settingsStyles, ThemeSegment, Toggle } from './SettingsParts';
 
-// Thông tin cá nhân / Đổi mật khẩu là màn riêng ngoài tab (/account/…); các trang còn lại vẫn là trang tạm /profile/…
+// Thông tin cá nhân / Mật khẩu & Bảo mật là màn riêng ngoài tab (/account/…); các trang còn lại vẫn là trang tạm /profile/…
 const go = (section: ProfileSection) =>
   section === 'thong-tin' ? router.push('/account/info') : section === 'doi-mat-khau' ? router.push('/account/password') : router.push(`/profile/${section}`);
-
-/** 1250 → "1.250" */
-const groupThousands = (n: number) => String(Math.max(0, Math.floor(n))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-/** "2026-11-30T…" → "30/11/2026" */
-const dmy = (iso: string) => {
-  const d = new Date(iso);
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-};
 
 const COMPACT_H = 52;
 
 /**
  * Tab Hồ sơ.
- * - Hero emerald (cùng kiểu Home): tiêu đề + nút QR, avatar lớn (bấm → sửa thông tin), tên, email, chip gói thành viên.
- * - Thẻ "Xu của bạn" nổi đè mép dưới hero: chỉ số xu (không quy đổi tiền) → Lịch sử xu.
+ * - Hero emerald (cùng kiểu Home): tiêu đề + nút QR, avatar lớn (bấm → Thông tin cá nhân), tên, email, loại tài khoản:
+ *   chưa có gói → pill trắng "Tài khoản cơ bản" + nút "Nâng cấp"; có gói → pill vàng "Tài khoản thành viên", bấm mở sheet
+ *   (ngày bắt đầu, ngày hết hạn, nút Gia hạn). Số xu đã chuyển sang màn Thông tin cá nhân.
  * - Các nhóm cài đặt: icon một kiểu (Lucide, ô mint). Giao diện Sáng / Tối / Hệ thống lưu trên máy.
  * - Cuộn: thanh trên cùng luôn cố định (tiêu đề + QR). Khối tên trên hero mờ dần / thu nhỏ khi cuộn; tới khoảng
- *   giữa hero thì thanh trên cùng hiện nền hero và đổi tiêu đề thành avatar nhỏ + tên + số xu. Nút làm mới (bên trái QR) tải lại số xu / gói / ảnh; mỗi lần vào tab cũng tự làm mới.
+ *   giữa hero thì thanh trên cùng hiện nền hero và đổi tiêu đề thành avatar nhỏ + tên + loại tài khoản. Nút làm mới (bên trái QR) tải lại số xu / gói / ảnh; mỗi lần vào tab cũng tự làm mới.
  * - Phiên bản lấy từ bản cài (appVersionLabel), không đặt cứng.
  */
 export function ProfileScreen() {
@@ -57,8 +49,8 @@ export function ProfileScreen() {
   const referralLink = `https://ellso.app/r/${code}`;
   const name = user?.name ?? '';
   const initials = user?.initials ?? '?';
-  const coins = user?.coins ?? 0;
-  const membership = user?.membership?.active && user.membership.endsAt ? { endsAt: user.membership.endsAt } : null;
+  const membership =
+    user?.membership?.active && user.membership.endsAt ? { endsAt: user.membership.endsAt, startedAt: user.membership.startedAt } : null;
 
   const topInset = Platform.OS === 'web' ? 20 : insets.top + 8;
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -66,6 +58,7 @@ export function ProfileScreen() {
   const [compact, setCompact] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [memberOpen, setMemberOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [systemNotif, setSystemNotif] = useState(true);
   const [toast, showToast] = useToast();
@@ -185,11 +178,8 @@ export function ProfileScreen() {
               },
             ]}
           >
-            <Pressable accessibilityRole="link" accessibilityLabel={`${name}. Sửa thông tin cá nhân`} onPress={() => go('thong-tin')} style={styles.avatarPress}>
+            <Pressable accessibilityRole="link" accessibilityLabel={`${name}. Xem thông tin cá nhân`} onPress={() => go('thong-tin')} style={styles.avatarPress}>
               <BigAvatar initials={initials} uri={user?.avatar} />
-              <View style={[styles.editBadge, { backgroundColor: colors.card, borderColor: colors.heroMid }]}>
-                <Icon name="pencil" size={13} strokeWidth={2.4} color={colors.emerald700} />
-              </View>
             </Pressable>
             <Text style={[styles.name, { color: colors.heroOn }]} numberOfLines={1}>
               {name}
@@ -198,51 +188,51 @@ export function ProfileScreen() {
               {user?.email}
             </Text>
 
-            <Pressable
-              accessibilityRole="link"
-              accessibilityLabel={membership ? `Gói thành viên, còn hạn đến ${dmy(membership.endsAt)}. Quản lý gói` : 'Chưa có gói thành viên. Xem các gói'}
-              onPress={() => go('quan-ly-goi')}
-              style={({ pressed }) => [styles.memberChip, { backgroundColor: colors.heroGlass, borderColor: colors.heroGlassLine, opacity: pressed ? 0.8 : 1 }]}
-            >
-              <Icon name="crown" size={15} strokeWidth={2.2} color={membership ? colors.spark500 : colors.heroOnMuted} />
-              <Text style={[styles.memberText, { color: colors.heroOn }]}>
-                {membership ? `Thành viên · đến ${dmy(membership.endsAt)}` : 'Chưa có gói thành viên'}
-              </Text>
-              <Icon name="chevronRight" size={15} color={colors.heroOnMuted} />
-            </Pressable>
+            {membership ? (
+              // Thành viên: pill vàng nổi bật, bấm → sheet thời hạn gói
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Tài khoản thành viên, hết hạn ${dmy(membership.endsAt)}. Xem chi tiết gói`}
+                onPress={() => setMemberOpen(true)}
+                style={({ pressed }) => [styles.memberPill, { boxShadow: `0px 3px 0px ${illo.goldEdge}`, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+              >
+                <GoldFill id="member-pill" />
+                <View style={styles.pillInner}>
+                  <Icon name="crown" size={16} strokeWidth={2.3} color={illo.goldInk} />
+                  <Text style={[styles.pillText, { color: illo.goldInk }]}>Tài khoản thành viên</Text>
+                  <Icon name="chevronRight" size={15} strokeWidth={2.4} color={illo.goldInk} />
+                </View>
+              </Pressable>
+            ) : (
+              // Cơ bản: pill trắng + nút Nâng cấp kế bên
+              <View style={styles.accountRow}>
+                <View accessible accessibilityLabel="Tài khoản cơ bản" style={[styles.basicPill, { backgroundColor: colors.heroOn }]}>
+                  <Icon name="basicAccount" size={16} strokeWidth={2.2} color={colors.heroMid} />
+                  <Text style={[styles.pillText, { color: colors.heroMid }]}>Tài khoản cơ bản</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Nâng cấp lên tài khoản thành viên"
+                  onPress={() => go('quan-ly-goi')}
+                  style={({ pressed }) => [styles.upgrade, { boxShadow: `0px 3px 0px ${illo.goldEdge}`, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+                >
+                  <GoldFill id="upgrade-btn" />
+                  <View style={styles.pillInner}>
+                    <Icon name="crown" size={15} strokeWidth={2.3} color={illo.goldInk} />
+                    <Text style={[styles.pillText, { color: illo.goldInk }]}>Nâng cấp</Text>
+                  </View>
+                </Pressable>
+              </View>
+            )}
           </Animated.View>
         </View>
-
-        {/* ---------- Xu (nổi đè mép dưới hero) ---------- */}
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel={`Bạn đang có ${groupThousands(coins)} xu. Xem lịch sử xu`}
-          onPress={() => go('lich-su-credit')}
-          style={({ pressed }) => [
-            styles.coinCard,
-            { backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.navShadow, transform: [{ scale: pressed ? 0.99 : 1 }] },
-          ]}
-        >
-          <CoinBadge />
-          <View style={styles.grow}>
-            <Text style={[type.caption, { color: colors.ink600 }]}>Xu của bạn</Text>
-            <Text style={[styles.coinValue, { color: colors.ink900 }]} numberOfLines={1}>
-              {groupThousands(coins)}
-              <Text style={[styles.coinUnit, { color: colors.ink600 }]}> xu</Text>
-            </Text>
-          </View>
-          <View style={[styles.historyPill, { backgroundColor: colors.mint50 }]}>
-            <Icon name="history" size={15} color={colors.emerald700} />
-            <Text style={[type.captionStrong, { color: colors.emerald700 }]}>Lịch sử</Text>
-          </View>
-        </Pressable>
 
         {/* ---------- Cài đặt ---------- */}
         <SettingsGroup title="Tài khoản">
           <SettingsRow first icon={<RowIcon name="user" />} label="Thông tin cá nhân" onPress={() => go('thong-tin')} />
+          <SettingsRow icon={<RowIcon name="lock" />} label="Mật khẩu & Bảo mật" onPress={() => go('doi-mat-khau')} />
+          <SettingsRow icon={<RowIcon name="receipt" />} label="Lịch sử thanh toán" onPress={() => go('lich-su-mua-hang')} />
           <SettingsRow icon={<RowIcon name="crown" />} label="Gói thành viên" value={membership ? `đến ${dmy(membership.endsAt)}` : 'Chưa có'} onPress={() => go('quan-ly-goi')} />
-          <SettingsRow icon={<RowIcon name="lock" />} label="Đổi mật khẩu" onPress={() => go('doi-mat-khau')} />
-          <SettingsRow icon={<RowIcon name="receipt" />} label="Lịch sử mua hàng" onPress={() => go('lich-su-mua-hang')} />
           <SettingsRow icon={<RowIcon name="ticket" />} label="Nhập mã kích hoạt" onPress={() => go('ma-kich-hoat')} />
         </SettingsGroup>
 
@@ -313,7 +303,7 @@ export function ProfileScreen() {
                 {name}
               </Text>
               <Text style={[type.caption, { color: colors.heroOnMuted }]} numberOfLines={1}>
-                {groupThousands(coins)} xu{membership ? ' · Thành viên' : ''}
+                {membership ? 'Tài khoản thành viên' : 'Tài khoản cơ bản'}
               </Text>
             </View>
           </Animated.View>
@@ -349,6 +339,44 @@ export function ProfileScreen() {
             <Text style={[type.label, { color: colors.onEmerald }]}>Chia sẻ link</Text>
           </Pressable>
         </View>
+      </BottomSheet>
+
+      {/* Gói thành viên: thời hạn + Gia hạn */}
+      <BottomSheet visible={memberOpen} onClose={() => setMemberOpen(false)} title="Tài khoản thành viên">
+        {membership ? (
+          <View style={styles.memberSheet}>
+            <View style={[styles.memberCard, { boxShadow: `0px 4px 0px ${illo.goldEdge}` }]}>
+              <GoldFill id="member-card" />
+              <View style={styles.memberCardInner}>
+                <Icon name="crown" size={22} strokeWidth={2.2} color={illo.goldInk} />
+                <View style={styles.grow}>
+                  <Text style={[styles.memberCardTitle, { color: illo.goldInk }]}>Gói thành viên Ellso</Text>
+                  <Text style={[type.caption, { color: illo.goldInk }]}>Mở toàn bộ tài liệu và các khoá huấn luyện</Text>
+                </View>
+                <View style={[styles.daysLeft, { backgroundColor: illo.goldInk }]}>
+                  <Text style={[styles.daysLeftText, { color: illo.goldHi }]}>còn {daysUntil(membership.endsAt)} ngày</Text>
+                </View>
+              </View>
+            </View>
+            <View style={[styles.dates, { borderColor: colors.line }]}>
+              <DateRow icon="calendarStart" label="Bắt đầu" value={membership.startedAt ? dmy(membership.startedAt) : '—'} />
+              <View style={[styles.datesDivider, { backgroundColor: colors.line }]} />
+              <DateRow icon="calendarEnd" label="Hết hạn" value={dmy(membership.endsAt)} />
+            </View>
+            <Text style={[type.caption, { color: colors.ink600 }]}>Gia hạn khi còn hạn: thời gian mới được cộng nối tiếp ngay sau ngày hết hạn hiện tại.</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setMemberOpen(false);
+                go('quan-ly-goi');
+              }}
+              style={({ pressed }) => [styles.primary, { backgroundColor: pressed ? colors.emerald800 : colors.emerald700 }]}
+            >
+              <Icon name="refresh" size={18} color={colors.onEmerald} />
+              <Text style={[type.label, { color: colors.onEmerald }]}>Gia hạn</Text>
+            </Pressable>
+          </View>
+        ) : null}
       </BottomSheet>
 
       {/* Xác nhận đăng xuất (dùng sheet vì Alert không chạy trên web) */}
@@ -402,23 +430,29 @@ function BigAvatar({ initials, uri }: { initials: string; uri?: string | null })
   );
 }
 
-/** Đồng xu vàng (gradient) chứa icon Lucide "coins". */
-function CoinBadge() {
+/** Nền vàng gradient phủ kín phần tử cha (pill / thẻ thành viên). Cha cần overflow hidden + bo góc. */
+function GoldFill({ id }: { id: string }) {
   return (
-    <View style={[styles.coin, { boxShadow: `0px 4px 0px ${illo.goldEdge}` }]}>
-      <Svg width={52} height={52} style={StyleSheet.absoluteFill}>
-        <Defs>
-          <LinearGradient id="coinBg" x1="0.15" y1="0" x2="0.85" y2="1">
-            <Stop offset="0" stopColor={illo.goldHi} />
-            <Stop offset="1" stopColor={illo.goldLo} />
-          </LinearGradient>
-        </Defs>
-        <Circle cx="26" cy="26" r="26" fill="url(#coinBg)" />
-      </Svg>
-      {/* bọc để icon nằm trên lớp gradient (web vẽ lớp absolute đè phần tử thường) */}
-      <View style={styles.onTop}>
-        <Icon name="coins" size={24} strokeWidth={2.2} color={illo.goldEdge} />
-      </View>
+    <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} preserveAspectRatio="none">
+      <Defs>
+        <LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor={illo.goldHi} />
+          <Stop offset="0.55" stopColor={illo.goldMid} />
+          <Stop offset="1" stopColor={illo.goldLo} />
+        </LinearGradient>
+      </Defs>
+      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id})`} />
+    </Svg>
+  );
+}
+
+function DateRow({ icon, label, value }: { icon: 'calendarStart' | 'calendarEnd'; label: string; value: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.dateRow}>
+      <RowIcon name={icon} />
+      <Text style={[styles.rowLabel, { color: colors.ink600 }]}>{label}</Text>
+      <Text style={[styles.dateValue, { color: colors.ink900 }]}>{value}</Text>
     </View>
   );
 }
@@ -430,23 +464,31 @@ const styles = StyleSheet.create({
   onTop: { position: 'relative', zIndex: 1 },
   overscroll: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%' },
 
-  hero: { paddingHorizontal: 16, paddingBottom: 72, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
+  hero: { paddingHorizontal: 16, paddingBottom: 32, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, overflow: 'hidden' },
   heroTop: { height: COMPACT_H },
   glassBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   identity: { alignItems: 'center', paddingTop: 8 },
   avatarPress: { marginBottom: 12 },
   avatarWrap: { width: 104, height: 104, alignItems: 'center', justifyContent: 'center' },
-  editBadge: { position: 'absolute', right: 4, bottom: 4, width: 30, height: 30, borderRadius: 15, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
   name: { fontFamily: fonts.display600, fontSize: 24, lineHeight: 32, maxWidth: '100%' },
   email: { fontFamily: fonts.sans500, fontSize: 14, lineHeight: 20, marginTop: 2 },
-  memberChip: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, paddingLeft: 12, paddingRight: 10, height: 34, borderRadius: 9999, borderWidth: 1 },
-  memberText: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18 },
+  accountRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 },
+  basicPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 9999 },
+  upgrade: { height: 34, borderRadius: 9999, overflow: 'hidden', justifyContent: 'center' },
+  memberPill: { marginTop: 14, height: 36, borderRadius: 9999, overflow: 'hidden', justifyContent: 'center' },
+  pillInner: { position: 'relative', zIndex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14 },
+  pillText: { fontFamily: fonts.sans700, fontSize: 13, lineHeight: 18 },
 
-  coinCard: { marginTop: -44, marginHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 24, borderWidth: 1 },
-  coin: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  coinValue: { fontFamily: fonts.display700, fontSize: 28, lineHeight: 34 },
-  coinUnit: { fontFamily: fonts.sans600, fontSize: 15 },
-  historyPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, height: 34, borderRadius: 9999 },
+  memberSheet: { gap: 14 },
+  memberCard: { borderRadius: 18, overflow: 'hidden' },
+  memberCardInner: { position: 'relative', zIndex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
+  memberCardTitle: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
+  daysLeft: { paddingHorizontal: 10, height: 26, borderRadius: 9999, justifyContent: 'center' },
+  daysLeftText: { fontFamily: fonts.sans700, fontSize: 12, lineHeight: 16 },
+  dates: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 14 },
+  datesDivider: { height: StyleSheet.hairlineWidth },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56 },
+  dateValue: { fontFamily: fonts.sans700, fontSize: 15, lineHeight: 22 },
 
   themeBlock: { gap: 12, paddingTop: 12, paddingRight: 12, paddingBottom: 14, paddingLeft: 14 },
   themeHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },

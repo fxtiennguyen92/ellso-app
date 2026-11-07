@@ -45,14 +45,26 @@ export const formatDate = (iso: string) => {
   return `${d}/${m}/${y}`;
 };
 
+/** "2026-11-30T…" (ISO) → "30/11/2026" */
+export const dmy = (iso: string) => {
+  const d = new Date(iso);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+};
+
+/** Số ngày còn lại tới ISO (làm tròn lên, tối thiểu 0). */
+export const daysUntil = (iso: string) => Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000));
+
+/** 1250 → "1.250" */
+export const groupThousands = (n: number) => String(Math.max(0, Math.floor(n))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
 /** Link hiển thị gọn (bỏ https://) */
 export const displayLink = (url: string) => url.replace(/^https?:\/\//, '');
 
 /** Các trang con của Hồ sơ (đang là màn tạm) — key = đường dẫn /profile/<key>. */
 export const profileSections = {
   'thong-tin': 'Thông tin cá nhân',
-  'doi-mat-khau': 'Đổi mật khẩu',
-  'lich-su-mua-hang': 'Lịch sử mua hàng',
+  'doi-mat-khau': 'Mật khẩu & Bảo mật',
+  'lich-su-mua-hang': 'Lịch sử thanh toán',
   'ma-kich-hoat': 'Nhập mã kích hoạt',
   'quan-ly-goi': 'Quản lý gói',
   'lich-su-credit': 'Lịch sử xu',

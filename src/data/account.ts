@@ -5,6 +5,8 @@
  * - DELETE /me/avatar                                → {data: user}
  * - POST   /me/password  {current_password, password, password_confirmation}
  *   Đổi xong server đăng xuất mọi thiết bị khác, máy này giữ đăng nhập.
+ * - GET    /me/referrer/preview?code=                → {data: {name, email, referral_code}}
+ * - POST   /me/referrer  {code}                       → {data: user} — chỉ một lần, không đổi được
  */
 import { Platform } from 'react-native';
 
@@ -39,6 +41,23 @@ export async function apiUpdatePassword(token: string, current: string, password
     token,
     body: { current_password: current, password, password_confirmation: password },
   });
+}
+
+export type ReferrerPreview = { name: string; email: string; code: string };
+
+/** Xem trước người giới thiệu theo mã (lỗi 422 → ApiError.field('code')). */
+export async function apiPreviewReferrer(token: string, code: string): Promise<ReferrerPreview> {
+  const r = await apiRequest<{ data: { name: string; email: string; referral_code: string } }>(
+    'GET',
+    `/me/referrer/preview?code=${encodeURIComponent(code.trim().toUpperCase())}`,
+    { token },
+  );
+  return { name: r.data.name, email: r.data.email, code: r.data.referral_code };
+}
+
+export async function apiSetReferrer(token: string, code: string): Promise<AuthUser> {
+  const r = await apiRequest<{ data: ServerUser }>('POST', '/me/referrer', { token, body: { code: code.trim().toUpperCase() } });
+  return toUser(r.data);
 }
 
 /** SĐT Việt Nam (khớp server): bỏ khoảng trắng / dấu chấm / gạch, +84 → 0; hợp lệ = 10 số bắt đầu bằng 0. */

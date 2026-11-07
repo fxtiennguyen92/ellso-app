@@ -4,7 +4,10 @@ import BadgeCheck from 'lucide-react-native/icons/badge-check';
 import Bell from 'lucide-react-native/icons/bell';
 import Book from 'lucide-react-native/icons/book';
 import BookOpen from 'lucide-react-native/icons/book-open';
+import CalendarCheck from 'lucide-react-native/icons/calendar-check';
+import CalendarClock from 'lucide-react-native/icons/calendar-clock';
 import Camera from 'lucide-react-native/icons/camera';
+import CircleUserRound from 'lucide-react-native/icons/circle-user-round';
 import Bookmark from 'lucide-react-native/icons/bookmark';
 import Check from 'lucide-react-native/icons/check';
 import ChevronDown from 'lucide-react-native/icons/chevron-down';
@@ -58,6 +61,7 @@ import Target from 'lucide-react-native/icons/target';
 import Ticket from 'lucide-react-native/icons/ticket';
 import TriangleAlert from 'lucide-react-native/icons/triangle-alert';
 import User from 'lucide-react-native/icons/user';
+import UserPlus from 'lucide-react-native/icons/user-plus';
 import UserRound from 'lucide-react-native/icons/user-round';
 import Users from 'lucide-react-native/icons/users';
 import Video from 'lucide-react-native/icons/video';
@@ -131,6 +135,10 @@ const ICONS = {
   verified: BadgeCheck,
   camera: Camera,
   trash: Trash2,
+  basicAccount: CircleUserRound,
+  userPlus: UserPlus,
+  calendarStart: CalendarCheck,
+  calendarEnd: CalendarClock,
   // tài liệu
   bookmark: Bookmark,
   bookmarkFilled: Bookmark,

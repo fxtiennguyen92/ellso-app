@@ -21,7 +21,9 @@ export type AuthUser = {
   /** Số xu đang có (GET /me → coins). */
   coins?: number;
   /** Gói thành viên: endsAt = ngày hết hạn (ISO) khi còn gói, null khi chưa có / đã hết. */
-  membership?: { active: boolean; endsAt: string | null };
+  membership?: { active: boolean; startedAt: string | null; endsAt: string | null };
+  /** Người giới thiệu (null = chưa có; chỉ thêm được một lần). */
+  referrer?: { name: string; email: string | null; code: string } | null;
 };
 export type Session = {
   token: string;
@@ -63,7 +65,8 @@ export type ServerUser = {
   phone?: string | null;
   referral_code?: string | null;
   coins?: number;
-  membership?: { active: boolean; ends_at: string | null };
+  membership?: { active: boolean; started_at?: string | null; ends_at: string | null };
+  referrer?: { name: string; email?: string | null; referral_code: string } | null;
 };
 export const toUser = (u: ServerUser): AuthUser => ({
   id: String(u.id),
@@ -74,7 +77,8 @@ export const toUser = (u: ServerUser): AuthUser => ({
   phone: u.phone ?? null,
   referralCode: u.referral_code ?? null,
   coins: u.coins ?? 0,
-  membership: u.membership ? { active: u.membership.active, endsAt: u.membership.ends_at } : undefined,
+  membership: u.membership ? { active: u.membership.active, startedAt: u.membership.started_at ?? null, endsAt: u.membership.ends_at } : undefined,
+  referrer: u.referrer === undefined ? undefined : u.referrer ? { name: u.referrer.name, email: u.referrer.email ?? null, code: u.referrer.referral_code } : null,
 });
 
 /** Đổi ApiError của server thành AuthError gắn đúng ô trên form. `fields`: tên trường server → ô trên app. */
