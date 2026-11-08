@@ -71,7 +71,7 @@ Màn hình / bottom sheet nào có `TextInput` thì phải xử lý bàn phím v
 
 - Mọi thứ mua được (sách, khoá học, sau này tài liệu khác) đi qua **giỏ hàng trên server** (`useCart()` từ `src/components/cart/CartContext.tsx`, API `/v1/cart`). Không tự làm luồng thanh toán riêng ở từng màn.
 - **"Mua ngay"** = `add(type, id, { open: true })` → thêm vào giỏ rồi mở tab Giỏ hàng. Nút giỏ nhỏ / "Thêm vào giỏ" = `add(type, id)` (ở lại màn, báo toast).
-- Tab **Giỏ hàng** nằm bên trái Hồ sơ, chỉ hiện khi giỏ có món (hoặc đang mở tab đó), icon có chấm vàng gây chú ý (`BottomBar`). Mã khuyến mãi áp ở trang giỏ (`POST /v1/cart/promo`).
+- Nút **Giỏ hàng** trên thanh tab (bên trái Hồ sơ, không phải tab thật) chỉ hiện khi giỏ có món, có chấm vàng gây chú ý; bấm mở màn `/cart` toàn màn hình (không thanh tab, nút X đóng). Mã khuyến mãi áp ở trang giỏ (`POST /v1/cart/promo`).
 
 ## Thông tin khác nút bấm (không làm thứ không bấm được trông như bấm được)
 
