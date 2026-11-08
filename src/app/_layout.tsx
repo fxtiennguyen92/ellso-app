@@ -131,8 +131,8 @@ function AppShell() {
         )}
       </RevealProvider>
       {!splashDone && <SplashOverlay ready={ready} onExitStart={onExitStart} onFinish={onFinish} />}
-      {/* Home và Hồ sơ có hero emerald đậm ở trên cùng → chữ status bar sáng */}
-      <StatusBar style={!splashDone ? 'dark' : pathname === '/' || pathname === '/profile' || scheme === 'dark' ? 'light' : 'dark'} />
+      {/* Home, Hồ sơ, Kết quả bài test có hero emerald đậm ở trên cùng → chữ status bar sáng */}
+      <StatusBar style={!splashDone ? 'dark' : pathname === '/' || pathname === '/profile' || /^\/placement-tests\/[^/]+\/result$/.test(pathname) || scheme === 'dark' ? 'light' : 'dark'} />
     </AppFrame>
   );
 }

@@ -49,6 +49,7 @@ import Receipt from 'lucide-react-native/icons/receipt';
 import RotateCw from 'lucide-react-native/icons/rotate-cw';
 import Scale from 'lucide-react-native/icons/scale';
 import ScanLine from 'lucide-react-native/icons/scan-line';
+import PartyPopper from 'lucide-react-native/icons/party-popper';
 import Plus from 'lucide-react-native/icons/plus';
 import Search from 'lucide-react-native/icons/search';
 import CircleCheckBig from 'lucide-react-native/icons/circle-check-big';
@@ -58,7 +59,9 @@ import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import ShoppingCart from 'lucide-react-native/icons/shopping-cart';
 import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
 import Smartphone from 'lucide-react-native/icons/smartphone';
+import Star from 'lucide-react-native/icons/star';
 import Sun from 'lucide-react-native/icons/sun';
+import Trophy from 'lucide-react-native/icons/trophy';
 import Tag from 'lucide-react-native/icons/tag';
 import Trash2 from 'lucide-react-native/icons/trash-2';
 import Target from 'lucide-react-native/icons/target';
@@ -92,6 +95,9 @@ const ICONS = {
   clock: Clock,
   cart: ShoppingCart,
   plus: Plus,
+  trophy: Trophy,
+  star: Star,
+  party: PartyPopper,
   checkCircle: CircleCheckBig,
   sparkles: Sparkles,
   check: Check,

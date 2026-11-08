@@ -1,13 +1,12 @@
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
-import { Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { PrimaryButton, SecondaryButton } from '@/components/auth/AuthUI';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Icon } from '@/components/Icon';
 import type { PlacementTestSummary } from '@/data/placement';
-import { useDragScroll } from '@/hooks/useDragScroll';
 import { useTheme } from '@/theme/ThemeProvider';
 import { illo } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
@@ -18,21 +17,14 @@ const TONES = {
   done: { top: '#6ee7b7', bottom: '#10b981', edge: '#047857', ink: '#022c22', muted: 'rgba(2,44,34,0.75)', cta: '#ffffff', ctaText: '#047857' },
 };
 
-const CARD_W = 248;
-
 /**
- * Mục "Bài test đầu vào" ở tab Khoá học: các bài nằm ngang (vuốt / kéo chuột), mỗi bài một thẻ bấm được.
- * Đã làm → thẻ xanh "Đã hoàn thành", bấm mở kết quả. Chưa làm → bấm hỏi xác nhận (số câu, thời gian ước tính) rồi mới vào làm.
+ * Mục "Bài test đầu vào" ở tab Khoá học: lưới 2 cột, mỗi bài một thẻ bấm được (icon, tên, nút). Không ghi trạng thái bằng chữ —
+ * màu + nút đã nói lên: chưa làm = vàng/cam "Làm bài"; đã làm = xanh "Xem kết quả", bấm mở kết quả. Chưa làm → bấm hỏi xác nhận (số câu, thời gian ước tính) rồi mới vào làm.
  */
 export function PlacementTests({ tests }: { tests: PlacementTestSummary[] }) {
   const { colors } = useTheme();
   const [confirm, setConfirm] = useState<PlacementTestSummary | null>(null);
-  const rowRef = useRef<ScrollViewInstance>(null);
-  useDragScroll(rowRef);
-
   if (tests.length === 0) return null;
-  const done = tests.filter((t) => t.completed).length;
-  const single = tests.length === 1;
 
   const press = (t: PlacementTestSummary) =>
     t.completed ? router.push({ pathname: '/placement-tests/[id]/result', params: { id: String(t.id) } }) : setConfirm(t);
@@ -46,31 +38,18 @@ export function PlacementTests({ tests }: { tests: PlacementTestSummary[] }) {
 
   return (
     <View style={styles.section}>
-      <View style={styles.head}>
-        <Text accessibilityRole="header" style={[type.h2, styles.grow, { color: colors.ink900 }]}>
-          Bài test đầu vào
-        </Text>
-        <View style={[styles.progress, { backgroundColor: done === tests.length ? colors.mint50 : colors.surfaceAlt }]}>
-          {done === tests.length ? <Icon name="check" size={13} strokeWidth={3} color={colors.emerald700} /> : null}
-          <Text style={[type.captionStrong, { color: done === tests.length ? colors.emerald700 : colors.ink600 }]}>
-            Đã làm {done}/{tests.length}
-          </Text>
-        </View>
-      </View>
+      <Text accessibilityRole="header" style={[type.h2, styles.title, { color: colors.ink900 }]}>
+        Bài test đầu vào
+      </Text>
 
-      <ScrollView
-        ref={rowRef}
-        horizontal
-        scrollEnabled={!single}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.row, single && styles.rowSingle]}
-        snapToInterval={single ? undefined : CARD_W + 12}
-        decelerationRate="fast"
-      >
+      {/* Lưới 2 cột, xuống hàng (không cuộn ngang) */}
+      <View style={styles.grid}>
         {tests.map((t) => (
-          <TestCard key={t.id} test={t} wide={single} onPress={() => press(t)} />
+          <View key={t.id} style={styles.cell}>
+            <TestCard test={t} onPress={() => press(t)} />
+          </View>
         ))}
-      </ScrollView>
+      </View>
 
       <BottomSheet visible={!!confirm} onClose={() => setConfirm(null)} title="Bắt đầu làm bài?">
         {confirm ? (
@@ -110,17 +89,16 @@ function Fact({ icon, label, value }: { icon: 'clock' | 'help'; label: string; v
   );
 }
 
-function TestCard({ test, wide, onPress }: { test: PlacementTestSummary; wide: boolean; onPress: () => void }) {
+function TestCard({ test, onPress }: { test: PlacementTestSummary; onPress: () => void }) {
   const t = test.completed ? TONES.done : TONES.todo;
   const gid = `pt-${test.id}-${test.completed ? 'd' : 't'}`;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${test.title}. ${test.completed ? 'Đã hoàn thành, xem kết quả' : `${test.questionCount} câu, khoảng ${test.minutes} phút. Làm bài`}`}
+      accessibilityLabel={`${test.title}. ${test.completed ? 'Đã hoàn thành, xem kết quả' : 'Chưa làm, bấm để làm bài'}`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
-        wide ? styles.cardWide : { width: CARD_W },
         { boxShadow: `0px ${pressed ? 2 : 5}px 0px ${t.edge}`, transform: [{ translateY: pressed ? 3 : 0 }] },
       ]}
     >
@@ -133,31 +111,19 @@ function TestCard({ test, wide, onPress }: { test: PlacementTestSummary; wide: b
         </Defs>
         <Rect width="100%" height="100%" fill={`url(#${gid})`} />
       </Svg>
-      <Svg width={150} height={150} style={styles.rings} pointerEvents="none">
-        {[34, 54, 74].map((r) => (
-          <Circle key={r} cx={110} cy={40} r={r} stroke="#ffffff" strokeOpacity={0.35} strokeWidth={1.4} fill="none" />
-        ))}
-      </Svg>
-      <View style={styles.cardIcon} pointerEvents="none">
-        <Icon name={test.completed ? 'checkCircle' : 'clipboard'} size={44} strokeWidth={1.6} color="#ffffff" duotone />
-      </View>
 
       <View style={styles.cardBody}>
-        <View style={styles.eyebrow}>
-          <Icon name={test.completed ? 'check' : 'target'} size={13} strokeWidth={2.6} color={t.ink} />
-          <Text style={[type.eyebrow, { color: t.ink }]}>{test.completed ? 'Đã hoàn thành' : 'Chưa làm'}</Text>
+        <View style={[styles.iconChip, { backgroundColor: 'rgba(255,255,255,0.32)' }]}>
+          <Icon name={test.completed ? 'trophy' : 'clipboard'} size={22} strokeWidth={2} color={t.ink} />
         </View>
-        <Text style={[styles.cardTitle, { color: t.ink }]} numberOfLines={2}>
+        <Text style={[styles.cardTitle, { color: t.ink }]} numberOfLines={3}>
           {test.title}
         </Text>
-        <View style={styles.cardFoot}>
-          <Text style={[styles.meta, { color: t.muted }]} numberOfLines={1}>
-            {test.questionCount} câu · ~{test.minutes} phút
+        <View style={[styles.cta, { backgroundColor: t.cta }]}>
+          <Text style={[styles.ctaText, { color: t.ctaText }]} numberOfLines={1}>
+            {test.completed ? 'Xem kết quả' : 'Làm bài'}
           </Text>
-          <View style={[styles.cta, { backgroundColor: t.cta }]}>
-            <Text style={[styles.ctaText, { color: t.ctaText }]}>{test.completed ? 'Xem kết quả' : 'Làm bài'}</Text>
-            <Icon name="chevronRight" size={15} strokeWidth={2.6} color={t.ctaText} />
-          </View>
+          <Icon name="chevronRight" size={15} strokeWidth={2.6} color={t.ctaText} />
         </View>
       </View>
     </Pressable>
@@ -166,21 +132,15 @@ function TestCard({ test, wide, onPress }: { test: PlacementTestSummary; wide: b
 
 const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
-  section: { gap: 12, paddingTop: 8 },
-  head: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16 },
-  progress: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, height: 26, borderRadius: 9999 },
-  row: { gap: 12, paddingHorizontal: 16, paddingTop: 2, paddingBottom: 8 },
-  rowSingle: { flexGrow: 1 },
-  card: { height: 156, borderRadius: 22, overflow: 'hidden' },
-  cardWide: { flex: 1 },
-  rings: { position: 'absolute', top: -20, right: -30 },
-  cardIcon: { position: 'absolute', top: 16, right: 16, transform: [{ rotate: '8deg' }] },
-  cardBody: { flex: 1, padding: 16, paddingRight: 18, justifyContent: 'space-between', zIndex: 1 },
-  eyebrow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  cardTitle: { fontFamily: fonts.display600, fontSize: 17, lineHeight: 23, marginRight: 52 },
-  cardFoot: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  meta: { flex: 1, minWidth: 0, fontFamily: fonts.sans600, fontSize: 12, lineHeight: 16 },
-  cta: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 12, paddingRight: 8, height: 32, borderRadius: 9999 },
+  section: { gap: 12, paddingTop: 8, paddingHorizontal: 16 },
+  title: {},
+  grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6, rowGap: 14 },
+  cell: { width: '50%', paddingHorizontal: 6, paddingBottom: 4 },
+  card: { flex: 1, minHeight: 168, borderRadius: 20, overflow: 'hidden' },
+  cardBody: { flex: 1, padding: 14, gap: 10, zIndex: 1 },
+  iconChip: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  cardTitle: { flex: 1, fontFamily: fonts.display600, fontSize: 15, lineHeight: 21 },
+  cta: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 12, paddingRight: 8, height: 32, borderRadius: 9999 },
   ctaText: { fontFamily: fonts.sans700, fontSize: 13, lineHeight: 18 },
   sheet: { gap: 14 },
   sheetTitle: { fontFamily: fonts.display600, fontSize: 18, lineHeight: 26 },
