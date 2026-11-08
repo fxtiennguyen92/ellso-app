@@ -70,7 +70,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Bỏ ngay trên máy cho mượt, lỗi thì trả lại
       setCart((c) => {
         const items = c.items.filter((i) => !(i.type === type && i.id === id));
-        return { items, count: items.length, total: items.reduce((s, i) => s + i.price, 0) };
+        return { ...c, items, count: items.length, total: items.reduce((s, i) => s + i.price, 0) };
       });
       try {
         setCart(await apiRemoveFromCart(token, type, id));

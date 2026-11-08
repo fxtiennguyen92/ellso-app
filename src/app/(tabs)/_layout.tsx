@@ -17,8 +17,6 @@ export default function TabsLayout() {
         <Tabs.Screen name="index" options={{ title: 'Trang chủ' }} />
         <Tabs.Screen name="courses" options={{ title: 'Khoá học' }} />
         <Tabs.Screen name="documents" options={{ title: 'Tài liệu' }} />
-        {/* Chỉ hiện trên thanh tab khi giỏ có món (xem BottomBar) */}
-        <Tabs.Screen name="cart" options={{ title: 'Giỏ hàng' }} />
         <Tabs.Screen name="profile" options={{ title: 'Hồ sơ' }} />
       </Tabs>
   );

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -13,6 +14,8 @@ import { type } from '@/theme/typography';
 
 /** Khoảng trống nội dung cần chừa phía dưới để không bị thanh điều hướng che. */
 export const BOTTOM_BAR_SPACE = 20 + 60 + 20;
+
+const CART_KEY = 'cart-button';
 
 const TABS: Record<string, { label: string; icon: IconName }> = {
   index: { label: 'Trang chủ', icon: 'home' },
@@ -61,9 +64,16 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
       hide.remove();
     };
   }, []);
-  const currentName = state.routes[state.index]?.name;
-  // Tab Giỏ hàng chỉ hiện khi giỏ có món (hoặc đang mở tab đó — vd vừa bỏ món cuối cùng ra)
-  const routes = state.routes.filter((r) => TABS[r.name] && (r.name !== 'cart' || cart.count > 0 || currentName === 'cart'));
+  // Nút Giỏ hàng: không phải tab thật — chỉ hiện khi giỏ có món, đứng trước Hồ sơ, bấm mở màn /cart toàn màn hình
+  // (không có thanh tab). Nên nó không bao giờ ở trạng thái "đang chọn".
+  const routes = useMemo(() => {
+    const list: { key: string; name: string }[] = state.routes.filter((r) => TABS[r.name]);
+    if (cart.count > 0) {
+      const at = list.findIndex((r) => r.name === 'profile');
+      list.splice(at < 0 ? list.length : at, 0, { key: CART_KEY, name: 'cart' });
+    }
+    return list;
+  }, [state.routes, cart.count]);
   const activeIndex = Math.max(
     0,
     routes.findIndex((r) => r.key === state.routes[state.index]?.key),
@@ -212,6 +222,10 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                   onPressIn={() => setPressedKey(route.key)}
                   onPressOut={() => setPressedKey(null)}
                   onPress={() => {
+                    if (route.key === CART_KEY) {
+                      router.push('/cart');
+                      return;
+                    }
                     // Phát sự kiện tabPress như tab bar mặc định: Stack lồng bên trong tự lắng nghe —
                     // bấm lại tab ĐANG mở thì Stack về màn đầu (popToTop).
                     // Chuyển sang tab khác thì giữ nguyên màn con đang xem của tab cũ.
@@ -311,15 +325,15 @@ function CartDot({ count }: { count: number }) {
           ]}
         />
       )}
-      <Animated.View style={[styles.dot, { backgroundColor: colors.spark500, borderColor: colors.navBg, transform: [{ scale: pop }] }]} />
+      <Animated.View style={[styles.dot, { backgroundColor: colors.spark500, transform: [{ scale: pop }] }]} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  dotWrap: { position: 'absolute', top: -3, right: -4, width: 12, height: 12, alignItems: 'center', justifyContent: 'center' },
-  dotRing: { position: 'absolute', width: 10, height: 10, borderRadius: 5 },
-  dot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
+  dotWrap: { position: 'absolute', top: -2, right: -3, width: 9, height: 9, alignItems: 'center', justifyContent: 'center' },
+  dotRing: { position: 'absolute', width: 9, height: 9, borderRadius: 5 },
+  dot: { width: 9, height: 9, borderRadius: 5 },
   hidden: { opacity: 0 },
   wrap: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
   measure: { position: 'absolute', opacity: 0, left: 0, top: 0, flexDirection: 'row' },

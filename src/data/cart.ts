@@ -23,19 +23,27 @@ export type CartItem = {
   price: number;
 };
 
-export type Cart = { items: CartItem[]; count: number; total: number };
+export type Cart = {
+  items: CartItem[];
+  count: number;
+  total: number;
+  /** Xu của học viên: số dư + tỉ lệ (VND / 1 xu, CMS chỉnh). Trừ thật khi tạo đơn (chưa làm). */
+  coins: { balance: number; rate: number };
+};
 
-export const emptyCart: Cart = { items: [], count: 0, total: 0 };
+export const emptyCart: Cart = { items: [], count: 0, total: 0, coins: { balance: 0, rate: 0 } };
 
 type ApiCart = {
   items: { type: CartItemType; id: number; kind: string; title: string; subtitle: string | null; cover: string | null; cover_url: string | null; price: number }[];
   count: number;
   total: number;
+  coins?: { balance: number; rate: number };
 };
 
 const fromApi = (c: ApiCart): Cart => ({
   count: c.count,
   total: c.total,
+  coins: c.coins ?? { balance: 0, rate: 0 },
   items: c.items.map((i) => ({
     type: i.type,
     id: i.id,
