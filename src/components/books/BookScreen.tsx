@@ -152,17 +152,6 @@ export function BookScreen() {
               </View>
             </View>
 
-            {/* Lớp chuyển màu từ hero (màu đã chọn) xuống nền trang */}
-            <Svg width="100%" height={44} pointerEvents="none">
-              <Defs>
-                <LinearGradient id={`bookFade-${book.cover}`} x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={pal.edge} stopOpacity={1} />
-                  <Stop offset="1" stopColor={colors.bg} stopOpacity={1} />
-                </LinearGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill={`url(#bookFade-${book.cover})`} />
-            </Svg>
-
             {/* 3. Khối mua */}
             <View style={styles.buyBox}>
               {access ? (
@@ -322,7 +311,7 @@ const styles = StyleSheet.create({
   back: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15,23,42,0.28)', overflow: 'hidden' },
   backSolid: { borderRadius: 12, borderWidth: 1 },
   backIcon: { alignItems: 'center', justifyContent: 'center' },
-  hero: { overflow: 'hidden' },
+  hero: { overflow: 'hidden', borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
   heroCover: { position: 'absolute', right: 20 },
   coverShadow: { borderRadius: 6, boxShadow: '0px 18px 34px rgba(0,0,0,0.38), 0px 4px 10px rgba(0,0,0,0.22)' },
   heroInfo: { position: 'absolute', left: 20, bottom: 26, gap: 6 },
@@ -345,7 +334,7 @@ const styles = StyleSheet.create({
   barTitle: { flex: 1, fontFamily: fonts.display600, fontSize: 17, lineHeight: 24 },
   loading: { paddingVertical: 100, alignItems: 'center' },
   errorBox: { alignItems: 'center', gap: 12, paddingVertical: 80, paddingHorizontal: 32 },
-  buyBox: { paddingHorizontal: 20, paddingTop: 0, paddingBottom: 8, gap: 10 },
+  buyBox: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 8, gap: 10 },
   priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   price: { fontFamily: fonts.display700, fontSize: 28, lineHeight: 36 },
   owned: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 26, borderRadius: 9999 },
