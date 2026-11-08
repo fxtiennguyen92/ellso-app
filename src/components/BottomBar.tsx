@@ -1,14 +1,15 @@
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { useCart } from '@/components/cart/CartContext';
 import { Icon, type IconName } from '@/components/Icon';
 import { useRevealStyle } from '@/components/splash/RevealContext';
+import { NATIVE_DRIVER } from '@/hooks/useLoop';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useTheme } from '@/theme/ThemeProvider';
-import { fonts, type } from '@/theme/typography';
+import { type } from '@/theme/typography';
 
 /** Khoảng trống nội dung cần chừa phía dưới để không bị thanh điều hướng che. */
 export const BOTTOM_BAR_SPACE = 20 + 60 + 20;
@@ -50,6 +51,16 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
   const reveal = useRevealStyle(4, 40);
 
   const { cart } = useCart();
+  // Bàn phím mở (vd ô mã khuyến mãi ở Giỏ hàng) → ẩn thanh tab để không nổi đè lên bàn phím / ô nhập
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
   const currentName = state.routes[state.index]?.name;
   // Tab Giỏ hàng chỉ hiện khi giỏ có món (hoặc đang mở tab đó — vd vừa bỏ món cuối cùng ra)
   const routes = state.routes.filter((r) => TABS[r.name] && (r.name !== 'cart' || cart.count > 0 || currentName === 'cart'));
@@ -121,7 +132,10 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
   const activePressed = pressedKey === routes[activeIndex]?.key;
 
   return (
-    <Animated.View pointerEvents="box-none" style={[styles.wrap, { bottom: 20 + insets.bottom }, reveal]}>
+    <Animated.View
+      pointerEvents={keyboardOpen ? 'none' : 'box-none'}
+      style={[styles.wrap, { bottom: 20 + insets.bottom }, reveal, keyboardOpen && styles.hidden]}
+    >
       {/* Đo nhãn chữ (ẩn) */}
       <View pointerEvents="none" style={styles.measure} aria-hidden>
         {routes.map((r) => (
@@ -227,7 +241,7 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                       >
                         <Icon name={tab.icon} color={colors.navOn} duotone />
                       </Animated.View>
-                      {route.name === 'cart' && cart.count > 0 ? <CartBadge count={cart.count} /> : null}
+                      {route.name === 'cart' && cart.count > 0 ? <CartDot count={cart.count} /> : null}
                     </View>
                     <Animated.Text
                       style={[
@@ -254,35 +268,59 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
   );
 }
 
-/** Số món trong giỏ trên icon tab Giỏ hàng: nảy nhẹ mỗi khi số thay đổi. */
-function CartBadge({ count }: { count: number }) {
+/**
+ * Dấu chấm vàng trên icon tab Giỏ hàng (không ghi số): vòng sóng lan ra định kỳ để gây chú ý,
+ * nảy mạnh một lần mỗi khi số món thay đổi. Giảm chuyển động → chỉ chấm tĩnh.
+ */
+function CartDot({ count }: { count: number }) {
   const { colors } = useTheme();
+  const reduced = useReducedMotion();
   const pop = useRef(new Animated.Value(1)).current;
+  const ping = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
-    pop.setValue(1.35);
-    Animated.spring(pop, { toValue: 1, stiffness: 320, damping: 12, mass: 1, useNativeDriver: false }).start();
-  }, [count, pop]);
+    if (reduced) return;
+    pop.setValue(0.3);
+    Animated.spring(pop, { toValue: 1, stiffness: 300, damping: 9, mass: 1, useNativeDriver: NATIVE_DRIVER }).start();
+  }, [count, pop, reduced]);
+
+  useEffect(() => {
+    if (reduced) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(ping, { toValue: 1, duration: 1300, easing: Easing.out(Easing.quad), useNativeDriver: NATIVE_DRIVER }),
+        Animated.delay(900),
+        Animated.timing(ping, { toValue: 0, duration: 0, useNativeDriver: NATIVE_DRIVER }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [ping, reduced]);
+
   return (
-    <Animated.View pointerEvents="none" style={[styles.badge, { backgroundColor: colors.spark500, borderColor: colors.navBg, transform: [{ scale: pop }] }]}>
-      <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
-    </Animated.View>
+    <View pointerEvents="none" style={styles.dotWrap}>
+      {!reduced && (
+        <Animated.View
+          style={[
+            styles.dotRing,
+            {
+              backgroundColor: colors.spark500,
+              opacity: ping.interpolate({ inputRange: [0, 1], outputRange: [0.7, 0] }),
+              transform: [{ scale: ping.interpolate({ inputRange: [0, 1], outputRange: [1, 2.2] }) }],
+            },
+          ]}
+        />
+      )}
+      <Animated.View style={[styles.dot, { backgroundColor: colors.spark500, borderColor: colors.navBg, transform: [{ scale: pop }] }]} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  badge: {
-    position: 'absolute',
-    top: -7,
-    right: -10,
-    minWidth: 19,
-    height: 19,
-    paddingHorizontal: 4,
-    borderRadius: 10,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: { color: '#111827', fontFamily: fonts.sans700, fontSize: 10, lineHeight: 12 },
+  dotWrap: { position: 'absolute', top: -3, right: -4, width: 12, height: 12, alignItems: 'center', justifyContent: 'center' },
+  dotRing: { position: 'absolute', width: 10, height: 10, borderRadius: 5 },
+  dot: { width: 12, height: 12, borderRadius: 6, borderWidth: 2 },
+  hidden: { opacity: 0 },
   wrap: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
   measure: { position: 'absolute', opacity: 0, left: 0, top: 0, flexDirection: 'row' },
   bar: {

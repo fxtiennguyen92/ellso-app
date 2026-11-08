@@ -65,3 +65,19 @@ export async function apiRemoveFromCart(token: string, type: CartItemType, id: n
 
 export const kindLabel = (kind: string) =>
   ({ course: 'Khoá học', book: 'Sách điện tử', pdf: 'Tài liệu PDF', video: 'Video' })[kind] ?? 'Sản phẩm';
+
+export type CartPromo = {
+  code: string;
+  description: string | null;
+  discount: number;
+  /** Món được giảm (hiện chỉ khoá học). */
+  eligible: { type: CartItemType; id: number }[];
+  subtotal: number;
+  total: number;
+};
+
+/** Xem trước mã khuyến mãi cho giỏ hiện tại (POST /cart/promo). Lỗi (mã sai, hết hạn, chỉ có sách…) ném ApiError có message tiếng Việt. */
+export async function apiCartPromo(token: string, code: string): Promise<CartPromo> {
+  const { data } = await apiRequest<{ data: CartPromo }>('POST', '/cart/promo', { token, body: { code } });
+  return data;
+}
