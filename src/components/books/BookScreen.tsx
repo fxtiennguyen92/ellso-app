@@ -46,7 +46,8 @@ export function BookScreen() {
   const topInset = Platform.OS === 'web' ? 12 : insets.top + 4;
   const coverW = Math.min(184, Math.round(width * 0.46));
   const coverH = Math.round(coverW * 1.5);
-  const barH = topInset + 52;
+  // Thanh trên cùng: nút 40px + đệm dưới 16px (= đệm trái/phải) — HEADER_PAD
+  const barH = topInset + 40 + 16;
   const heroH = barH + coverH + 32;
 
   const load = useCallback(() => {
@@ -306,7 +307,7 @@ function Row({ label, value, first }: { label: string; value: string; first?: bo
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   centerText: { textAlign: 'center' },
-  topBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
+  topBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 16 },
   topBarBg: { borderBottomWidth: StyleSheet.hairlineWidth },
   back: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15,23,42,0.28)', overflow: 'hidden' },
   backSolid: { borderRadius: 12, borderWidth: 1 },

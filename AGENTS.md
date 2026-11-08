@@ -62,6 +62,11 @@ Màn hình / bottom sheet nào có `TextInput` thì phải xử lý bàn phím v
 - Bottom sheet cũng theo kiểu nổi (vd `home/TrainingSheet.tsx`).
 - Ngoại lệ: màn có nhiều khối, mỗi khối có nút riêng, thì nút đặt cuối khối đó, không nổi.
 
+## Header / thanh trên cùng (kể cả dạng thu gọn khi cuộn)
+
+- Đệm dưới của header **≥ đệm trái/phải** (header đệm ngang 16px → đệm dưới tối thiểu **16px**; ngang 20px → dưới ≥ 20px), để nút Back / icon không bị dồn sát mép dưới.
+- Thanh nổi có chiều cao cố định thì tính đủ: `barH = topInset + 40 (nút) + 16 (đệm dưới)`, đặt `paddingBottom: 16`.
+
 ## Thông tin khác nút bấm (không làm thứ không bấm được trông như bấm được)
 
 - Khối chỉ để **hiển thị thông tin** (số dư, thống kê, trạng thái, nhãn…) phải **phẳng**: nền nhạt + viền mảnh hoặc không viền; **không** bóng đổ, **không** mép 3D (`boxShadow: 0px Npx 0px …`), không icon / chevron gợi ý bấm, không hiệu ứng nhấn.

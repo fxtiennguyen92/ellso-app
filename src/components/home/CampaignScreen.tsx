@@ -39,7 +39,8 @@ export function CampaignScreen() {
   const width = Platform.OS === 'web' ? Math.min(winW, WEB_MAX_WIDTH) : winW;
   const bannerH = Math.round(((width - 32) * 9) / 16);
   const topInset = Platform.OS === 'web' ? 12 : insets.top + 4;
-  const barH = topInset + 52;
+  // Thanh trên cùng: nút 40px + đệm dưới 16px (= đệm trái/phải) — HEADER_PAD
+  const barH = topInset + 40 + 16;
   const ambientH = barH + bannerH + 60;
 
   const load = useCallback(() => {
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.display700, fontSize: 26, lineHeight: 34 },
   summary: { fontFamily: fonts.sans400, fontSize: 16, lineHeight: 25 },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 6 },
-  topBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
+  topBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 16 },
   topBarBg: { borderBottomWidth: StyleSheet.hairlineWidth },
   back: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   barTitle: { flex: 1, fontFamily: fonts.display600, fontSize: 17, lineHeight: 24 },

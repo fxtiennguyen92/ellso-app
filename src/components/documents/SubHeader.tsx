@@ -77,7 +77,7 @@ export function SubHeader({ title, searchOpen, onToggleSearch, query, onQuery, p
 }
 
 const styles = StyleSheet.create({
-  header: { paddingBottom: 12, gap: 14, borderBottomWidth: 1, zIndex: 10 },
+  header: { paddingBottom: 20, gap: 14, borderBottomWidth: 1, zIndex: 10 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20 },
   title: { flex: 1, minWidth: 0 },
   iconBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
