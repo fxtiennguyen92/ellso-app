@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BottomSheet } from '@/components/BottomSheet';
+import { useCart } from '@/components/cart/CartContext';
 import { Icon, type IconName } from '@/components/Icon';
 import { formatPrice } from '@/data/courses';
 import { type Access, type Doc, typeLabel } from '@/data/documents';
@@ -18,6 +19,7 @@ type Option = { title: string; desc: string; action: string; icon: IconName; run
  */
 export function AccessSheet({ doc, onClose, onNotice }: { doc: Doc | null; onClose: () => void; onNotice: (msg: string) => void }) {
   const { colors } = useTheme();
+  const { add: addToCart } = useCart();
 
   const go = (path: Parameters<typeof router.push>[0]) => {
     onClose();
@@ -32,11 +34,17 @@ export function AccessSheet({ doc, onClose, onNotice }: { doc: Doc | null; onClo
         return {
           title: 'Mua riêng tài liệu này',
           desc: 'Mua một lần, xem mãi trong app.',
-          action: `Mua · ${formatPrice(a.price)}`,
+          action: `Mua ngay · ${formatPrice(a.price)}`,
           icon: 'tag',
-          run: () => {
+          // Mua ngay = thêm vào giỏ rồi mở tab Giỏ hàng
+          run: async () => {
             onClose();
-            onNotice('Thanh toán sẽ làm ở bước sau');
+            if (!doc || !/^\d+$/.test(doc.id)) {
+              onNotice('Tài liệu mẫu, chưa mua được');
+              return;
+            }
+            const err = await addToCart('document', Number(doc.id), { open: true });
+            if (err) onNotice(err);
           },
         };
       case 'lesson':

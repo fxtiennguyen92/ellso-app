@@ -16,6 +16,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '@/auth/AuthProvider';
 import { useAppSessionTracking } from '@/auth/useAppSessionTracking';
 import { AppFrame } from '@/components/AppFrame';
+import { CartProvider } from '@/components/cart/CartContext';
 import { DocumentsProvider } from '@/components/documents/DocumentsContext';
 import { RevealProvider } from '@/components/splash/RevealContext';
 import { SplashOverlay } from '@/components/splash/SplashOverlay';
@@ -91,6 +92,8 @@ function AppShell() {
       <RevealProvider revealed={revealed}>
         {ready && (
           // DocumentsProvider: trạng thái đã lưu + bảng cách mở tài liệu dùng chung cho tab Tài liệu, Home và trang sách (ngoài tab)
+          // CartProvider: giỏ hàng dùng chung (tab Giỏ hàng chỉ hiện khi có món), bọc ngoài để bảng cách mở tài liệu cũng thêm vào giỏ được
+          <CartProvider>
           <DocumentsProvider onView={(doc) => router.push(`/documents/view/${doc.id}`)}>
           {/* Chặn theo trạng thái đăng nhập: đổi status (đăng nhập / đổi mật khẩu / đăng xuất) là router tự chuyển nhóm màn. */}
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
@@ -100,7 +103,8 @@ function AppShell() {
               <Stack.Screen name="campaign/[id]" />
               <Stack.Screen name="books/[id]/index" />
               <Stack.Screen name="books/[id]/read" />
-              <Stack.Screen name="placement-test" />
+              <Stack.Screen name="placement-tests/[id]/index" />
+              <Stack.Screen name="placement-tests/[id]/result" />
               {/* Màn con của Hồ sơ không có thanh tab (đường dẫn /profile/…, file trong nhóm (account)) */}
               <Stack.Screen name="(account)/profile/personal-info/index" />
               <Stack.Screen name="(account)/profile/personal-info/edit" />
@@ -123,6 +127,7 @@ function AppShell() {
             </Stack.Protected>
           </Stack>
           </DocumentsProvider>
+          </CartProvider>
         )}
       </RevealProvider>
       {!splashDone && <SplashOverlay ready={ready} onExitStart={onExitStart} onFinish={onFinish} />}

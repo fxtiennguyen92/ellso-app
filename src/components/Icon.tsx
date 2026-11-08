@@ -49,7 +49,10 @@ import Receipt from 'lucide-react-native/icons/receipt';
 import RotateCw from 'lucide-react-native/icons/rotate-cw';
 import Scale from 'lucide-react-native/icons/scale';
 import ScanLine from 'lucide-react-native/icons/scan-line';
+import Plus from 'lucide-react-native/icons/plus';
 import Search from 'lucide-react-native/icons/search';
+import CircleCheckBig from 'lucide-react-native/icons/circle-check-big';
+import Sparkles from 'lucide-react-native/icons/sparkles';
 import Share2 from 'lucide-react-native/icons/share-2';
 import ShieldCheck from 'lucide-react-native/icons/shield-check';
 import ShoppingCart from 'lucide-react-native/icons/shopping-cart';
@@ -88,6 +91,9 @@ const ICONS = {
   chevronDown: ChevronDown,
   clock: Clock,
   cart: ShoppingCart,
+  plus: Plus,
+  checkCircle: CircleCheckBig,
+  sparkles: Sparkles,
   check: Check,
   arrowUp: ArrowUp,
   book: Book,

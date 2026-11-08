@@ -3,11 +3,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
+import { useCart } from '@/components/cart/CartContext';
 import { Icon, type IconName } from '@/components/Icon';
 import { useRevealStyle } from '@/components/splash/RevealContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useTheme } from '@/theme/ThemeProvider';
-import { type } from '@/theme/typography';
+import { fonts, type } from '@/theme/typography';
 
 /** Khoảng trống nội dung cần chừa phía dưới để không bị thanh điều hướng che. */
 export const BOTTOM_BAR_SPACE = 20 + 60 + 20;
@@ -16,6 +17,7 @@ const TABS: Record<string, { label: string; icon: IconName }> = {
   index: { label: 'Trang chủ', icon: 'home' },
   courses: { label: 'Khoá học', icon: 'courses' },
   documents: { label: 'Tài liệu', icon: 'documents' },
+  cart: { label: 'Giỏ hàng', icon: 'cart' },
   profile: { label: 'Hồ sơ', icon: 'profile' },
 };
 
@@ -47,7 +49,10 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
   const reduced = useReducedMotion();
   const reveal = useRevealStyle(4, 40);
 
-  const routes = state.routes.filter((r) => TABS[r.name]);
+  const { cart } = useCart();
+  const currentName = state.routes[state.index]?.name;
+  // Tab Giỏ hàng chỉ hiện khi giỏ có món (hoặc đang mở tab đó — vd vừa bỏ món cuối cùng ra)
+  const routes = state.routes.filter((r) => TABS[r.name] && (r.name !== 'cart' || cart.count > 0 || currentName === 'cart'));
   const activeIndex = Math.max(
     0,
     routes.findIndex((r) => r.key === state.routes[state.index]?.key),
@@ -189,7 +194,7 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                 <Pressable
                   accessibilityRole="tab"
                   accessibilityState={{ selected: active }}
-                  accessibilityLabel={tab.label}
+                  accessibilityLabel={route.name === 'cart' && cart.count > 0 ? `${tab.label}, ${cart.count} sản phẩm` : tab.label}
                   onPressIn={() => setPressedKey(route.key)}
                   onPressOut={() => setPressedKey(null)}
                   onPress={() => {
@@ -222,6 +227,7 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                       >
                         <Icon name={tab.icon} color={colors.navOn} duotone />
                       </Animated.View>
+                      {route.name === 'cart' && cart.count > 0 ? <CartBadge count={cart.count} /> : null}
                     </View>
                     <Animated.Text
                       style={[
@@ -248,7 +254,35 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
   );
 }
 
+/** Số món trong giỏ trên icon tab Giỏ hàng: nảy nhẹ mỗi khi số thay đổi. */
+function CartBadge({ count }: { count: number }) {
+  const { colors } = useTheme();
+  const pop = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    pop.setValue(1.35);
+    Animated.spring(pop, { toValue: 1, stiffness: 320, damping: 12, mass: 1, useNativeDriver: false }).start();
+  }, [count, pop]);
+  return (
+    <Animated.View pointerEvents="none" style={[styles.badge, { backgroundColor: colors.spark500, borderColor: colors.navBg, transform: [{ scale: pop }] }]}>
+      <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
+  badge: {
+    position: 'absolute',
+    top: -7,
+    right: -10,
+    minWidth: 19,
+    height: 19,
+    paddingHorizontal: 4,
+    borderRadius: 10,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: { color: '#111827', fontFamily: fonts.sans700, fontSize: 10, lineHeight: 12 },
   wrap: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
   measure: { position: 'absolute', opacity: 0, left: 0, top: 0, flexDirection: 'row' },
   bar: {

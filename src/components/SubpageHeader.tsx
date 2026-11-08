@@ -7,7 +7,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/typography';
 
 /** Thanh đầu trang con (ngoài tab): nút quay lại + tiêu đề; đã cuộn thì hiện đường kẻ mảnh phía dưới. */
-export function SubpageHeader({ title, scrolled = false, fallback = '/profile' }: { title: string; scrolled?: boolean; fallback?: '/profile' | '/' }) {
+export function SubpageHeader({ title, scrolled = false, fallback = '/profile' }: { title: string; scrolled?: boolean; fallback?: '/profile' | '/' | '/courses' }) {
   const { colors } = useTheme();
   const topInset = useScreenTopInset(8, 20);
   return (

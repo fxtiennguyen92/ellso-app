@@ -4,6 +4,7 @@
  * Khi có API chỉ cần thay các hàm get… ở cuối file.
  */
 import type { IconName } from '@/components/Icon';
+import { apiRequest } from '@/lib/api';
 import type { ChapterColor } from '@/theme/tokens';
 
 import type { CourseIllustration, CourseTint } from './home';
@@ -41,9 +42,6 @@ export type ExploreCourse = {
   illustration: ExploreIllustration;
   tint: ExploreTint;
 };
-
-/** Bài test đầu vào (banner đầu tab Khoá học). */
-export const placementTest = { minutes: 15, questions: 20 };
 
 export const categories: Category[] = [
   { id: 'soft-skills', name: 'Kỹ năng mềm' },
@@ -269,3 +267,65 @@ export function getCoursePath(courseId: string): CoursePath | null {
 
 /** 1290000 → "1.290.000đ" (tự định dạng, không phụ thuộc Intl của máy). */
 export const formatPrice = (vnd: number) => `${String(Math.round(vnd)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ`;
+
+// ---------------------------------------------------------------- Khám phá khoá học (nối ellso-server)
+// GET /courses?category_id=&page=  → 10 khoá / trang, meta.has_more · GET /courses/categories
+
+export type CatalogCourse = {
+  id: number;
+  title: string;
+  shortDescription: string | null;
+  category: { id: number; name: string } | null;
+  instructor: { id: number; name: string; avatar: string | null } | null;
+  coverUrl: string | null;
+  /** VND; 0 = miễn phí */
+  price: number;
+  lessonCount: number;
+  isNew: boolean;
+  enrolled: boolean;
+  inCart: boolean;
+};
+
+export type CatalogPage = { items: CatalogCourse[]; page: number; hasMore: boolean; total: number };
+
+type ApiCatalogCourse = {
+  id: number;
+  title: string;
+  short_description: string | null;
+  category: { id: number; name: string } | null;
+  instructor: { id: number; name: string; avatar: string | null } | null;
+  cover_url: string | null;
+  price: number;
+  lesson_count: number;
+  is_new: boolean;
+  enrolled: boolean;
+  in_cart: boolean;
+};
+
+export async function apiCatalog(token: string, page: number, categoryId: number | null): Promise<CatalogPage> {
+  const q = `?page=${page}${categoryId ? `&category_id=${categoryId}` : ''}`;
+  const res = await apiRequest<{ data: ApiCatalogCourse[]; meta: { page: number; has_more: boolean; total: number } }>('GET', `/courses${q}`, { token });
+  return {
+    page: res.meta.page,
+    hasMore: res.meta.has_more,
+    total: res.meta.total,
+    items: res.data.map((c) => ({
+      id: c.id,
+      title: c.title,
+      shortDescription: c.short_description,
+      category: c.category,
+      instructor: c.instructor,
+      coverUrl: c.cover_url,
+      price: c.price,
+      lessonCount: c.lesson_count,
+      isNew: c.is_new,
+      enrolled: c.enrolled,
+      inCart: c.in_cart,
+    })),
+  };
+}
+
+export async function apiCourseCategories(token: string): Promise<Category[]> {
+  const { data } = await apiRequest<{ data: { id: number; name: string }[] }>('GET', '/courses/categories', { token });
+  return data.map((c) => ({ id: String(c.id), name: c.name }));
+}

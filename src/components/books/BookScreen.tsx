@@ -6,6 +6,7 @@ import Svg, { Circle, Defs, LinearGradient, Pattern, RadialGradient, Rect, Stop 
 
 import { useAuth } from '@/auth/AuthProvider';
 import { PrimaryButton, SecondaryButton } from '@/components/auth/AuthUI';
+import { useCart } from '@/components/cart/CartContext';
 import { accessStyle, primaryAccess } from '@/components/documents/docAccess';
 import { BookCover } from '@/components/documents/DocParts';
 import { useDocuments } from '@/components/documents/DocumentsContext';
@@ -35,7 +36,9 @@ export function BookScreen() {
   const { width: winW } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { token } = useAuth();
-  const { isSaved, toggleSave, openDoc } = useDocuments();
+  const { isSaved, toggleSave, openDoc, showToast } = useDocuments();
+  const cartApi = useCart();
+  const [buying, setBuying] = useState(false);
   const [book, setBook] = useState<BookDetail | null>(null);
   const [others, setOthers] = useState<Doc[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +81,21 @@ export function BookScreen() {
   const canPreview = !!book && !book.unlocked && book.preview.available;
   const formatName = book?.format ? book.format.toUpperCase() : null;
   const tone = { bg: pal.base, pressed: pal.edge, edge: pal.edge };
+  const inCart = !!book && cartApi.has('document', Number(book.id));
+
+  // "Mua ngay" = thêm vào giỏ rồi mở tab Giỏ hàng; nút giỏ nhỏ = chỉ thêm (đã có trong giỏ thì mở giỏ)
+  const addToCart = async (open: boolean) => {
+    if (!book || buying) return;
+    if (inCart && !open) {
+      router.navigate('/cart');
+      return;
+    }
+    setBuying(true);
+    const err = await cartApi.add('document', Number(book.id), { open });
+    setBuying(false);
+    if (err) showToast(err);
+    else if (!open) showToast('Đã thêm vào giỏ hàng');
+  };
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -181,11 +199,36 @@ export function BookScreen() {
                     <SecondaryButton label="Đọc thử" icon="bookOpen" onPress={() => read('preview')} />
                   </View>
                 ) : null}
+                {onlyBuy && !book.unlocked ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={inCart ? 'Đã có trong giỏ hàng. Mở giỏ hàng' : 'Thêm vào giỏ hàng'}
+                    onPress={() => addToCart(false)}
+                    style={({ pressed }) => [
+                      styles.cartBtn,
+                      inCart
+                        ? { backgroundColor: colors.mint50, borderColor: colors.mint100 }
+                        : { backgroundColor: pressed ? colors.surfaceAlt : colors.card, borderColor: colors.line },
+                      { transform: [{ scale: pressed ? 0.96 : 1 }] },
+                    ]}
+                  >
+                    <Icon name="cart" size={22} color={inCart ? colors.emerald700 : colors.ink900} duotone={inCart} />
+                    <View style={[styles.cartMark, { backgroundColor: inCart ? colors.emerald700 : colors.ink900, borderColor: inCart ? colors.mint50 : colors.card }]}>
+                      <Icon name={inCart ? 'check' : 'plus'} size={10} strokeWidth={3.2} color={inCart ? colors.onEmerald : colors.card} />
+                    </View>
+                  </Pressable>
+                ) : null}
                 <View style={styles.mainBtn}>
                   {book.unlocked ? (
                     <PrimaryButton label="Đọc sách" icon="bookOpen" tone={tone} onPress={() => read('full')} />
                   ) : (
-                    <PrimaryButton label={onlyBuy ? 'Mua ngay' : 'Mở khoá sách'} icon={onlyBuy ? 'cart' : 'lock'} tone={tone} onPress={() => openDoc(book)} />
+                    <PrimaryButton
+                      label={onlyBuy ? 'Mua ngay' : 'Mở khoá sách'}
+                      icon={onlyBuy ? 'cart' : 'lock'}
+                      tone={tone}
+                      loading={buying}
+                      onPress={() => (onlyBuy ? addToCart(true) : openDoc(book))}
+                    />
                   )}
                 </View>
               </View>
@@ -343,6 +386,8 @@ const styles = StyleSheet.create({
   buttons: { flexDirection: 'row', gap: 10, marginTop: 6 },
   previewBtn: { flex: 0.62 },
   mainBtn: { flex: 1 },
+  cartBtn: { width: 52, height: 52, borderRadius: 16, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  cartMark: { position: 'absolute', top: 9, right: 7, width: 16, height: 16, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   rule: { height: 8, marginTop: 18 },
   section: { paddingHorizontal: 20, paddingTop: 22, gap: 10 },
   more: { alignSelf: 'flex-start' },

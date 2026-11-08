@@ -67,6 +67,12 @@ Màn hình / bottom sheet nào có `TextInput` thì phải xử lý bàn phím v
 - Đệm dưới của header **≥ đệm trái/phải** (header đệm ngang 16px → đệm dưới tối thiểu **16px**; ngang 20px → dưới ≥ 20px), để nút Back / icon không bị dồn sát mép dưới.
 - Thanh nổi có chiều cao cố định thì tính đủ: `barH = topInset + 40 (nút) + 16 (đệm dưới)`, đặt `paddingBottom: 16`.
 
+## Mua hàng / Giỏ hàng
+
+- Mọi thứ mua được (sách, khoá học, sau này tài liệu khác) đi qua **giỏ hàng trên server** (`useCart()` từ `src/components/cart/CartContext.tsx`, API `/v1/cart`). Không tự làm luồng thanh toán riêng ở từng màn.
+- **"Mua ngay"** = `add(type, id, { open: true })` → thêm vào giỏ rồi mở tab Giỏ hàng. Nút giỏ nhỏ / "Thêm vào giỏ" = `add(type, id)` (ở lại màn, báo toast).
+- Tab **Giỏ hàng** nằm bên trái Hồ sơ, chỉ hiện khi giỏ có món (hoặc đang mở tab đó), icon có badge số món (`BottomBar`).
+
 ## Thông tin khác nút bấm (không làm thứ không bấm được trông như bấm được)
 
 - Khối chỉ để **hiển thị thông tin** (số dư, thống kê, trạng thái, nhãn…) phải **phẳng**: nền nhạt + viền mảnh hoặc không viền; **không** bóng đổ, **không** mép 3D (`boxShadow: 0px Npx 0px …`), không icon / chevron gợi ý bấm, không hiệu ứng nhấn.
