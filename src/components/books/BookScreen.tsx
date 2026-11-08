@@ -44,7 +44,7 @@ export function BookScreen() {
 
   const width = Platform.OS === 'web' ? Math.min(winW, WEB_MAX_WIDTH) : winW;
   const topInset = Platform.OS === 'web' ? 12 : insets.top + 4;
-  const coverW = Math.min(160, Math.round(width * 0.4));
+  const coverW = Math.min(184, Math.round(width * 0.46));
   const coverH = Math.round(coverW * 1.5);
   const barH = topInset + 52;
   const heroH = barH + coverH + 32;
@@ -76,6 +76,7 @@ export function BookScreen() {
   const longDesc = (book?.description?.length ?? 0) > 240;
   const canPreview = !!book && !book.unlocked && book.preview.available;
   const formatName = book?.format ? book.format.toUpperCase() : null;
+  const tone = { bg: pal.base, pressed: pal.edge, edge: pal.edge };
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -135,7 +136,7 @@ export function BookScreen() {
                 </Pressable>
               </Animated.View>
 
-              <View style={[styles.heroInfo, { right: coverW + 36 }]}>
+              <View style={[styles.heroInfo, { right: coverW + 30 }]}>
                 {book.author ? (
                   <Text style={styles.heroAuthor} numberOfLines={1}>
                     {book.author}
@@ -146,10 +147,21 @@ export function BookScreen() {
                 </Text>
                 <View style={styles.heroTag}>
                   <Icon name="book" size={12} strokeWidth={2.2} color="#ffffff" />
-                  <Text style={styles.heroTagText}>Sách điện tử{formatName ? ` · ${formatName}` : ''}</Text>
+                  <Text numberOfLines={1} style={styles.heroTagText}>Sách điện tử{formatName ? ` · ${formatName}` : ''}</Text>
                 </View>
               </View>
             </View>
+
+            {/* Lớp chuyển màu từ hero (màu đã chọn) xuống nền trang */}
+            <Svg width="100%" height={44} pointerEvents="none">
+              <Defs>
+                <LinearGradient id={`bookFade-${book.cover}`} x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={pal.edge} stopOpacity={1} />
+                  <Stop offset="1" stopColor={colors.bg} stopOpacity={1} />
+                </LinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill={`url(#bookFade-${book.cover})`} />
+            </Svg>
 
             {/* 3. Khối mua */}
             <View style={styles.buyBox}>
@@ -161,7 +173,7 @@ export function BookScreen() {
                       <Text style={[styles.ownedText, { color: colors.emerald700 }]}>Bạn đã có thể đọc</Text>
                     </View>
                   ) : (
-                    <Text style={[type.caption, { color: colors.ink600 }]}>{access.kind === 'buy' ? 'Giá sách điện tử' : 'Quyền đọc'}</Text>
+                    <View />
                   )}
                   <Text style={[styles.price, { color: book.unlocked && access.kind !== 'buy' ? colors.emerald700 : accent }]}>
                     {access.kind === 'buy' && !book.bought ? formatPrice(access.price) : accessStyle(access, !!book.bought, colors).long}
@@ -172,25 +184,21 @@ export function BookScreen() {
                 <Text style={[type.caption, { color: colors.ink600 }]}>Hoặc mở bằng {book.access.length - 1} cách khác (gói thành viên, khoá học…)</Text>
               ) : null}
 
+              {/* Một hàng: Đọc thử (ngắn) + nút chính (dài, màu theo màu đã chọn của sách) */}
               <View style={styles.buttons}>
-                {book.unlocked ? (
-                  <PrimaryButton label="Đọc sách" onPress={() => read('full')} />
-                ) : (
-                  <PrimaryButton label={onlyBuy ? 'Mua ngay' : 'Mở khoá sách'} icon={onlyBuy ? 'cart' : 'lock'} onPress={() => openDoc(book)} />
-                )}
-                {canPreview ? <SecondaryButton label="Đọc thử miễn phí" icon="bookOpen" onPress={() => read('preview')} /> : null}
+                {canPreview ? (
+                  <View style={styles.previewBtn}>
+                    <SecondaryButton label="Đọc thử" icon="bookOpen" onPress={() => read('preview')} />
+                  </View>
+                ) : null}
+                <View style={styles.mainBtn}>
+                  {book.unlocked ? (
+                    <PrimaryButton label="Đọc sách" icon="bookOpen" tone={tone} onPress={() => read('full')} />
+                  ) : (
+                    <PrimaryButton label={onlyBuy ? 'Mua ngay' : 'Mở khoá sách'} icon={onlyBuy ? 'cart' : 'lock'} tone={tone} onPress={() => openDoc(book)} />
+                  )}
+                </View>
               </View>
-
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ selected: saved }}
-                onPress={() => toggleSave(book)}
-                hitSlop={6}
-                style={({ pressed }) => [styles.saveRow, { opacity: pressed ? 0.7 : 1 }]}
-              >
-                <Icon name={saved ? 'bookmarkFilled' : 'bookmark'} size={20} color={saved ? colors.fav : colors.ink600} />
-                <Text style={[type.label, { color: colors.ink900 }]}>{saved ? 'Đã lưu vào Tài liệu của tôi' : 'Lưu vào Tài liệu của tôi'}</Text>
-              </Pressable>
             </View>
 
             <View style={[styles.rule, { backgroundColor: colors.surfaceAlt }]} />
@@ -275,6 +283,22 @@ export function BookScreen() {
         <Animated.Text numberOfLines={1} style={[styles.barTitle, { color: colors.ink900, opacity: titleIn }]}>
           {book?.title ?? ''}
         </Animated.Text>
+        {book ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={saved ? `Bỏ lưu ${book.title} khỏi Tài liệu của tôi` : `Lưu ${book.title} vào Tài liệu của tôi`}
+            accessibilityState={{ selected: saved }}
+            onPress={() => toggleSave(book)}
+            hitSlop={6}
+            style={({ pressed }) => [styles.back, { opacity: pressed ? 0.75 : 1 }]}
+          >
+            <Animated.View style={[StyleSheet.absoluteFill, styles.backSolid, { backgroundColor: colors.card, borderColor: colors.line, opacity: titleIn }]} />
+            <Icon name={saved ? 'bookmarkFilled' : 'bookmark'} size={21} color={saved ? colors.fav : '#ffffff'} />
+            <Animated.View style={[StyleSheet.absoluteFill, styles.backIcon, { opacity: titleIn }]}>
+              <Icon name={saved ? 'bookmarkFilled' : 'bookmark'} size={21} color={saved ? colors.fav : colors.ink900} />
+            </Animated.View>
+          </Pressable>
+        ) : null}
       </View>
     </View>
   );
@@ -317,18 +341,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
   },
-  heroTagText: { color: '#ffffff', fontFamily: fonts.sans600, fontSize: 12, lineHeight: 16 },
+  heroTagText: { color: '#ffffff', fontFamily: fonts.sans600, fontSize: 11.5, lineHeight: 16, flexShrink: 1 },
   barTitle: { flex: 1, fontFamily: fonts.display600, fontSize: 17, lineHeight: 24 },
   loading: { paddingVertical: 100, alignItems: 'center' },
   errorBox: { alignItems: 'center', gap: 12, paddingVertical: 80, paddingHorizontal: 32 },
-  buyBox: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, gap: 10 },
+  buyBox: { paddingHorizontal: 20, paddingTop: 0, paddingBottom: 8, gap: 10 },
   priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   price: { fontFamily: fonts.display700, fontSize: 28, lineHeight: 36 },
   owned: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 26, borderRadius: 9999 },
   ownedText: { fontFamily: fonts.sans600, fontSize: 12, lineHeight: 16 },
-  buttons: { gap: 10, marginTop: 6 },
-  saveRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 10 },
-  rule: { height: 8, marginTop: 8 },
+  buttons: { flexDirection: 'row', gap: 10, marginTop: 6 },
+  previewBtn: { flex: 0.62 },
+  mainBtn: { flex: 1 },
+  rule: { height: 8, marginTop: 18 },
   section: { paddingHorizontal: 20, paddingTop: 22, gap: 10 },
   more: { alignSelf: 'flex-start' },
   table: { borderWidth: 1, borderRadius: 16, overflow: 'hidden' },

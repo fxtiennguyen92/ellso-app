@@ -91,12 +91,13 @@ export function CampaignScreen() {
         </Animated.View>
 
         {/* Banner trọn vẹn */}
-        <View style={[styles.bannerCard, { marginTop: barH + 4, height: bannerH, backgroundColor: colors.surfaceAlt, boxShadow: colors.shadowCard }]}>
+        <View style={[styles.bannerCard, { marginTop: barH + 4, height: bannerH, boxShadow: colors.shadowCard }]}>
           {data?.bannerUrl ? (
             <Image
               source={{ uri: data.bannerUrl }}
               style={StyleSheet.absoluteFill}
-              contentFit="contain"
+              // banner CMS luôn 16:9 (1280×720) → cover lấp kín thẻ, không còn dải nền trên / dưới do làm tròn kích thước
+              contentFit="cover"
               transition={200}
               accessibilityLabel={data.title}
               accessibilityIgnoresInvertColors

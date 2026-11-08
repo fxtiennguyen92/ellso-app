@@ -141,7 +141,7 @@ export function BookCover({ doc }: { doc: Doc }) {
           <Text style={styles.bookPlaceholderText}>Ảnh bìa</Text>
         </View>
       )}
-      {!doc.unlocked && <LockOverlay size={30} />}
+      {/* Sách không có dấu khoá: nhãn giá / "Đã mua" / "Miễn phí" trên bìa đã cho biết tình trạng */}
     </View>
   );
 }

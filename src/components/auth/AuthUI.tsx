@@ -141,6 +141,7 @@ export function PrimaryButton({
   disabled = false,
   loading = false,
   icon,
+  tone,
 }: {
   label: string;
   onPress: () => void;
@@ -148,6 +149,8 @@ export function PrimaryButton({
   loading?: boolean;
   /** Icon bên trái chữ (vd giỏ hàng cho nút Mua ngay). */
   icon?: IconName;
+  /** Đổi màu nút (vd nút Mua ngay theo màu đã chọn của sách): nền, nền khi nhấn, mép dưới. */
+  tone?: { bg: string; pressed: string; edge: string };
 }) {
   const { colors } = useTheme();
   const off = disabled || loading;
@@ -162,8 +165,8 @@ export function PrimaryButton({
         disabled && !loading
           ? { backgroundColor: colors.line }
           : {
-              backgroundColor: pressed ? colors.emerald800 : colors.emerald700,
-              boxShadow: `0px ${pressed ? 1 : 4}px 0px ${colors.emeraldEdge}`,
+              backgroundColor: pressed ? (tone?.pressed ?? colors.emerald800) : (tone?.bg ?? colors.emerald700),
+              boxShadow: `0px ${pressed ? 1 : 4}px 0px ${tone?.edge ?? colors.emeraldEdge}`,
               transform: [{ translateY: pressed ? 3 : 0 }],
             },
       ]}
@@ -172,8 +175,8 @@ export function PrimaryButton({
         <ActivityIndicator color={colors.onEmerald} />
       ) : (
         <View style={styles.primaryInner}>
-          {icon ? <Icon name={icon} size={20} strokeWidth={2.1} color={disabled ? colors.ink600 : colors.onEmerald} /> : null}
-          <Text style={[styles.primaryText, { color: disabled ? colors.ink600 : colors.onEmerald }]}>{label}</Text>
+          {icon ? <Icon name={icon} size={20} strokeWidth={2.1} color={disabled ? colors.ink600 : tone ? '#ffffff' : colors.onEmerald} /> : null}
+          <Text style={[styles.primaryText, { color: disabled ? colors.ink600 : tone ? '#ffffff' : colors.onEmerald }]}>{label}</Text>
         </View>
       )}
     </Pressable>
