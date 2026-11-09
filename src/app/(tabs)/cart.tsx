@@ -1,6 +1,6 @@
 import { CartScreen } from '@/components/cart/CartScreen';
 
-/** Giỏ hàng (toàn màn hình, nút X góc trên phải để đóng). */
+/** Tab Giỏ hàng (chỉ hiện trên thanh tab khi giỏ có món). */
 export default function CartRoute() {
   return <CartScreen />;
 }

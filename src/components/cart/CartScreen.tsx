@@ -7,9 +7,9 @@ import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 
 import { useAuth } from '@/auth/AuthProvider';
 import { PrimaryButton } from '@/components/auth/AuthUI';
+import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { CourseCover } from '@/components/courses/CourseCover';
 import { useDocuments } from '@/components/documents/DocumentsContext';
-import { FLOATING_EDGE } from '@/components/FloatingAction';
 import { Icon } from '@/components/Icon';
 import { apiCartPromo, type CartItem, type CartPromo, kindLabel } from '@/data/cart';
 import { formatPrice } from '@/data/courses';
@@ -21,19 +21,16 @@ import { fonts, type } from '@/theme/typography';
 import { useCart } from './CartContext';
 import { PromoSheet } from './PromoSheet';
 
-const PANEL_H = 76;
-
 const formatCoins = (n: number) => n.toLocaleString('vi-VN');
 
 /**
- * Giỏ hàng — màn toàn màn hình (không thanh tab), nút X góc trên phải để đóng. Các khối:
+ * Tab Giỏ hàng (chỉ hiện trên thanh tab khi giỏ có món). Các khối:
  * 1. Sản phẩm — thẻ chứa các hàng (ảnh, loại, tên, giá, nhãn mã nếu được giảm, nút bỏ).
  * 2. Mã khuyến mãi — tiêu đề + nút "Thêm mã" cùng hàng; bấm → popup nhập / kiểm tra / áp dụng (PromoSheet).
  *    Đã áp dụng → vé mã (viền đứt) + nút xoá mã. Giỏ đổi → tự kiểm tra lại mã.
  * 3. Xu của tôi — số dư (+ quy ra tiền), nút "Sử dụng": trừ tối đa có thể = min(số dư, floor(còn phải trả / tỉ lệ)).
- * 4. Chi tiết thanh toán — chỉ hiện khi có giảm: dòng mã, dòng "Dùng N xu", tổng.
- * (Sau này: khối Xuất hoá đơn doanh nghiệp.)
- * Đáy: khối nổi cố định Tổng thanh toán + "Thanh toán" (chưa làm).
+ * 4. Thanh toán — cuối nội dung (không nổi): dòng mã, dòng "Dùng N xu" (nếu có), tổng (giá gạch nếu có giảm), nút Thanh toán (chưa làm).
+ * (Sau này: khối Xuất hoá đơn doanh nghiệp trước khối Thanh toán.)
  */
 export function CartScreen() {
   const { colors } = useTheme();
@@ -76,8 +73,6 @@ export function CartScreen() {
     if (item.type === 'document' && item.kind === 'book') router.push(`/books/${item.id}`);
   };
 
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
-
   // Tiền: mã giảm trước, xu trừ trên phần còn lại
   const discount = promo?.discount ?? 0;
   const afterPromo = Math.max(0, cart.total - discount);
@@ -89,11 +84,10 @@ export function CartScreen() {
   const eligible = useMemo(() => new Set((promo?.eligible ?? []).map((e) => `${e.type}${e.id}`)), [promo]);
 
   const empty = cart.count === 0;
-  const bottom = Math.max(insets.bottom, FLOATING_EDGE);
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      {/* Header: tiêu đề + số món, nút X đóng ở góc phải (đệm dưới = đệm ngang 16) */}
+      {/* Header: tiêu đề + số món (đệm dưới = đệm ngang 16) */}
       <View style={[styles.header, { paddingTop: topInset, backgroundColor: colors.bg, borderBottomColor: scrolled ? colors.line : 'transparent' }]}>
         <Text accessibilityRole="header" style={[type.screenTitle, { color: colors.ink900 }]}>
           Giỏ hàng
@@ -103,16 +97,6 @@ export function CartScreen() {
             <Text style={[styles.countText, { color: colors.onEmerald }]}>{cart.count}</Text>
           </View>
         )}
-        <View style={styles.grow} />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Đóng giỏ hàng"
-          hitSlop={6}
-          onPress={close}
-          style={({ pressed }) => [styles.closeBtn, { backgroundColor: pressed ? colors.surfaceAlt : colors.card, borderColor: colors.line }]}
-        >
-          <Icon name="close" size={22} color={colors.ink900} />
-        </Pressable>
       </View>
 
       <ScrollView
@@ -120,7 +104,7 @@ export function CartScreen() {
         onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={loading && !empty} onRefresh={refresh} tintColor={colors.emerald700} />}
-        contentContainerStyle={[styles.content, { paddingBottom: bottom + PANEL_H + 28 }, empty && styles.contentEmpty]}
+        contentContainerStyle={[styles.content, { paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 24 }, empty && styles.contentEmpty]}
       >
         {empty ? (
           <View style={styles.empty}>
@@ -130,14 +114,7 @@ export function CartScreen() {
             <Text style={[type.h2, styles.centerText, { color: colors.ink900 }]}>Giỏ hàng đang trống</Text>
             <Text style={[type.body, styles.centerText, { color: colors.ink600 }]}>Thêm khoá học hoặc sách bạn muốn mua, rồi thanh toán một lần.</Text>
             <View style={styles.emptyBtn}>
-              <PrimaryButton
-                label="Khám phá khoá học"
-                icon="courses"
-                onPress={() => {
-                  close();
-                  router.navigate('/courses');
-                }}
-              />
+              <PrimaryButton label="Khám phá khoá học" icon="courses" onPress={() => router.navigate('/courses')} />
             </View>
           </View>
         ) : (
@@ -232,45 +209,27 @@ export function CartScreen() {
             {/* 3. Xu của tôi */}
             <CoinsCard balance={balance} rate={rate} usable={coinsUsable} using={useCoins && coinsUsable > 0} onToggle={() => setUseCoins((v) => !v)} />
 
-            {/* 4. Chi tiết thanh toán (chỉ khi có giảm) */}
-            {discount > 0 || coinMoney > 0 ? (
-              <Block title="Chi tiết thanh toán">
-                <View style={[styles.card, styles.summary, { backgroundColor: colors.card, borderColor: colors.line }]}>
-                  {discount > 0 ? <SummaryRow icon="ticket" label={`Mã ${promo?.code}`} value={`−${formatPrice(discount)}`} /> : null}
-                  {coinMoney > 0 ? <SummaryRow icon="coins" label={`Dùng ${formatCoins(coinsUsed)} xu`} value={`−${formatPrice(coinMoney)}`} /> : null}
-                  <View style={[styles.dashed, { borderColor: colors.line }]} />
-                  <View style={styles.sumTotal}>
-                    <Text style={[type.label, { color: colors.ink900 }]}>Tổng thanh toán</Text>
+            {/* 4. Thanh toán — nằm trong nội dung (cuối trang), không nổi */}
+            <Block title="Thanh toán">
+              <View style={[styles.card, styles.summary, { backgroundColor: colors.card, borderColor: colors.line }]}>
+                {discount > 0 ? <SummaryRow icon="ticket" label={`Mã ${promo?.code}`} value={`−${formatPrice(discount)}`} /> : null}
+                {coinMoney > 0 ? <SummaryRow icon="coins" label={`Dùng ${formatCoins(coinsUsed)} xu`} value={`−${formatPrice(coinMoney)}`} /> : null}
+                {discount > 0 || coinMoney > 0 ? <View style={[styles.dashed, { borderColor: colors.line }]} /> : null}
+                <View style={styles.sumTotal}>
+                  <Text style={[type.label, { color: colors.ink900 }]}>Tổng thanh toán</Text>
+                  <View style={styles.sumTotalRight}>
+                    {total < cart.total ? <Text style={[styles.strike, { color: colors.ink400 }]}>{formatPrice(cart.total)}</Text> : null}
                     <Text style={[styles.sumTotalValue, { color: colors.ink900 }]}>{formatPrice(total)}</Text>
                   </View>
                 </View>
-              </Block>
-            ) : null}
+                <View style={styles.payBtn}>
+                  <PrimaryButton label="Thanh toán" onPress={() => showToast('Thanh toán sẽ làm ở bước sau')} />
+                </View>
+              </View>
+            </Block>
           </>
         )}
       </ScrollView>
-
-      {/* Nút thanh toán nổi cố định ở đáy màn */}
-      {!empty && (
-        <View pointerEvents="box-none" style={[styles.panelWrap, { bottom }]}>
-          <View style={[styles.panel, { backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.floatShadow }]}>
-            <View style={styles.grow}>
-              <View style={styles.panelTop}>
-                <Text style={[type.caption, { color: colors.ink600 }]} numberOfLines={1}>
-                  Tổng cộng
-                </Text>
-                {total < cart.total ? <Text style={[styles.strike, { color: colors.ink400 }]}>{formatPrice(cart.total)}</Text> : null}
-              </View>
-              <Text style={[styles.total, { color: colors.ink900 }]} numberOfLines={1} adjustsFontSizeToFit>
-                {formatPrice(total)}
-              </Text>
-            </View>
-            <View style={styles.payBtn}>
-              <PrimaryButton label="Thanh toán" onPress={() => showToast('Thanh toán sẽ làm ở bước sau')} />
-            </View>
-          </View>
-        </View>
-      )}
 
       <PromoSheet
         visible={promoOpen}
@@ -410,7 +369,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingBottom: 16, borderBottomWidth: 1, zIndex: 10 },
   countPill: { minWidth: 28, height: 26, paddingHorizontal: 9, borderRadius: 9999, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   countText: { fontFamily: fonts.sans700, fontSize: 14, lineHeight: 18 },
-  closeBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   content: { paddingHorizontal: 16, paddingTop: 4, gap: 24 },
   contentEmpty: { flexGrow: 1 },
 
@@ -457,10 +415,7 @@ const styles = StyleSheet.create({
   emptyIcon: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   emptyBtn: { alignSelf: 'stretch', marginTop: 12 },
 
-  panelWrap: { position: 'absolute', left: FLOATING_EDGE, right: FLOATING_EDGE },
-  panel: { height: PANEL_H, flexDirection: 'row', alignItems: 'center', gap: 14, paddingLeft: 18, paddingRight: 12, borderRadius: 20, borderWidth: 1 },
-  panelTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  total: { fontFamily: fonts.display600, fontSize: 21, lineHeight: 28, flexShrink: 1 },
-  strike: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 18, textDecorationLine: 'line-through' },
-  payBtn: { width: 144 },
+  sumTotalRight: { alignItems: 'flex-end' },
+  strike: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16, textDecorationLine: 'line-through' },
+  payBtn: { marginTop: 6 },
 });

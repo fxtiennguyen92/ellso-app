@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -14,8 +13,6 @@ import { type } from '@/theme/typography';
 
 /** Khoảng trống nội dung cần chừa phía dưới để không bị thanh điều hướng che. */
 export const BOTTOM_BAR_SPACE = 20 + 60 + 20;
-
-const CART_KEY = 'cart-button';
 
 const TABS: Record<string, { label: string; icon: IconName }> = {
   index: { label: 'Trang chủ', icon: 'home' },
@@ -64,16 +61,12 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
       hide.remove();
     };
   }, []);
-  // Nút Giỏ hàng: không phải tab thật — chỉ hiện khi giỏ có món, đứng trước Hồ sơ, bấm mở màn /cart toàn màn hình
-  // (không có thanh tab). Nên nó không bao giờ ở trạng thái "đang chọn".
-  const routes = useMemo(() => {
-    const list: { key: string; name: string }[] = state.routes.filter((r) => TABS[r.name]);
-    if (cart.count > 0) {
-      const at = list.findIndex((r) => r.name === 'profile');
-      list.splice(at < 0 ? list.length : at, 0, { key: CART_KEY, name: 'cart' });
-    }
-    return list;
-  }, [state.routes, cart.count]);
+  const currentName = state.routes[state.index]?.name;
+  // Tab Giỏ hàng (trước Hồ sơ) chỉ hiện khi giỏ có món, hoặc đang mở tab đó (vd vừa bỏ món cuối cùng ra)
+  const routes = useMemo(
+    () => state.routes.filter((r) => TABS[r.name] && (r.name !== 'cart' || cart.count > 0 || currentName === 'cart')),
+    [state.routes, cart.count, currentName],
+  );
   const activeIndex = Math.max(
     0,
     routes.findIndex((r) => r.key === state.routes[state.index]?.key),
@@ -222,10 +215,6 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                   onPressIn={() => setPressedKey(route.key)}
                   onPressOut={() => setPressedKey(null)}
                   onPress={() => {
-                    if (route.key === CART_KEY) {
-                      router.push('/cart');
-                      return;
-                    }
                     // Phát sự kiện tabPress như tab bar mặc định: Stack lồng bên trong tự lắng nghe —
                     // bấm lại tab ĐANG mở thì Stack về màn đầu (popToTop).
                     // Chuyển sang tab khác thì giữ nguyên màn con đang xem của tab cũ.

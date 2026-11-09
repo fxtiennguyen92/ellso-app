@@ -103,8 +103,6 @@ function AppShell() {
               <Stack.Screen name="campaign/[id]" />
               <Stack.Screen name="books/[id]/index" />
               <Stack.Screen name="books/[id]/read" />
-              {/* Giỏ hàng: màn toàn màn hình (không thanh tab), mở từ nút Giỏ hàng trên thanh tab */}
-              <Stack.Screen name="cart" />
               <Stack.Screen name="placement-tests/[id]/index" />
               <Stack.Screen name="placement-tests/[id]/result" />
               {/* Màn con của Hồ sơ không có thanh tab (đường dẫn /profile/…, file trong nhóm (account)) */}
