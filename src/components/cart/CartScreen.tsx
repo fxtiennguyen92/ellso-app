@@ -185,7 +185,8 @@ export function CartScreen() {
                         hitSlop={8}
                         style={({ pressed }) => [styles.remove, { opacity: pressed ? 0.5 : 1 }]}
                       >
-                        <Icon name="trash" size={17} color={colors.ink400} />
+                        {/* Đỏ nhẹ (danger mờ) để gợi ý thao tác xoá mà không quá gắt */}
+                        <Icon name="trash" size={17} color={colors.danger} opacity={0.7} />
                       </Pressable>
                     </View>
                   </View>
