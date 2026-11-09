@@ -11,31 +11,32 @@ import { fonts, type } from '@/theme/typography';
 import { CourseCover, coursePalette } from './CourseCover';
 
 /**
- * Thẻ khoá học ở mục Khám phá — cùng ngôn ngữ với thẻ Sách: ảnh bìa là "thẻ", nhãn giá chữ nhật ở góc dưới trái ảnh
- * (chữ theo màu bìa; Miễn phí / Đã sở hữu = xanh lá), nhãn MỚI góc trên trái; dưới ảnh: danh mục · số bài, tên (2 dòng),
- * người hướng dẫn + nút giỏ hàng (thêm / đã có trong giỏ).
+ * Thẻ khoá học ở mục Khoá học E-learning — cùng ngôn ngữ với thẻ Sách: ảnh bìa là "thẻ", nhãn giá chữ nhật ở
+ * góc dưới PHẢI, nền hơi trong (chữ theo màu bìa; Miễn phí / Đã sở hữu = xanh lá); dưới ảnh: danh mục · số bài, tên (2 dòng),
+ * người hướng dẫn + nút "Thêm vào" (thêm vào giỏ) → đã trong giỏ thì "Xem giỏ hàng" (mở trang giỏ).
  */
 export function CourseCard({
   course,
   inCart,
   busy,
-  onToggleCart,
+  onAddToCart,
   onOpen,
 }: {
   course: CatalogCourse;
   inCart: boolean;
   busy: boolean;
-  onToggleCart: (e: GestureResponderEvent) => void;
+  onAddToCart: (e: GestureResponderEvent) => void;
   onOpen: () => void;
 }) {
   const { colors } = useTheme();
   const pal = coursePalette(course.id);
   const free = course.price === 0;
+  // Nhãn giá góc dưới phải ảnh bìa, nền hơi trong (cố định 2 chế độ vì nằm trên ảnh)
   const badge = course.enrolled
-    ? { text: 'Đã sở hữu', bg: colors.mint50, fg: colors.emerald700 }
+    ? { text: 'Đã sở hữu', bg: illo.badgeMintSoft, fg: illo.badgeMintInk }
     : free
-      ? { text: 'Miễn phí', bg: colors.mint50, fg: colors.emerald700 }
-      : { text: formatPrice(course.price), bg: illo.badgeLight, fg: pal.edge };
+      ? { text: 'Miễn phí', bg: illo.badgeMintSoft, fg: illo.badgeMintInk }
+      : { text: formatPrice(course.price), bg: illo.badgeSoft, fg: pal.edge };
   const canBuy = !course.enrolled && !free;
 
   return (
@@ -48,12 +49,6 @@ export function CourseCard({
       >
         <View style={[styles.cover, { boxShadow: colors.shadowCard }]}>
           <CourseCover id={course.id} coverUrl={course.coverUrl} />
-          {course.isNew ? (
-            <View style={[styles.newTag, { backgroundColor: colors.amberChip }]}>
-              <Icon name="sparkles" size={11} strokeWidth={2.4} color={colors.amberChipText} />
-              <Text style={[styles.newText, { color: colors.amberChipText }]}>MỚI</Text>
-            </View>
-          ) : null}
           <View style={[styles.priceBadge, { backgroundColor: badge.bg }]}>
             {course.enrolled ? <Icon name="check" size={12} strokeWidth={3} color={badge.fg} /> : null}
             <Text style={[styles.priceText, { color: badge.fg }]}>{badge.text}</Text>
@@ -73,10 +68,10 @@ export function CourseCard({
         {canBuy ? (
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={inCart ? `${course.title} đã có trong giỏ. Bấm để bỏ ra` : `Thêm ${course.title} vào giỏ`}
+            accessibilityLabel={inCart ? `${course.title} đã có trong giỏ. Xem giỏ hàng` : `Thêm ${course.title} vào giỏ`}
             accessibilityState={{ selected: inCart, busy }}
             disabled={busy}
-            onPress={onToggleCart}
+            onPress={(e) => (inCart ? router.navigate('/cart') : onAddToCart(e))}
             style={({ pressed }) => [
               styles.cartBtn,
               inCart
@@ -85,8 +80,8 @@ export function CourseCard({
               { opacity: busy ? 0.6 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] },
             ]}
           >
-            <Icon name={inCart ? 'check' : 'cart'} size={17} strokeWidth={inCart ? 2.8 : 2} color={colors.emerald700} />
-            <Text style={[type.label, { color: colors.emerald700 }]}>{inCart ? 'Trong giỏ' : 'Thêm vào giỏ'}</Text>
+            <Icon name="cart" size={17} strokeWidth={2} color={colors.emerald700} duotone={inCart} />
+            <Text style={[type.label, { color: colors.emerald700 }]}>{inCart ? 'Xem giỏ hàng' : 'Thêm vào'}</Text>
           </Pressable>
         ) : course.enrolled ? (
           <Pressable
@@ -108,9 +103,7 @@ const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   card: { gap: 10 },
   cover: { aspectRatio: 16 / 9, borderRadius: 18, overflow: 'hidden' },
-  newTag: { position: 'absolute', top: 10, left: 10, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 22, borderRadius: 6 },
-  newText: { fontFamily: fonts.sans700, fontSize: 11, lineHeight: 14, letterSpacing: 0.8 },
-  priceBadge: { position: 'absolute', left: 10, bottom: 10, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  priceBadge: { position: 'absolute', right: 10, bottom: 10, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   priceText: { fontFamily: fonts.sans700, fontSize: 13, lineHeight: 18 },
   meta: { marginTop: 12, letterSpacing: 0.6 },
   title: { fontFamily: fonts.display600, fontSize: 18, lineHeight: 25, marginTop: 2 },

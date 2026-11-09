@@ -7,7 +7,7 @@ import type { IconName } from '@/components/Icon';
 import { apiRequest } from '@/lib/api';
 import type { ChapterColor } from '@/theme/tokens';
 
-import type { CourseIllustration, CourseTint } from './home';
+import type { ContentBlock, CourseIllustration, CourseTint } from './home';
 
 // ---------------------------------------------------------------- Danh sách
 
@@ -328,4 +328,59 @@ export async function apiCatalog(token: string, page: number, categoryId: number
 export async function apiCourseCategories(token: string): Promise<Category[]> {
   const { data } = await apiRequest<{ data: { id: number; name: string }[] }>('GET', '/courses/categories', { token });
   return data.map((c) => ({ id: String(c.id), name: c.name }));
+}
+
+// ---------------------------------------------------------------- Trang giới thiệu khoá học (GET /courses/{id})
+
+export type CourseOutlineItem =
+  | { type: 'chapter'; title: string; color: string | null; lessons: { title: string; isPreview: boolean; coaching: boolean }[] }
+  | { type: 'exam'; title: string };
+
+export type CourseDetail = CatalogCourse & {
+  blocks: ContentBlock[];
+  /** Khoá nhiều lộ trình: lộ trình riêng theo năng lực → không liệt kê đề cương. */
+  personalized: boolean;
+  pathsCount: number;
+  chapterCount: number;
+  outline: CourseOutlineItem[];
+  instructorBio: string | null;
+  /** Bài đánh giá năng lực bắt buộc trước khi học. */
+  placementTests: { id: number; title: string; completed: boolean }[];
+};
+
+export async function apiCourseDetail(token: string, id: string | number): Promise<CourseDetail> {
+  type Api = ApiCatalogCourse & {
+    description_blocks: ContentBlock[];
+    personalized: boolean;
+    paths_count: number;
+    chapter_count: number;
+    outline: { type: 'chapter' | 'exam'; title: string; color: string | null; lessons: { title: string; is_preview: boolean; coaching: boolean }[] }[];
+    instructor_bio: string | null;
+    placement_tests: { id: number; title: string; completed: boolean }[];
+  };
+  const { data: c } = await apiRequest<{ data: Api }>('GET', `/courses/${id}`, { token });
+  return {
+    id: c.id,
+    title: c.title,
+    shortDescription: c.short_description,
+    category: c.category,
+    instructor: c.instructor,
+    coverUrl: c.cover_url,
+    price: c.price,
+    lessonCount: c.lesson_count,
+    isNew: c.is_new,
+    enrolled: c.enrolled,
+    inCart: c.in_cart,
+    blocks: c.description_blocks,
+    personalized: c.personalized,
+    pathsCount: c.paths_count,
+    chapterCount: c.chapter_count,
+    outline: c.outline.map((o) =>
+      o.type === 'exam'
+        ? { type: 'exam', title: o.title }
+        : { type: 'chapter', title: o.title, color: o.color, lessons: o.lessons.map((l) => ({ title: l.title, isPreview: l.is_preview, coaching: l.coaching })) },
+    ),
+    instructorBio: c.instructor_bio,
+    placementTests: c.placement_tests,
+  };
 }

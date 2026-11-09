@@ -8,32 +8,26 @@ import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { useCart } from '@/components/cart/CartContext';
 import { useDocuments } from '@/components/documents/DocumentsContext';
 import { Icon } from '@/components/Icon';
-import { CourseThumb } from '@/components/illustrations/CourseArt';
 import { SCROLL_TOP_SPACE, ScrollTopButton } from '@/components/ScrollTopButton';
 import {
   apiCatalog,
   apiCourseCategories,
   type CatalogCourse,
   type Category,
-  type EnrolledCourse,
-  getEnrolledCourses,
 } from '@/data/courses';
-import type { CourseTint } from '@/data/home';
 import { apiPlacementTests, type PlacementTestSummary } from '@/data/placement';
 import { useDragScroll } from '@/hooks/useDragScroll';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 import { useTheme } from '@/theme/ThemeProvider';
-import type { ColorTokens } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
 
 import { CourseCard } from './CourseCard';
 import { PlacementTests } from './PlacementTests';
 
-const enrolledTint = (t: CourseTint, c: ColorTokens) => ({ mint: c.mint50, sky: c.skyTint, sun: c.sunTint })[t];
 
 /**
- * Tab Khoá học: header (tiêu đề + nút tìm kiếm) · bài test đầu vào (nhiều bài, thẻ ngang) · đang học · khám phá khoá học
- * (nối CMS, lọc danh mục, tải thêm khi cuộn gần cuối). Giỏ hàng nằm ở tab riêng (BottomBar).
+ * Tab Khoá học: header (tiêu đề + nút tìm kiếm) · Đánh giá năng lực (bài test đầu vào, lưới 2 cột) · Khoá học E-learning
+ * (nối CMS, lọc danh mục, tải thêm khi cuộn gần cuối; bấm thẻ → /catalog/[id]). Mục "Đang học" tạm ẩn. Giỏ hàng nằm ở tab riêng (BottomBar).
  */
 export function CoursesScreen() {
   const { colors } = useTheme();
@@ -42,8 +36,6 @@ export function CoursesScreen() {
   const { token } = useAuth();
   const cart = useCart();
   const { showToast } = useDocuments();
-
-  const enrolled = getEnrolledCourses();
 
   const [tests, setTests] = useState<PlacementTestSummary[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -116,18 +108,16 @@ export function CoursesScreen() {
     }
   };
 
-  const toggleCart = async (c: CatalogCourse, e?: GestureResponderEvent) => {
+  // "Thêm vào" → thêm vào giỏ (chấm xanh bay vào tab Giỏ hàng); đã trong giỏ thì thẻ tự đổi thành "Xem giỏ hàng"
+  const addToCart = async (c: CatalogCourse, e?: GestureResponderEvent) => {
     setBusyId(c.id);
-    const inCart = cart.has('course', c.id);
-    const err = inCart ? await cart.remove('course', c.id) : await cart.add('course', c.id, { from: e ? { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY } : null });
+    const err = await cart.add('course', c.id, { from: e ? { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY } : null });
     setBusyId(null);
-    showToast(err ?? (inCart ? 'Đã bỏ khỏi giỏ hàng' : 'Đã thêm vào giỏ hàng'));
+    showToast(err ?? 'Đã thêm vào giỏ hàng');
   };
 
-  const openCourse = (c: CatalogCourse) => {
-    if (c.enrolled) router.push(`/courses/${c.id}`);
-    else showToast('Trang giới thiệu khoá học sẽ làm ở bước sau');
-  };
+  // Bấm thẻ → trang giới thiệu khoá học
+  const openCourse = (c: CatalogCourse) => router.push({ pathname: '/catalog/[id]', params: { id: String(c.id) } });
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
@@ -161,25 +151,13 @@ export function CoursesScreen() {
         {/* BÀI TEST ĐẦU VÀO */}
         <PlacementTests tests={tests} />
 
-        {/* ĐANG HỌC (dữ liệu tạm — làm sau) */}
-        <View style={styles.section}>
-          <View style={styles.sectionHead}>
-            <Text accessibilityRole="header" style={[type.h2, styles.grow, { color: colors.ink900 }]}>
-              Đang học
-            </Text>
-            <Text style={[type.caption, { color: colors.ink600 }]}>{enrolled.length} khoá</Text>
-          </View>
-          {enrolled.map((c) => (
-            <EnrolledRow key={c.id} course={c} />
-          ))}
-        </View>
-
-        {/* KHÁM PHÁ */}
+        {/* KHOÁ HỌC E-LEARNING */}
         <View style={[styles.section, { paddingTop: 32, paddingHorizontal: 0 }]}>
-          <View style={styles.pad}>
+          <View style={[styles.pad, styles.titleBlock]}>
             <Text accessibilityRole="header" style={[type.h2, { color: colors.ink900 }]}>
-              Khám phá khoá học
+              Khoá học E-learning
             </Text>
+            <Text style={[type.caption, { color: colors.ink600 }]}>Các khoá học trực tuyến phù hợp với năng lực của bạn</Text>
           </View>
 
           {categories.length > 0 && (
@@ -204,7 +182,7 @@ export function CoursesScreen() {
                 course={c}
                 inCart={cart.has('course', c.id)}
                 busy={busyId === c.id}
-                onToggleCart={(e) => toggleCart(c, e)}
+                onAddToCart={(e) => addToCart(c, e)}
                 onOpen={() => openCourse(c)}
               />
             ))}
@@ -235,42 +213,6 @@ export function CoursesScreen() {
 
 // ------------------------------------------------------------------
 
-function EnrolledRow({ course }: { course: EnrolledCourse }) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="link"
-      accessibilityLabel={`${course.title}, chương ${course.chapterNo}, bài ${course.lessonNo} trên ${course.lessonTotal}, hoàn thành ${course.progress}%`}
-      onPress={() => router.push(`/courses/${course.id}`)}
-      style={({ pressed, hovered }) => [
-        styles.enrolled,
-        {
-          backgroundColor: colors.card,
-          borderColor: hovered ? colors.mint100 : colors.line,
-          transform: [{ scale: pressed ? 0.985 : 1 }],
-        },
-      ]}
-    >
-      <CourseThumb illustration={course.illustration} bg={enrolledTint(course.tint, colors)} />
-      <View style={styles.enrolledText}>
-        <Text style={[styles.enrolledTitle, { color: colors.ink900 }]} numberOfLines={1}>
-          {course.title}
-        </Text>
-        <Text style={[type.caption, { color: colors.ink600 }]}>
-          Chương {course.chapterNo} · Bài {course.lessonNo}/{course.lessonTotal}
-        </Text>
-        <View style={styles.progressRow}>
-          <View style={[styles.track, { backgroundColor: colors.line }]}>
-            <View style={[styles.fill, { width: `${course.progress}%`, backgroundColor: colors.emerald500 }]} />
-          </View>
-          <Text style={[type.chip, { color: colors.emerald700 }]}>{course.progress}%</Text>
-        </View>
-      </View>
-      <Icon name="chevronRight" size={20} color={colors.ink400} />
-    </Pressable>
-  );
-}
-
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   const { colors } = useTheme();
   return (
@@ -300,14 +242,7 @@ const styles = StyleSheet.create({
   iconBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
   section: { paddingTop: 24, paddingHorizontal: 16, gap: 12 },
-  sectionHead: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-
-  enrolled: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12, borderRadius: 20, borderWidth: 1 },
-  enrolledText: { flex: 1, minWidth: 0, gap: 2 },
-  enrolledTitle: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
-  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  track: { flex: 1, height: 6, borderRadius: 9999, overflow: 'hidden' },
-  fill: { height: 6, borderRadius: 9999 },
+  titleBlock: { gap: 2 },
 
   chips: { gap: 8, paddingHorizontal: 16, paddingVertical: 4 },
   chip: { height: 40, paddingHorizontal: 16, borderRadius: 9999, borderWidth: 1, justifyContent: 'center' },

@@ -14,17 +14,19 @@ import { fonts, type } from '@/theme/typography';
 /** Bảng màu thẻ: chưa làm = vàng → cam (màu bài test cũ), đã làm = xanh lá. Cố định cho cả 2 chế độ sáng / tối. */
 const TONES = {
   todo: { top: illo.ptTop, bottom: illo.ptBottom, edge: illo.ptEdge, ink: illo.ptInk, muted: illo.ptInkMuted, cta: illo.ptInk, ctaText: '#ffffff' },
-  done: { top: '#6ee7b7', bottom: '#10b981', edge: '#047857', ink: '#022c22', muted: 'rgba(2,44,34,0.75)', cta: '#ffffff', ctaText: '#047857' },
+  done: { top: '#6ee7b7', bottom: '#10b981', edge: '#047857', ink: '#022c22', muted: 'rgba(2,44,34,0.75)', cta: 'rgba(255,255,255,0.62)', ctaText: '#047857' },
 };
 
 /**
- * Mục "Bài test đầu vào" ở tab Khoá học: lưới 2 cột, mỗi bài một thẻ bấm được (icon, tên, nút). Không ghi trạng thái bằng chữ —
- * màu + nút đã nói lên: chưa làm = vàng/cam "Làm bài"; đã làm = xanh "Xem kết quả", bấm mở kết quả. Chưa làm → bấm hỏi xác nhận (số câu, thời gian ước tính) rồi mới vào làm.
+ * Mục "Đánh giá năng lực" (bài test đầu vào) ở tab Khoá học: lưới 2 cột, bài chưa làm xếp trước, mỗi bài một thẻ bấm được (icon, tên, nút). Không ghi trạng thái bằng chữ —
+ * màu + nút đã nói lên: chưa làm = vàng/cam "Làm thử"; đã làm = xanh "Xem kết quả", bấm mở kết quả. Chưa làm → bấm hỏi xác nhận (số câu, thời gian ước tính) rồi mới vào làm.
  */
 export function PlacementTests({ tests }: { tests: PlacementTestSummary[] }) {
   const { colors } = useTheme();
   const [confirm, setConfirm] = useState<PlacementTestSummary | null>(null);
   if (tests.length === 0) return null;
+  // Bài chưa làm lên trước, bài đã hoàn thành xuống sau (giữ thứ tự CMS trong từng nhóm)
+  const ordered = [...tests.filter((t) => !t.completed), ...tests.filter((t) => t.completed)];
 
   const press = (t: PlacementTestSummary) =>
     t.completed ? router.push({ pathname: '/placement-tests/[id]/result', params: { id: String(t.id) } }) : setConfirm(t);
@@ -38,13 +40,16 @@ export function PlacementTests({ tests }: { tests: PlacementTestSummary[] }) {
 
   return (
     <View style={styles.section}>
-      <Text accessibilityRole="header" style={[type.h2, styles.title, { color: colors.ink900 }]}>
-        Bài test đầu vào
-      </Text>
+      <View style={styles.title}>
+        <Text accessibilityRole="header" style={[type.h2, { color: colors.ink900 }]}>
+          Đánh giá năng lực
+        </Text>
+        <Text style={[type.caption, { color: colors.ink600 }]}>Đánh giá năng lực hiện tại của bạn qua các bài kiểm tra ngắn</Text>
+      </View>
 
       {/* Lưới 2 cột, xuống hàng (không cuộn ngang) */}
       <View style={styles.grid}>
-        {tests.map((t) => (
+        {ordered.map((t) => (
           <View key={t.id} style={styles.cell}>
             <TestCard test={t} onPress={() => press(t)} />
           </View>
@@ -95,7 +100,7 @@ function TestCard({ test, onPress }: { test: PlacementTestSummary; onPress: () =
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${test.title}. ${test.completed ? 'Đã hoàn thành, xem kết quả' : 'Chưa làm, bấm để làm bài'}`}
+      accessibilityLabel={`${test.title}. ${test.completed ? 'Đã hoàn thành, xem kết quả' : 'Chưa làm, bấm để làm thử'}`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
@@ -121,9 +126,9 @@ function TestCard({ test, onPress }: { test: PlacementTestSummary; onPress: () =
         </Text>
         <View style={[styles.cta, { backgroundColor: t.cta }]}>
           <Text style={[styles.ctaText, { color: t.ctaText }]} numberOfLines={1}>
-            {test.completed ? 'Xem kết quả' : 'Làm bài'}
+            {test.completed ? 'Xem kết quả' : 'Làm thử'}
           </Text>
-          <Icon name="chevronRight" size={15} strokeWidth={2.6} color={t.ctaText} />
+          <Icon name="chevronRight" size={15} strokeWidth={2} color={t.ctaText} />
         </View>
       </View>
     </Pressable>
@@ -133,7 +138,7 @@ function TestCard({ test, onPress }: { test: PlacementTestSummary; onPress: () =
 const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   section: { gap: 12, paddingTop: 8, paddingHorizontal: 16 },
-  title: {},
+  title: { gap: 2 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6, rowGap: 14 },
   cell: { width: '50%', paddingHorizontal: 6, paddingBottom: 4 },
   card: { flex: 1, minHeight: 168, borderRadius: 20, overflow: 'hidden' },
@@ -141,7 +146,7 @@ const styles = StyleSheet.create({
   iconChip: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   cardTitle: { flex: 1, fontFamily: fonts.display600, fontSize: 15, lineHeight: 21 },
   cta: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 12, paddingRight: 8, height: 32, borderRadius: 9999 },
-  ctaText: { fontFamily: fonts.sans700, fontSize: 13, lineHeight: 18 },
+  ctaText: { fontFamily: fonts.sans500, fontSize: 13, lineHeight: 18 },
   sheet: { gap: 14 },
   sheetTitle: { fontFamily: fonts.display600, fontSize: 18, lineHeight: 26 },
   facts: { flexDirection: 'row', gap: 10 },

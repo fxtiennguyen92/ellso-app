@@ -328,6 +328,10 @@ export const illo = {
   saveBg: 'rgba(15,23,42,0.45)',
   /** Nhãn giá trên ảnh bìa sách (nền trắng gần đặc, giống hai chế độ). */
   badgeLight: 'rgba(255,255,255,0.95)',
+  /** Nhãn giá trên ảnh bìa khoá học: nền trắng / mint hơi trong để thấy ảnh phía sau. */
+  badgeSoft: 'rgba(255,255,255,0.8)',
+  badgeMintSoft: 'rgba(236,253,245,0.85)',
+  badgeMintInk: '#047857',
   typeVideo: '#3d6896',
   typePdf: '#a9553a',
   typeBook: '#76508a',

@@ -50,7 +50,9 @@ import RotateCw from 'lucide-react-native/icons/rotate-cw';
 import Scale from 'lucide-react-native/icons/scale';
 import ScanLine from 'lucide-react-native/icons/scan-line';
 import PartyPopper from 'lucide-react-native/icons/party-popper';
+import Award from 'lucide-react-native/icons/award';
 import Plus from 'lucide-react-native/icons/plus';
+import UsersRound from 'lucide-react-native/icons/users-round';
 import Search from 'lucide-react-native/icons/search';
 import CircleCheckBig from 'lucide-react-native/icons/circle-check-big';
 import Sparkles from 'lucide-react-native/icons/sparkles';
@@ -95,6 +97,8 @@ const ICONS = {
   clock: Clock,
   cart: ShoppingCart,
   plus: Plus,
+  users: UsersRound,
+  award: Award,
   trophy: Trophy,
   star: Star,
   party: PartyPopper,
