@@ -104,6 +104,7 @@ function AppShell() {
               <Stack.Screen name="catalog/[id]" />
               {/* Bản đồ bài học: ngoài nhóm (tabs) để không có thanh tab, đường dẫn vẫn /courses/[id] */}
               <Stack.Screen name="(learn)/courses/[id]" />
+              <Stack.Screen name="(learn)/lessons/[id]" />
               <Stack.Screen name="books/[id]/index" />
               <Stack.Screen name="books/[id]/read" />
               <Stack.Screen name="placement-tests/[id]/index" />

@@ -16,6 +16,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { Icon } from '@/components/Icon';
 import { SCROLL_TOP_SPACE, ScrollTopButton } from '@/components/ScrollTopButton';
+import { useToast } from '@/components/Toast';
 import { TUTOR_LABEL } from '@/components/home/tutorLabel';
 import type { CoursePath, PathChapter, PathLesson } from '@/data/courses';
 import { NATIVE_DRIVER, useLoop } from '@/hooks/useLoop';
@@ -46,7 +47,9 @@ export function CourseMapScreen({ path }: { path: CoursePath }) {
   // Banner ghim: chương nào có banner đã chạm vị trí ghim thì là chương hiện tại.
   const bannerY = useRef<number[]>([]);
   const [current, setCurrent] = useState(0);
+  const lastY = useRef(0);
   const onScroll = (y: number) => {
+    lastY.current = y;
     setShowTop((v) => (v === y > 400 ? v : y > 400));
     const tops = bannerY.current;
     let idx = 0;
@@ -93,6 +96,16 @@ export function CourseMapScreen({ path }: { path: CoursePath }) {
   };
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/courses'));
+
+  // Bấm bài trên bản đồ: bài học → màn nội dung (màu chương đi theo). Bài kiểm tra / gặp giáo viên: chưa có màn riêng.
+  const [toast, showToast] = useToast();
+  const openLesson = (lesson: PathLesson, ch: PathChapter) => {
+    if (lesson.kind === 'lesson') {
+      router.push({ pathname: '/lessons/[id]', params: { id: lesson.id, color: ch.color, course: path.courseId } });
+    } else {
+      showToast(lesson.kind === 'test' ? 'Màn làm bài kiểm tra sắp ra mắt' : `Đặt lịch gặp ${TUTOR_LABEL} sắp ra mắt`);
+    }
+  };
 
   const infos: ChapterInfo[] = path.chapters.map((ch, i) => ({
     index: i + 1,
@@ -152,7 +165,10 @@ export function CourseMapScreen({ path }: { path: CoursePath }) {
               <View
                 key={`${ch.id}-banner`}
                 onLayout={(e) => {
+                  // Web: màn bị ẩn (display:none khi mở bài học) báo kích thước 0 → bỏ qua; hiện lại thì đo lại và tính lại chương ghim
+                  if (!e.nativeEvent.layout.height) return;
                   bannerY.current[ci] = e.nativeEvent.layout.y + BANNER_TOP;
+                  onScroll(lastY.current);
                 }}
                 // Banner đã tới / qua vị trí ghim thì ẩn đi (banner ghim đã thay nó), tránh lộ ra ở dải mờ phía trên
                 style={[styles.bannerWrap, ci <= current && styles.hidden]}
@@ -174,6 +190,7 @@ export function CourseMapScreen({ path }: { path: CoursePath }) {
                     theme={t}
                     offset={SNAKE[li % SNAKE.length] * sign}
                     onLayout={lesson.status === 'next' ? (e) => onNextLayout(ch.id, e.nativeEvent.layout.y) : undefined}
+                    onOpen={() => openLesson(lesson, ch)}
                   />
                 ))}
               </View>,
@@ -199,6 +216,7 @@ export function CourseMapScreen({ path }: { path: CoursePath }) {
       </View>
 
       <ScrollTopButton tabBar={false} visible={showTop} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
+      {toast}
     </View>
   );
 }
@@ -392,12 +410,14 @@ function LessonNode({
   theme,
   offset,
   onLayout,
+  onOpen,
 }: {
   number: number;
   lesson: PathLesson;
   theme: ChapterTheme;
   offset: number;
   onLayout?: (e: LayoutChangeEvent) => void;
+  onOpen: () => void;
 }) {
   const { colors } = useTheme();
   const isDone = lesson.status === 'done';
@@ -505,6 +525,7 @@ function LessonNode({
           accessibilityRole={open ? 'link' : 'image'}
           accessibilityLabel={a11y}
           disabled={!open}
+          onPress={onOpen}
           style={({ pressed }) => [
             styles.nodeBtn,
             { width: size, height: size, borderRadius: radius },

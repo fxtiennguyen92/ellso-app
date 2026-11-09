@@ -77,6 +77,12 @@ import Users from 'lucide-react-native/icons/users';
 import Video from 'lucide-react-native/icons/video';
 import X from 'lucide-react-native/icons/x';
 import Zap from 'lucide-react-native/icons/zap';
+import Quote from 'lucide-react-native/icons/quote';
+import ThumbsDown from 'lucide-react-native/icons/thumbs-down';
+import ThumbsUp from 'lucide-react-native/icons/thumbs-up';
+import CirclePlay from 'lucide-react-native/icons/circle-play';
+import RotateCcw from 'lucide-react-native/icons/rotate-ccw';
+import Pause from 'lucide-react-native/icons/pause';
 
 /**
  * Icon dùng trên toàn app — MỘT bộ duy nhất: Lucide (lucide.dev), nét viền 24×24, đầu nét bo tròn.
@@ -169,6 +175,13 @@ const ICONS = {
   eyeOff: EyeOff,
   info: Info,
   scan: ScanLine,
+  // bài học
+  quote: Quote,
+  thumbsUp: ThumbsUp,
+  thumbsDown: ThumbsDown,
+  playCircle: CirclePlay,
+  retry: RotateCcw,
+  pause: Pause,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

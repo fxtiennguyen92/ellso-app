@@ -99,3 +99,10 @@ Cố gắng follow theo bộ nhận diện đã thiết kế trong `branding_rea
 - **Slogan** *Learn to Lead, Innovate to Succeed* đặt thành dòng riêng, không gắn vào logo.
 
 Nếu thấy chỗ nào trong code đang lệch so với branding, báo lại thay vì tự ý đổi diện rộng.
+
+## Màn Nội dung bài học (`src/components/lesson/`)
+- Mở từ bản đồ: `router.push({ pathname: '/lessons/[id]', params: { id, color: <màu chương>, course } })`. Bài kiểm tra / gặp giáo viên: chưa có màn → toast.
+- Khối Editor.js: `LessonBlocks` (paragraph, header, list v1/v2 lồng nhau + checklist, quote, delimiter, image, table, code, warning), `QuizBlock`, `VideoBlock` (`PlatformPlayer`: native expo-video, web `<video>` + hls.js). Chữ trong dòng: `RichInline` (b/i/u/mark/code/a/br) — không dùng WebView.
+- Thêm loại khối mới ở server (`LessonContent::BLOCK_TYPES`) → thêm type vào `src/data/lesson.ts` + render ở `StaticBlock`.
+- Tracking: `useLessonTracking` (phiên học, giây học thực, độ sâu cuộn, đọc hết, giây xem video) + `LessonFeedback` cuối bài. Lỗi tracking bỏ qua im lặng.
+- Expo chạy với `CI=1` không theo dõi file → sửa code xong phải khởi động lại Metro mới thấy thay đổi.
