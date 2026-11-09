@@ -1,13 +1,14 @@
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { PrimaryButton } from '@/components/auth/AuthUI';
 import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
+import { CenterDialog } from '@/components/CenterDialog';
 import { CourseCover } from '@/components/courses/CourseCover';
 import { useDocuments } from '@/components/documents/DocumentsContext';
 import { Icon } from '@/components/Icon';
@@ -65,9 +66,16 @@ export function CartScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [signature]);
 
-  const onRemove = async (item: CartItem) => {
-    const err = await remove(item.type, item.id);
-    showToast(err ?? `Đã bỏ "${item.title}" khỏi giỏ`);
+  // Xoá món: hỏi xác nhận trước (popup giữa màn)
+  const [confirmItem, setConfirmItem] = useState<CartItem | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const onRemove = async () => {
+    if (!confirmItem) return;
+    setRemoving(true);
+    const err = await remove(confirmItem.type, confirmItem.id);
+    setRemoving(false);
+    setConfirmItem(null);
+    showToast(err ?? `Đã xoá "${confirmItem.title}" khỏi giỏ`);
   };
 
   const open = (item: CartItem) => {
@@ -115,7 +123,8 @@ export function CartScreen() {
             <Text style={[type.h2, styles.centerText, { color: colors.ink900 }]}>Giỏ hàng đang trống</Text>
             <Text style={[type.body, styles.centerText, { color: colors.ink600 }]}>Thêm khoá học hoặc sách bạn muốn mua, rồi thanh toán một lần.</Text>
             <View style={styles.emptyBtn}>
-              <PrimaryButton label="Khám phá khoá học" icon="courses" onPress={() => router.navigate('/courses')} />
+              {/* Không biết trước đó học viên đang mua sách hay khoá học → luôn về Trang chủ */}
+              <PrimaryButton label="Quay lại" onPress={() => router.navigate('/')} />
             </View>
           </View>
         ) : (
@@ -154,7 +163,7 @@ export function CartScreen() {
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`Bỏ ${item.title} khỏi giỏ`}
-                      onPress={() => onRemove(item)}
+                      onPress={() => setConfirmItem(item)}
                       hitSlop={8}
                       style={({ pressed }) => [styles.remove, { backgroundColor: pressed ? colors.surfaceAlt : 'transparent' }]}
                     >
@@ -238,6 +247,31 @@ export function CartScreen() {
           </>
         )}
       </ScrollView>
+
+      <CenterDialog visible={!!confirmItem} onClose={() => !removing && setConfirmItem(null)} title="Xoá khỏi giỏ hàng?">
+        <Text style={[type.body, { color: colors.ink600 }]}>
+          Bạn muốn xoá <Text style={{ fontFamily: fonts.sans700, color: colors.ink900 }}>{confirmItem?.title}</Text> khỏi giỏ hàng?
+        </Text>
+        <View style={styles.confirmRow}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setConfirmItem(null)}
+            disabled={removing}
+            style={({ pressed }) => [styles.confirmBtn, styles.cancelBtn, { borderColor: colors.line, backgroundColor: pressed ? colors.surfaceAlt : colors.card }]}
+          >
+            <Text style={[type.label, { color: colors.ink900 }]}>Huỷ</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ busy: removing }}
+            onPress={onRemove}
+            disabled={removing}
+            style={({ pressed }) => [styles.confirmBtn, { backgroundColor: colors.danger, opacity: pressed || removing ? 0.85 : 1 }]}
+          >
+            {removing ? <ActivityIndicator color="#ffffff" /> : <Text style={[type.label, { color: '#ffffff' }]}>Xoá</Text>}
+          </Pressable>
+        </View>
+      </CenterDialog>
 
       <PromoSheet
         visible={promoOpen}
@@ -407,6 +441,9 @@ const styles = StyleSheet.create({
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 40 },
   emptyIcon: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   emptyBtn: { alignSelf: 'stretch', marginTop: 12 },
+  confirmRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
+  confirmBtn: { flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  cancelBtn: { borderWidth: 1.5 },
 
   sumTotalRight: { alignItems: 'flex-end' },
   strike: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16, textDecorationLine: 'line-through' },
