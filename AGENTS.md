@@ -72,6 +72,7 @@ Màn hình / bottom sheet nào có `TextInput` thì phải xử lý bàn phím v
 
 - Mọi thứ mua được (sách, khoá học, sau này tài liệu khác) đi qua **giỏ hàng trên server** (`useCart()` từ `src/components/cart/CartContext.tsx`, API `/v1/cart`). Không tự làm luồng thanh toán riêng ở từng màn.
 - **"Mua ngay"** = `add(type, id, { open: true })` → thêm vào giỏ rồi mở tab Giỏ hàng. Nút giỏ nhỏ / "Thêm vào giỏ" = `add(type, id)` (ở lại màn, báo toast).
+- Mọi nút thêm vào giỏ truyền điểm bấm `from: { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY }` → chấm xanh bay từ đó vào icon Giỏ hàng (`cart/CartFly.tsx`), icon "hứng" (nảy + lắc). Không truyền thì bay từ giữa màn.
 - Tab **Giỏ hàng** (bên trái Hồ sơ) chỉ hiện khi giỏ có món (hoặc đang mở), icon có chấm vàng gây chú ý (không viền). Nút Thanh toán nằm cuối nội dung trang giỏ, không nổi. Mã khuyến mãi áp ở trang giỏ (`POST /v1/cart/promo`).
 
 ## Thông tin khác nút bấm (không làm thứ không bấm được trông như bấm được)
