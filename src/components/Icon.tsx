@@ -50,6 +50,7 @@ import RotateCw from 'lucide-react-native/icons/rotate-cw';
 import Scale from 'lucide-react-native/icons/scale';
 import ScanLine from 'lucide-react-native/icons/scan-line';
 import PartyPopper from 'lucide-react-native/icons/party-popper';
+import ArrowBigUp from 'lucide-react-native/icons/arrow-big-up';
 import Award from 'lucide-react-native/icons/award';
 import Plus from 'lucide-react-native/icons/plus';
 import UsersRound from 'lucide-react-native/icons/users-round';
@@ -99,6 +100,7 @@ const ICONS = {
   plus: Plus,
   users: UsersRound,
   award: Award,
+  arrowBigUp: ArrowBigUp,
   trophy: Trophy,
   star: Star,
   party: PartyPopper,

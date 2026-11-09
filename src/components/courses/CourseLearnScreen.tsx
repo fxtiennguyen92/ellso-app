@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { PrimaryButton, SecondaryButton } from '@/components/auth/AuthUI';
-import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { useDocuments } from '@/components/documents/DocumentsContext';
 import { Icon } from '@/components/Icon';
 import { SubpageHeader } from '@/components/SubpageHeader';
@@ -90,7 +89,7 @@ function PlacementGate({ data }: { data: MyCourse }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   return (
-    <ScrollView contentContainerStyle={[styles.body, { paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 24 }]}>
+    <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 32 }]}>
       <View style={[styles.hero, { backgroundColor: colors.mint50 }]}>
         <Icon name="target" size={28} color={colors.emerald700} />
         <Text style={[type.h2, { color: colors.emerald800 }]}>Đánh giá năng lực trước khi học</Text>
@@ -158,7 +157,7 @@ function PathQuestions({ data, onDone, onNeedTests }: { data: MyCourse; onDone: 
   };
 
   return (
-    <ScrollView contentContainerStyle={[styles.body, { paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 24 }]}>
+    <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 32 }]}>
       <View style={[styles.hero, { backgroundColor: colors.mint50 }]}>
         <Icon name="branch" size={28} color={colors.emerald700} />
         <Text style={[type.h2, { color: colors.emerald800 }]}>Chọn lộ trình phù hợp</Text>

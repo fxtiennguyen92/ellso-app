@@ -14,7 +14,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { Icon } from '@/components/Icon';
 import { SCROLL_TOP_SPACE, ScrollTopButton } from '@/components/ScrollTopButton';
 import { TUTOR_LABEL } from '@/components/home/tutorLabel';
@@ -144,7 +143,7 @@ export function CourseMapScreen({ path }: { path: CoursePath }) {
           scrollEventThrottle={16}
           onScroll={(e) => onScroll(e.nativeEvent.contentOffset.y)}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + SCROLL_TOP_SPACE + 8 }}
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + SCROLL_TOP_SPACE + 8 }}
         >
           {path.chapters.flatMap((ch, ci) => {
             const t = infos[ci].theme;
@@ -199,7 +198,7 @@ export function CourseMapScreen({ path }: { path: CoursePath }) {
         <PinnedChapter infos={infos} current={current} />
       </View>
 
-      <ScrollTopButton visible={showTop} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
+      <ScrollTopButton tabBar={false} visible={showTop} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
     </View>
   );
 }
@@ -368,6 +367,7 @@ function GradientFill({ id, from, to }: { id: string; from: string; to: string }
   );
 }
 
+/** Vòng sóng toả ra quanh bài kế tiếp: màu đặc của chương (không dùng màu ring trong suốt) để đủ rõ. */
 function PulseRing({ color }: { color: string }) {
   const v = useLoop(1800, { kind: 'forward' });
   return (
@@ -378,8 +378,8 @@ function PulseRing({ color }: { color: string }) {
         {
           borderRadius: 9999,
           backgroundColor: color,
-          opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.7, 0] }),
-          transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.4] }) }],
+          opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0] }),
+          transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.5] }) }],
         },
       ]}
     />
@@ -427,6 +427,15 @@ function LessonNode({
       };
       iconColor = colors.meetInk;
     }
+  } else if (lesson.kind === 'test' && !isDone && !isNext) {
+    // Bài kiểm tra chưa mở (chưa học xong các bài trước theo điều kiện CMS) → xám như bài khoá
+    nodeStyle = {
+      backgroundColor: colors.card,
+      borderWidth: 2,
+      borderColor: colors.line,
+      boxShadow: `0px 6px 0px ${colors.line}`,
+    };
+    iconColor = colors.ink400;
   } else if (lesson.kind === 'test') {
     if (isDone) {
       gradient = { from: illo.testHi, to: illo.testLo };
@@ -483,13 +492,15 @@ function LessonNode({
           bg: colors.meetTint,
         }
       : lesson.kind === 'test'
-        ? { text: 'Kiểm tra', fg: colors.testInk, bg: colors.testTint }
+        ? open
+          ? { text: 'Kiểm tra', fg: colors.testInk, bg: colors.testTint }
+          : { text: 'Kiểm tra', fg: colors.ink600, bg: colors.surfaceAlt }
         : null;
 
   return (
     <View onLayout={onLayout} style={[styles.node, { transform: [{ translateX: offset }] }]}>
       <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-        {isNext && <PulseRing color={lesson.kind === 'lesson' ? theme.ring : colors.meetLine} />}
+        {isNext && <PulseRing color={lesson.kind === 'lesson' ? theme.base : lesson.kind === 'test' ? illo.testLo : illo.meetLo} />}
         <Pressable
           accessibilityRole={open ? 'link' : 'image'}
           accessibilityLabel={a11y}
@@ -586,7 +597,7 @@ const styles = StyleSheet.create({
   bannerBtn: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 
   list: { alignItems: 'center', gap: 22, paddingTop: 16, paddingBottom: 28 },
-  node: { alignItems: 'center', gap: 8 },
+  node: { alignItems: 'center', gap: 16 },
   nodeBtn: { alignItems: 'center', justifyContent: 'center' },
   iconLayer: { position: 'relative', zIndex: 1 },
   labelBox: { alignItems: 'center', gap: 4, maxWidth: 170 },

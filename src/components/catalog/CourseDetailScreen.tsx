@@ -28,7 +28,7 @@ import { apiCourseDetail, type CourseDetail, formatPrice, studyLabel } from '@/d
 import { NATIVE_DRIVER } from '@/hooks/useLoop';
 import { ApiError } from '@/lib/api';
 import { useTheme } from '@/theme/ThemeProvider';
-import { type ChapterColor, chapterPalette, WEB_MAX_WIDTH } from '@/theme/tokens';
+import { type ChapterColor, chapterPalette, illo, WEB_MAX_WIDTH } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
 
 /**
@@ -192,10 +192,11 @@ export function CourseDetailScreen() {
                     return course.outline.map((ch, i) => {
                       if (ch.type === 'exam') {
                         return (
-                          <View key={`e${i}`} style={[styles.exam, { backgroundColor: colors.surfaceAlt }]}>
-                            <Icon name="award" size={18} color={colors.ink600} />
-                            <Text style={[type.label, styles.grow, { color: colors.ink900 }]}>{ch.title}</Text>
-                            <Text style={[type.caption, { color: colors.ink600 }]}>Bài thi</Text>
+                          <View key={`e${i}`} style={[styles.exam, { backgroundColor: colors.amberChip, borderColor: colors.amberChipLine }]}>
+                            <View style={[styles.examIcon, { backgroundColor: illo.goldLo }]}>
+                              <Icon name="award" size={18} color="#ffffff" />
+                            </View>
+                            <Text style={[type.label, styles.grow, { color: colors.amberChipText }]}>{ch.title}</Text>
                           </View>
                         );
                       }
@@ -339,7 +340,6 @@ function ChapterBlock({ index, chapter }: { index: number; chapter: Extract<Cour
       <View style={styles.chapterHead}>
         <Text style={[styles.chapterNo, { color: accent }]}>CHƯƠNG {index}</Text>
         <Text style={[styles.chapterTitle, { color: colors.ink900 }]}>{chapter.title}</Text>
-        <Text style={[type.caption, { color: colors.ink600 }]}>{chapter.lessons.length} bài</Text>
       </View>
       {chapter.lessons.map((l, i) => (
         <View key={i} style={[styles.lesson, { borderTopColor: colors.line }]}>
@@ -417,7 +417,8 @@ const styles = StyleSheet.create({
   lessonNo: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   lessonNoText: { fontFamily: fonts.sans700, fontSize: 12, lineHeight: 16 },
   previewTag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 9999 },
-  exam: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 16 },
+  exam: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, borderWidth: 1 },
+  examIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
 
   teacher: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   teacherName: { fontFamily: fonts.display600, fontSize: 17, lineHeight: 24 },
