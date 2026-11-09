@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
@@ -96,7 +96,8 @@ function Fact({ icon, label, value }: { icon: 'clock' | 'help'; label: string; v
 
 function TestCard({ test, onPress }: { test: PlacementTestSummary; onPress: () => void }) {
   const t = test.completed ? TONES.done : TONES.todo;
-  const gid = `pt-${test.id}-${test.completed ? 'd' : 't'}`;
+  // id gradient duy nhất theo từng lần mount (web: trùng id giữa các màn ẩn/hiện làm mất nền khi quay lại tab)
+  const gid = `pt-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}-${test.completed ? 'd' : 't'}`;
   return (
     <Pressable
       accessibilityRole="button"
@@ -104,6 +105,8 @@ function TestCard({ test, onPress }: { test: PlacementTestSummary; onPress: () =
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
+        // Nền màu đặc phía dưới gradient: SVG chưa vẽ / bị trình duyệt bỏ thì thẻ vẫn có màu
+        { backgroundColor: t.bottom },
         { boxShadow: `0px ${pressed ? 2 : 5}px 0px ${t.edge}`, transform: [{ translateY: pressed ? 3 : 0 }] },
       ]}
     >
@@ -128,7 +131,6 @@ function TestCard({ test, onPress }: { test: PlacementTestSummary; onPress: () =
           <Text style={[styles.ctaText, { color: t.ctaText }]} numberOfLines={1}>
             {test.completed ? 'Xem kết quả' : 'Làm thử'}
           </Text>
-          <Icon name="chevronRight" size={15} strokeWidth={2} color={t.ctaText} />
         </View>
       </View>
     </Pressable>
@@ -145,7 +147,7 @@ const styles = StyleSheet.create({
   cardBody: { flex: 1, padding: 14, gap: 10, zIndex: 1 },
   iconChip: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   cardTitle: { flex: 1, fontFamily: fonts.display600, fontSize: 15, lineHeight: 21 },
-  cta: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 2, paddingLeft: 12, paddingRight: 8, height: 32, borderRadius: 9999 },
+  cta: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, height: 32, borderRadius: 9999 },
   ctaText: { fontFamily: fonts.sans500, fontSize: 13, lineHeight: 18 },
   sheet: { gap: 14 },
   sheetTitle: { fontFamily: fonts.display600, fontSize: 18, lineHeight: 26 },

@@ -17,13 +17,14 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useAuth } from '@/auth/AuthProvider';
 import { PrimaryButton } from '@/components/auth/AuthUI';
 import { useCart } from '@/components/cart/CartContext';
+import { useStartCourse } from '@/components/catalog/useStartCourse';
 import { ContentBlocks } from '@/components/content/ContentBlocks';
 import { CourseCover, coursePalette } from '@/components/courses/CourseCover';
 import { useDocuments } from '@/components/documents/DocumentsContext';
 import { Icon, type IconName } from '@/components/Icon';
 import { InstructorTag } from '@/components/InstructorTag';
 import { UserAvatar } from '@/components/UserAvatar';
-import { apiCourseDetail, type CourseDetail, formatPrice } from '@/data/courses';
+import { apiCourseDetail, type CourseDetail, formatPrice, studyLabel } from '@/data/courses';
 import { NATIVE_DRIVER } from '@/hooks/useLoop';
 import { ApiError } from '@/lib/api';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -34,8 +35,8 @@ import { fonts, type } from '@/theme/typography';
  * Trang giới thiệu khoá học E-learning (/catalog/[id], mở từ thẻ khoá ở tab Khoá học).
  * 1. Hero: ảnh bìa tràn viền (bo 2 góc dưới), lớp tối dưới đáy + danh mục / tên khoá; thanh trên: quay lại (kính mờ → nền khi cuộn).
  * 2. Mô tả ngắn, người hướng dẫn, thông số (bài học / chương / lộ trình).
- * 3. Khối mua (trong nội dung, không nổi): giá bên phải; nút giỏ nhỏ (thêm / xem giỏ) + Mua ngay (thêm rồi mở giỏ).
- *    Miễn phí / đã sở hữu: nút tương ứng.
+ * 3. Khối mua (trong nội dung, không nổi): có phí → giá bên phải + 1 nút "Thêm vào giỏ hàng" / "Xem giỏ hàng";
+ *    miễn phí / đã sở hữu → không hiện giá, 1 nút "Bắt đầu học" / "Tiếp tục học".
  * 4. Đánh giá năng lực bắt buộc (nếu có) · Giới thiệu (mô tả CMS) · Nội dung khoá (đề cương / lộ trình cá nhân hoá) · Người hướng dẫn.
  */
 export function CourseDetailScreen() {
@@ -72,18 +73,15 @@ export function CourseDetailScreen() {
   const free = course?.price === 0;
   const pal = coursePalette(course?.id ?? 0);
 
-  // Mua ngay = thêm vào giỏ rồi mở Giỏ hàng; nút giỏ nhỏ = thêm (đã có thì mở giỏ)
-  const addToCart = async (open: boolean, e?: GestureResponderEvent) => {
+  const { start, busyId: startingId } = useStartCourse();
+
+  // "Thêm vào giỏ hàng": thêm (chấm xanh bay vào giỏ), ở lại trang; nút tự đổi thành "Xem giỏ hàng"
+  const addToCart = async (e?: GestureResponderEvent) => {
     if (!course || buying) return;
-    if (inCart && !open) {
-      router.navigate('/cart');
-      return;
-    }
     setBuying(true);
-    const err = await cartApi.add('course', course.id, { open, from: e ? { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY } : null });
+    const err = await cartApi.add('course', course.id, { from: e ? { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY } : null });
     setBuying(false);
-    if (err) showToast(err);
-    else if (!open) showToast('Đã thêm vào giỏ hàng');
+    showToast(err ?? 'Đã thêm vào giỏ hàng');
   };
 
   return (
@@ -144,58 +142,29 @@ export function CourseDetailScreen() {
               <View style={styles.stats}>
                 {course.lessonCount > 0 ? <Stat icon="book" text={`${course.lessonCount} bài học`} /> : null}
                 {course.chapterCount > 0 ? <Stat icon="layers" text={`${course.chapterCount} chương`} /> : null}
-                <Stat icon={course.personalized ? 'target' : 'play'} text={course.personalized ? 'Lộ trình riêng' : 'Học online'} />
+                {course.personalized ? <Stat icon="target" text="Lộ trình riêng" /> : null}
               </View>
 
-              {/* 3. Khối mua */}
+              {/* 3. Khối mua / học:
+                  - Đã sở hữu hoặc miễn phí: không hiện giá, chỉ 1 nút "Bắt đầu học" / "Tiếp tục học".
+                  - Có phí: giá bên phải + 1 nút "Thêm vào giỏ hàng" → đã trong giỏ thì "Xem giỏ hàng". */}
               <View style={[styles.buy, { borderTopColor: colors.line }]}>
-                <View style={styles.priceRow}>
-                  {course.enrolled ? (
-                    <View style={[styles.owned, { backgroundColor: colors.mint50 }]}>
-                      <Icon name="check" size={13} strokeWidth={3} color={colors.emerald700} />
-                      <Text style={[type.captionStrong, { color: colors.emerald700 }]}>Bạn đã sở hữu khoá này</Text>
+                {course.enrolled || free ? (
+                  <PrimaryButton label={studyLabel(course)} icon="play" loading={startingId === course.id} onPress={() => start(course)} />
+                ) : (
+                  <>
+                    <View style={styles.priceRow}>
+                      <Text style={[type.caption, { color: colors.ink600 }]}>Học phí</Text>
+                      <Text style={[styles.price, { color: colors.ink900 }]}>{formatPrice(course.price)}</Text>
                     </View>
-                  ) : (
-                    <View />
-                  )}
-                  <Text style={[styles.price, { color: free || course.enrolled ? colors.emerald700 : colors.ink900 }]}>
-                    {course.enrolled ? '' : free ? 'Miễn phí' : formatPrice(course.price)}
-                  </Text>
-                </View>
-                <View style={styles.buttons}>
-                  {course.enrolled ? (
-                    <View style={styles.grow}>
-                      <PrimaryButton label="Vào học" icon="play" onPress={() => router.push(`/courses/${course.id}`)} />
-                    </View>
-                  ) : free ? (
-                    <View style={styles.grow}>
-                      <PrimaryButton label="Học miễn phí" icon="play" onPress={() => showToast('Ghi danh khoá miễn phí sẽ làm ở bước sau')} />
-                    </View>
-                  ) : (
-                    <>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={inCart ? 'Đã có trong giỏ hàng. Mở giỏ hàng' : 'Thêm vào giỏ hàng'}
-                        onPress={(e) => addToCart(false, e)}
-                        style={({ pressed }) => [
-                          styles.cartBtn,
-                          inCart
-                            ? { backgroundColor: colors.mint50, borderColor: colors.mint100 }
-                            : { backgroundColor: pressed ? colors.surfaceAlt : colors.card, borderColor: colors.line },
-                          { transform: [{ scale: pressed ? 0.96 : 1 }] },
-                        ]}
-                      >
-                        <Icon name="cart" size={22} color={inCart ? colors.emerald700 : colors.ink900} duotone={inCart} />
-                        <View style={[styles.cartMark, { backgroundColor: inCart ? colors.emerald700 : colors.ink900, borderColor: inCart ? colors.mint50 : colors.card }]}>
-                          <Icon name={inCart ? 'check' : 'plus'} size={10} strokeWidth={3.2} color={inCart ? colors.onEmerald : colors.card} />
-                        </View>
-                      </Pressable>
-                      <View style={styles.grow}>
-                        <PrimaryButton label="Mua ngay" icon="cart" loading={buying} onPress={(e) => addToCart(true, e)} />
-                      </View>
-                    </>
-                  )}
-                </View>
+                    <PrimaryButton
+                      label={inCart ? 'Xem giỏ hàng' : 'Thêm vào giỏ hàng'}
+                      icon="cart"
+                      loading={buying}
+                      onPress={(e) => (inCart ? router.navigate('/cart') : addToCart(e))}
+                    />
+                  </>
+                )}
               </View>
             </View>
 
@@ -392,11 +361,7 @@ const styles = StyleSheet.create({
 
   buy: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 16, marginTop: 4, gap: 12 },
   priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 32 },
-  owned: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, height: 30, borderRadius: 9999 },
   price: { fontFamily: fonts.display600, fontSize: 26, lineHeight: 32 },
-  buttons: { flexDirection: 'row', gap: 10 },
-  cartBtn: { width: 52, height: 52, borderRadius: 16, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  cartMark: { position: 'absolute', top: 9, right: 7, width: 16, height: 16, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
 
   section: { paddingHorizontal: 20, paddingTop: 32, gap: 12 },
   card: { borderRadius: 20, borderWidth: 1, paddingHorizontal: 16 },

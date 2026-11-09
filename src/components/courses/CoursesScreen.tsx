@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/auth/AuthProvider';
 import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { useCart } from '@/components/cart/CartContext';
+import { useStartCourse } from '@/components/catalog/useStartCourse';
 import { useDocuments } from '@/components/documents/DocumentsContext';
 import { Icon } from '@/components/Icon';
 import { SCROLL_TOP_SPACE, ScrollTopButton } from '@/components/ScrollTopButton';
@@ -116,6 +117,8 @@ export function CoursesScreen() {
     showToast(err ?? 'Đã thêm vào giỏ hàng');
   };
 
+  const { start, busyId: startingId } = useStartCourse();
+
   // Bấm thẻ → trang giới thiệu khoá học
   const openCourse = (c: CatalogCourse) => router.push({ pathname: '/catalog/[id]', params: { id: String(c.id) } });
 
@@ -181,9 +184,10 @@ export function CoursesScreen() {
                 key={c.id}
                 course={c}
                 inCart={cart.has('course', c.id)}
-                busy={busyId === c.id}
+                busy={busyId === c.id || startingId === c.id}
                 onAddToCart={(e) => addToCart(c, e)}
                 onOpen={() => openCourse(c)}
+                onStart={() => start(c)}
               />
             ))}
             {loadingMore && (

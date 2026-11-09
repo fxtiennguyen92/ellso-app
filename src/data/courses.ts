@@ -284,6 +284,10 @@ export type CatalogCourse = {
   isNew: boolean;
   enrolled: boolean;
   inCart: boolean;
+  /** % hoàn thành (null nếu chưa ghi danh / chưa có lộ trình). */
+  progressPercent: number | null;
+  /** Đã học ≥ 1 bài → "Tiếp tục học", chưa → "Bắt đầu học". */
+  started: boolean;
 };
 
 export type CatalogPage = { items: CatalogCourse[]; page: number; hasMore: boolean; total: number };
@@ -300,6 +304,8 @@ type ApiCatalogCourse = {
   is_new: boolean;
   enrolled: boolean;
   in_cart: boolean;
+  progress_percent: number | null;
+  started: boolean;
 };
 
 export async function apiCatalog(token: string, page: number, categoryId: number | null): Promise<CatalogPage> {
@@ -321,6 +327,8 @@ export async function apiCatalog(token: string, page: number, categoryId: number
       isNew: c.is_new,
       enrolled: c.enrolled,
       inCart: c.in_cart,
+      progressPercent: c.progress_percent,
+      started: c.started,
     })),
   };
 }
@@ -371,6 +379,8 @@ export async function apiCourseDetail(token: string, id: string | number): Promi
     isNew: c.is_new,
     enrolled: c.enrolled,
     inCart: c.in_cart,
+    progressPercent: c.progress_percent,
+    started: c.started,
     blocks: c.description_blocks,
     personalized: c.personalized,
     pathsCount: c.paths_count,
@@ -384,3 +394,11 @@ export async function apiCourseDetail(token: string, id: string | number): Promi
     placementTests: c.placement_tests,
   };
 }
+
+/** Ghi danh khoá MIỄN PHÍ (nút "Bắt đầu học"). Đã ghi danh thì giữ nguyên. */
+export async function apiEnrollFree(token: string, id: number): Promise<void> {
+  await apiRequest('POST', `/courses/${id}/enroll`, { token });
+}
+
+/** Nhãn nút học: đã học ≥ 1 bài → "Tiếp tục học", chưa → "Bắt đầu học". */
+export const studyLabel = (c: { started: boolean }) => (c.started ? 'Tiếp tục học' : 'Bắt đầu học');

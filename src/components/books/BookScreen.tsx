@@ -83,18 +83,13 @@ export function BookScreen() {
   const tone = { bg: pal.base, pressed: pal.edge, edge: pal.edge };
   const inCart = !!book && cartApi.has('document', Number(book.id));
 
-  // "Mua ngay" = thêm vào giỏ rồi mở tab Giỏ hàng; nút giỏ nhỏ = chỉ thêm (đã có trong giỏ thì mở giỏ)
-  const addToCart = async (open: boolean, e?: GestureResponderEvent) => {
+  // Một nút: "Thêm vào giỏ hàng" (thêm, ở lại trang) → đã trong giỏ thì "Xem giỏ hàng" (mở giỏ)
+  const addToCart = async (e?: GestureResponderEvent) => {
     if (!book || buying) return;
-    if (inCart && !open) {
-      router.navigate('/cart');
-      return;
-    }
     setBuying(true);
-    const err = await cartApi.add('document', Number(book.id), { open, from: e ? { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY } : null });
+    const err = await cartApi.add('document', Number(book.id), { from: e ? { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY } : null });
     setBuying(false);
-    if (err) showToast(err);
-    else if (!open) showToast('Đã thêm vào giỏ hàng');
+    showToast(err ?? 'Đã thêm vào giỏ hàng');
   };
 
   return (
@@ -199,35 +194,16 @@ export function BookScreen() {
                     <SecondaryButton label="Đọc thử" icon="bookOpen" onPress={() => read('preview')} />
                   </View>
                 ) : null}
-                {onlyBuy && !book.unlocked ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={inCart ? 'Đã có trong giỏ hàng. Mở giỏ hàng' : 'Thêm vào giỏ hàng'}
-                    onPress={(e) => addToCart(false, e)}
-                    style={({ pressed }) => [
-                      styles.cartBtn,
-                      inCart
-                        ? { backgroundColor: colors.mint50, borderColor: colors.mint100 }
-                        : { backgroundColor: pressed ? colors.surfaceAlt : colors.card, borderColor: colors.line },
-                      { transform: [{ scale: pressed ? 0.96 : 1 }] },
-                    ]}
-                  >
-                    <Icon name="cart" size={22} color={inCart ? colors.emerald700 : colors.ink900} duotone={inCart} />
-                    <View style={[styles.cartMark, { backgroundColor: inCart ? colors.emerald700 : colors.ink900, borderColor: inCart ? colors.mint50 : colors.card }]}>
-                      <Icon name={inCart ? 'check' : 'plus'} size={10} strokeWidth={3.2} color={inCart ? colors.onEmerald : colors.card} />
-                    </View>
-                  </Pressable>
-                ) : null}
                 <View style={styles.mainBtn}>
                   {book.unlocked ? (
                     <PrimaryButton label="Đọc sách" icon="bookOpen" tone={tone} onPress={() => read('full')} />
                   ) : (
                     <PrimaryButton
-                      label={onlyBuy ? 'Mua ngay' : 'Mở khoá sách'}
+                      label={onlyBuy ? (inCart ? 'Xem giỏ hàng' : 'Thêm vào giỏ hàng') : 'Mở khoá sách'}
                       icon={onlyBuy ? 'cart' : 'lock'}
                       tone={tone}
                       loading={buying}
-                      onPress={(e) => (onlyBuy ? addToCart(true, e) : openDoc(book))}
+                      onPress={(e) => (!onlyBuy ? openDoc(book) : inCart ? router.navigate('/cart') : addToCart(e))}
                     />
                   )}
                 </View>
@@ -386,8 +362,6 @@ const styles = StyleSheet.create({
   buttons: { flexDirection: 'row', gap: 10, marginTop: 6 },
   previewBtn: { flex: 0.62 },
   mainBtn: { flex: 1 },
-  cartBtn: { width: 52, height: 52, borderRadius: 16, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  cartMark: { position: 'absolute', top: 9, right: 7, width: 16, height: 16, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   rule: { height: 8, marginTop: 18 },
   section: { paddingHorizontal: 20, paddingTop: 22, gap: 10 },
   more: { alignSelf: 'flex-start' },

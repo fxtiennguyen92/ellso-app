@@ -15,11 +15,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
-import { ComingSoon } from '@/components/ComingSoon';
 import { Icon } from '@/components/Icon';
 import { SCROLL_TOP_SPACE, ScrollTopButton } from '@/components/ScrollTopButton';
 import { TUTOR_LABEL } from '@/components/home/tutorLabel';
-import { getCoursePath, type PathChapter, type PathLesson } from '@/data/courses';
+import type { CoursePath, PathChapter, PathLesson } from '@/data/courses';
 import { NATIVE_DRIVER, useLoop } from '@/hooks/useLoop';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
@@ -36,12 +35,11 @@ const BANNER_TOP = 12;
 type ChapterTheme = { base: string; edge: string; ink: string; ring: string };
 type ChapterInfo = { index: number; chapter: PathChapter; done: number; theme: ChapterTheme };
 
-/** Màn Lộ trình học của một khoá (kiểu Duolingo). */
-export function CourseMapScreen({ courseId }: { courseId: string }) {
+/** Màn Lộ trình học của một khoá (kiểu Duolingo). Dữ liệu do CourseLearnScreen tải (GET /my/courses/{id}). */
+export function CourseMapScreen({ path }: { path: CoursePath }) {
   const { colors, scheme } = useTheme();
   const insets = useSafeAreaInsets();
   const topInset = useScreenTopInset(12, 28);
-  const path = getCoursePath(courseId);
 
   const scrollRef = useRef<ScrollViewInstance>(null);
   const [showTop, setShowTop] = useState(false);
@@ -85,8 +83,6 @@ export function CourseMapScreen({ courseId }: { courseId: string }) {
     },
     [tryScrollToNext],
   );
-
-  if (!path) return <ComingSoon title="Không tìm thấy khoá học" back />;
 
   const all = path.chapters.flatMap((c) => c.lessons);
   const done = all.filter((l) => l.status === 'done').length;
@@ -137,7 +133,7 @@ export function CourseMapScreen({ courseId }: { courseId: string }) {
           style={[styles.headerTrack, { backgroundColor: colors.line }]}
         >
           <View
-            style={[styles.headerFill, { width: `${(done / total) * 100}%`, backgroundColor: colors.emerald500 }]}
+            style={[styles.headerFill, { width: `${total ? (done / total) * 100 : 0}%`, backgroundColor: colors.emerald500 }]}
           />
         </View>
       </View>
