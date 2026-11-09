@@ -18,6 +18,7 @@ import {
 } from '@/data/courses';
 import { apiPlacementTests, type PlacementTestSummary } from '@/data/placement';
 import { useDragScroll } from '@/hooks/useDragScroll';
+import { useKeepScroll } from '@/hooks/useKeepScroll';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
@@ -52,6 +53,8 @@ export function CoursesScreen() {
 
   const [scrollY, setScrollY] = useState(0);
   const scrollRef = useRef<ScrollViewInstance>(null);
+  // Mở trang khoá / bản đồ rồi quay lại: giữ vị trí cuộn (web)
+  const trackScroll = useKeepScroll(scrollRef);
   // Hàng chip danh mục cuộn ngang: vuốt trên điện thoại, kéo chuột trên web
   const chipsRef = useRef<ScrollViewInstance>(null);
   useDragScroll(chipsRef);
@@ -104,6 +107,7 @@ export function CoursesScreen() {
   const onScroll = (e: { nativeEvent: { contentOffset: { y: number }; layoutMeasurement: { height: number }; contentSize: { height: number } } }) => {
     const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
     setScrollY(contentOffset.y);
+    trackScroll(contentOffset.y);
     if (hasMore && !loadingRef.current && !error && contentOffset.y + layoutMeasurement.height > contentSize.height - 600) {
       loadPage(page + 1, category);
     }

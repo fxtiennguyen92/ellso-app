@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { type GestureResponderEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BottomSheet } from '@/components/BottomSheet';
 import { useCart } from '@/components/cart/CartContext';
@@ -11,7 +11,7 @@ import { fonts, type } from '@/theme/typography';
 
 import { accessStyle } from './docAccess';
 
-type Option = { title: string; desc: string; action: string; icon: IconName; run: () => void };
+type Option = { title: string; desc: string; action: string; icon: IconName; run: (e?: GestureResponderEvent) => void };
 
 /**
  * Bảng "Cách mở tài liệu": liệt kê MỌI điều kiện của tài liệu (đủ một là mở);
@@ -19,7 +19,7 @@ type Option = { title: string; desc: string; action: string; icon: IconName; run
  */
 export function AccessSheet({ doc, onClose, onNotice }: { doc: Doc | null; onClose: () => void; onNotice: (msg: string) => void }) {
   const { colors } = useTheme();
-  const { add: addToCart } = useCart();
+  const { add: addToCart, has } = useCart();
 
   const go = (path: Parameters<typeof router.push>[0]) => {
     onClose();
@@ -30,23 +30,29 @@ export function AccessSheet({ doc, onClose, onNotice }: { doc: Doc | null; onClo
     switch (a.kind) {
       case 'plus':
         return { title: 'Có gói thành viên', desc: 'Mở mọi tài liệu thuộc gói khi gói còn hạn.', action: 'Nâng cấp gói', icon: 'crown', run: () => go('/profile/membership') };
-      case 'buy':
+      case 'buy': {
+        const inCart = !!doc && /^\d+$/.test(doc.id) && has('document', Number(doc.id));
         return {
           title: 'Mua riêng tài liệu này',
           desc: 'Mua một lần, xem mãi trong app.',
-          action: `Mua ngay · ${formatPrice(a.price)}`,
-          icon: 'tag',
-          // Mua ngay = thêm vào giỏ rồi mở tab Giỏ hàng
-          run: async () => {
+          // Giống trang chi tiết: "Thêm vào giỏ hàng" (ở lại màn, chấm xanh bay vào giỏ) → đã có trong giỏ: "Xem giỏ hàng"
+          action: inCart ? 'Xem giỏ hàng' : `Thêm vào giỏ hàng · ${formatPrice(a.price)}`,
+          icon: 'cart',
+          run: async (e?: GestureResponderEvent) => {
             onClose();
             if (!doc || !/^\d+$/.test(doc.id)) {
               onNotice('Tài liệu mẫu, chưa mua được');
               return;
             }
-            const err = await addToCart('document', Number(doc.id), { open: true });
-            if (err) onNotice(err);
+            if (inCart) {
+              setTimeout(() => router.navigate('/cart'), 250);
+              return;
+            }
+            const err = await addToCart('document', Number(doc.id), { from: e ? { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY } : null });
+            onNotice(err ?? 'Đã thêm vào giỏ hàng');
           },
         };
+      }
       case 'lesson':
         return {
           title: `Mở ${a.lesson} của khoá ${a.courseTitle}`,

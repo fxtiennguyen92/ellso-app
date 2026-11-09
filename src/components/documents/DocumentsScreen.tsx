@@ -8,6 +8,7 @@ import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { Icon } from '@/components/Icon';
 import { SCROLL_TOP_SPACE, ScrollTopButton } from '@/components/ScrollTopButton';
 import { getWatching, matchQuery, type Doc, typeLabel } from '@/data/documents';
+import { useKeepScroll } from '@/hooks/useKeepScroll';
 import { useLoop } from '@/hooks/useLoop';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -28,6 +29,8 @@ export function DocumentsScreen() {
   const [query, setQuery] = useState('');
   const [scrollY, setScrollY] = useState(0);
   const scrollRef = useRef<ScrollViewInstance>(null);
+  // Mở sách / video rồi quay lại: giữ vị trí cuộn (web)
+  const trackScroll = useKeepScroll(scrollRef);
 
   const visible = useMemo(() => docs.filter((d) => (!topic || d.topicId === topic) && matchQuery(d, query)), [docs, topic, query]);
   const byType = (t: Doc['type']) => visible.filter((d) => d.type === t);
@@ -47,7 +50,10 @@ export function DocumentsScreen() {
         ref={scrollRef}
         stickyHeaderIndices={[1]}
         scrollEventThrottle={16}
-        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+        onScroll={(e) => {
+          setScrollY(e.nativeEvent.contentOffset.y);
+          trackScroll(e.nativeEvent.contentOffset.y);
+        }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + SCROLL_TOP_SPACE + 8 }}

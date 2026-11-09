@@ -3,6 +3,7 @@ import { ActivityIndicator, Animated, Platform, RefreshControl, ScrollView, type
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
+import { SCROLL_TOP_SPACE, ScrollTopButton } from '@/components/ScrollTopButton';
 import { CampaignCarousel } from '@/components/home/CampaignCarousel';
 import { HomeBooks } from '@/components/home/HomeBooks';
 import { HomeHeader, SEARCH_HEIGHT } from '@/components/home/HomeHeader';
@@ -12,6 +13,7 @@ import { WorkshopSchedule } from '@/components/home/WorkshopSchedule';
 import { useAuth } from '@/auth/AuthProvider';
 import { cachedHomeFeed, emptyFeed, type HomeFeed, type HomeTraining, loadHomeFeed } from '@/data/home';
 import { LoopScope } from '@/hooks/LoopScope';
+import { useKeepScroll } from '@/hooks/useKeepScroll';
 import { PULL_TRIGGER, usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/typography';
@@ -56,6 +58,9 @@ export default function HomeScreen() {
   const scrollRef = useRef<ScrollViewInstance>(null);
   // Web: kéo xuống để làm mới (native dùng RefreshControl)
   const webPull = usePullToRefresh(scrollRef, refresh);
+  // Mở sách / khuyến mãi rồi quay lại: giữ nguyên vị trí cuộn (web)
+  const trackScroll = useKeepScroll(scrollRef);
+  const [showTop, setShowTop] = useState(false);
 
   // Khoảng trống trên cùng của hero. Native: dưới status bar thật; web (không có status bar): 28px.
   const topInset = Platform.OS === 'web' ? 28 : insets.top + 12;
@@ -95,11 +100,16 @@ export default function HomeScreen() {
             <ScrollView
               ref={scrollRef}
               scrollEventThrottle={16}
-              onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y + (ios ? contentTop : 0) > 4)}
+              onScroll={(e) => {
+                const y = e.nativeEvent.contentOffset.y;
+                setScrolled(y + (ios ? contentTop : 0) > 4);
+                setShowTop(y + (ios ? contentTop : 0) > 400);
+                trackScroll(y);
+              }}
               contentInset={ios ? { top: contentTop } : undefined}
               contentOffset={ios ? { x: 0, y: -contentTop } : undefined}
               scrollIndicatorInsets={ios ? { top: contentTop } : undefined}
-              contentContainerStyle={{ paddingTop: ios ? 0 : contentTop, paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 16 }}
+              contentContainerStyle={{ paddingTop: ios ? 0 : contentTop, paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + SCROLL_TOP_SPACE + 8 }}
               showsVerticalScrollIndicator={false}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onPull} tintColor={colors.emerald700} colors={[colors.emerald700]} progressViewOffset={contentTop} />}
             >
@@ -121,6 +131,8 @@ export default function HomeScreen() {
 
         {/* Hero + ô tìm kiếm phủ lên trên; nội dung cuộn trượt vào bên dưới (không có dải nền / đường kẻ ngăn) */}
         <HomeHeader student={student} tagline={feed.tagline} scrolled={scrolled} topInset={topInset} onHeroHeight={setHeroH} />
+
+        <ScrollTopButton visible={showTop} onPress={() => scrollRef.current?.scrollTo({ y: ios ? -contentTop : 0, animated: true })} />
 
         <TrainingSheet training={openTraining} onClose={() => setOpenTraining(null)} onChanged={refresh} />
       </View>
