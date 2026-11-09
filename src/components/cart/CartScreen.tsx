@@ -3,7 +3,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { PrimaryButton } from '@/components/auth/AuthUI';
@@ -26,9 +26,10 @@ const formatCoins = (n: number) => n.toLocaleString('vi-VN');
 /**
  * Tab Giỏ hàng (chỉ hiện trên thanh tab khi giỏ có món). Các khối:
  * 1. Sản phẩm — thẻ chứa các hàng (ảnh, loại, tên, giá, nhãn mã nếu được giảm, nút bỏ).
- * 2. Mã khuyến mãi — tiêu đề + nút "Thêm mã" cùng hàng; bấm → popup nhập / kiểm tra / áp dụng (PromoSheet).
- *    Đã áp dụng → vé mã (viền đứt) + nút xoá mã. Giỏ đổi → tự kiểm tra lại mã.
- * 3. Xu của tôi — số dư (+ quy ra tiền), nút "Sử dụng": trừ tối đa có thể = min(số dư, floor(còn phải trả / tỉ lệ)).
+ * 2. Giảm giá — một thẻ 2 dòng:
+ *    • Mã khuyến mãi: nút "Thêm mã" → popup giữa màn nhập / kiểm tra / áp dụng (PromoSheet). Đã áp dụng → vé mã (viền đứt) + nút xoá.
+ *      Giỏ đổi → tự kiểm tra lại mã.
+ *    • Xu của tôi: số dư, nút "Sử dụng": trừ tối đa có thể = min(số dư, floor(còn phải trả / tỉ lệ)).
  * 4. Thanh toán — cuối nội dung (không nổi): dòng mã, dòng "Dùng N xu" (nếu có), tổng (giá gạch nếu có giảm), nút Thanh toán (chưa làm).
  * (Sau này: khối Xuất hoá đơn doanh nghiệp trước khối Thanh toán.)
  */
@@ -164,50 +165,57 @@ export function CartScreen() {
               </View>
             </Block>
 
-            {/* 2. Mã khuyến mãi: nút Thêm cùng hàng tiêu đề → popup */}
-            <Block
-              title="Mã khuyến mãi"
-              action={
-                promo ? null : (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel="Thêm mã khuyến mãi"
-                    onPress={() => setPromoOpen(true)}
-                    hitSlop={6}
-                    style={({ pressed }) => [styles.addBtn, { backgroundColor: pressed ? colors.mint100 : colors.mint50 }]}
-                  >
-                    <Icon name="plus" size={15} strokeWidth={2.6} color={colors.emerald700} />
-                    <Text style={[type.captionStrong, { color: colors.emerald700 }]}>Thêm mã</Text>
-                  </Pressable>
-                )
-              }
-            >
-              {promo ? (
-                <View style={[styles.voucher, { backgroundColor: colors.mint50, borderColor: colors.emerald500 }]}>
-                  <View style={[styles.voucherIcon, { backgroundColor: colors.emerald700 }]}>
-                    <Icon name="ticket" size={20} strokeWidth={2} color={colors.onEmerald} />
+            {/* 2. Giảm giá: mã khuyến mãi + xu của tôi trong cùng một thẻ */}
+            <Block title="Giảm giá">
+              <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.line }]}>
+                {promo ? (
+                  <View style={styles.discRow}>
+                    <View style={[styles.voucher, { backgroundColor: colors.mint50, borderColor: colors.emerald500 }]}>
+                      <View style={[styles.voucherIcon, { backgroundColor: colors.emerald700 }]}>
+                        <Icon name="ticket" size={18} strokeWidth={2} color={colors.onEmerald} />
+                      </View>
+                      <View style={styles.grow}>
+                        <Text style={[styles.voucherCode, { color: colors.emerald800 }]}>{promo.code}</Text>
+                        <Text style={[type.caption, { color: colors.emerald700 }]} numberOfLines={2}>
+                          {promo.description ? `${promo.description} · ` : ''}Giảm {formatPrice(promo.discount)}
+                        </Text>
+                      </View>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Xoá mã ${promo.code}`}
+                        hitSlop={8}
+                        onPress={() => setPromo(null)}
+                        style={({ pressed }) => [styles.voucherRemove, { backgroundColor: pressed ? colors.mint100 : 'transparent' }]}
+                      >
+                        <Icon name="trash" size={18} color={colors.emerald800} />
+                      </Pressable>
+                    </View>
                   </View>
-                  <View style={styles.grow}>
-                    <Text style={[styles.voucherCode, { color: colors.emerald800 }]}>{promo.code}</Text>
-                    <Text style={[type.caption, { color: colors.emerald700 }]} numberOfLines={2}>
-                      {promo.description ? `${promo.description} · ` : ''}Giảm {formatPrice(promo.discount)}
-                    </Text>
+                ) : (
+                  <View style={styles.discRow}>
+                    <View style={[styles.discIcon, { backgroundColor: colors.mint50 }]}>
+                      <Icon name="ticket" size={20} color={colors.emerald700} />
+                    </View>
+                    <View style={styles.grow}>
+                      <Text style={[type.label, { color: colors.ink900 }]}>Mã khuyến mãi</Text>
+                      <Text style={[type.caption, { color: colors.ink600 }]}>Áp dụng cho khoá học trong giỏ</Text>
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Thêm mã khuyến mãi"
+                      onPress={() => setPromoOpen(true)}
+                      hitSlop={6}
+                      style={({ pressed }) => [styles.addBtn, { backgroundColor: pressed ? colors.mint100 : colors.mint50 }]}
+                    >
+                      <Icon name="plus" size={15} strokeWidth={2.6} color={colors.emerald700} />
+                      <Text style={[type.captionStrong, { color: colors.emerald700 }]}>Thêm mã</Text>
+                    </Pressable>
                   </View>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Xoá mã ${promo.code}`}
-                    hitSlop={8}
-                    onPress={() => setPromo(null)}
-                    style={({ pressed }) => [styles.voucherRemove, { backgroundColor: pressed ? colors.mint100 : 'transparent' }]}
-                  >
-                    <Icon name="trash" size={18} color={colors.emerald800} />
-                  </Pressable>
-                </View>
-              ) : null}
+                )}
+                <View style={[styles.divider, { backgroundColor: colors.line }]} />
+                <CoinsRow balance={balance} rate={rate} usable={coinsUsable} using={useCoins && coinsUsable > 0} onToggle={() => setUseCoins((v) => !v)} />
+              </View>
             </Block>
-
-            {/* 3. Xu của tôi */}
-            <CoinsCard balance={balance} rate={rate} usable={coinsUsable} using={useCoins && coinsUsable > 0} onToggle={() => setUseCoins((v) => !v)} />
 
             {/* 4. Thanh toán — nằm trong nội dung (cuối trang), không nổi */}
             <Block title="Thanh toán">
@@ -244,52 +252,38 @@ export function CartScreen() {
   );
 }
 
-/**
- * Thẻ Xu của tôi: thông tin (phẳng — không bóng / mép 3D) nhưng có điểm nhấn vàng: nền kem → vàng nhạt, đồng xu tròn,
- * số xu lớn + quy ra tiền. Nút "Sử dụng" (bấm được → có mép 3D) / "Đang dùng" (bấm để bỏ).
- */
-function CoinsCard({ balance, rate, usable, using, onToggle }: { balance: number; rate: number; usable: number; using: boolean; onToggle: () => void }) {
-  const { colors, scheme } = useTheme();
-  const dark = scheme === 'dark';
+/** Dòng Xu của tôi (trong thẻ Giảm giá): đồng xu vàng, số dư + ghi chú quy đổi, nút "Sử dụng" ↔ "Đang dùng" (trừ tối đa có thể). */
+function CoinsRow({ balance, rate, usable, using, onToggle }: { balance: number; rate: number; usable: number; using: boolean; onToggle: () => void }) {
+  const { colors } = useTheme();
   const note =
     balance === 0
-      ? 'Bạn chưa có xu. Mời bạn bè để nhận xu.'
+      ? 'Bạn chưa có xu'
       : usable === 0
-        ? `Cần còn phải trả từ ${formatPrice(rate)} mới dùng được xu`
+        ? `Đơn từ ${formatPrice(rate)} mới dùng được xu`
         : using
           ? `Đang trừ ${formatCoins(usable)} xu = ${formatPrice(usable * rate)}`
           : `Dùng được ${formatCoins(usable)} xu = ${formatPrice(usable * rate)}`;
 
   return (
-    <View style={[styles.coinCard, { borderColor: dark ? colors.amberChipLine : illo.goldHi }]}>
-      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} preserveAspectRatio="none">
-        <Defs>
-          <LinearGradient id="cartCoins" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={dark ? '#2a2108' : '#fffbeb'} />
-            <Stop offset="1" stopColor={dark ? '#3a2c0b' : '#fef3c7'} />
-          </LinearGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill="url(#cartCoins)" />
-      </Svg>
+    <View style={styles.discRow}>
       <View style={styles.coin}>
-        <Svg width={44} height={44} style={StyleSheet.absoluteFill}>
+        <Svg width={40} height={40} style={StyleSheet.absoluteFill}>
           <Defs>
             <LinearGradient id="cartCoin" x1="0" y1="0" x2="1" y2="1">
               <Stop offset="0" stopColor={illo.goldHi} />
               <Stop offset="1" stopColor={illo.goldLo} />
             </LinearGradient>
           </Defs>
-          <Circle cx={22} cy={22} r={22} fill="url(#cartCoin)" />
-          <Circle cx={22} cy={22} r={16} fill="none" stroke={illo.goldEdge} strokeOpacity={0.35} strokeWidth={1.5} />
+          <Circle cx={20} cy={20} r={20} fill="url(#cartCoin)" />
+          <Circle cx={20} cy={20} r={14.5} fill="none" stroke={illo.goldEdge} strokeOpacity={0.35} strokeWidth={1.5} />
         </Svg>
         <View style={[StyleSheet.absoluteFill, styles.coinIcon]}>
-          <Icon name="coins" size={20} strokeWidth={2.2} color={illo.goldInk} />
+          <Icon name="coins" size={18} strokeWidth={2.2} color={illo.goldInk} />
         </View>
       </View>
       <View style={styles.grow}>
-        <Text style={[type.caption, { color: colors.amberChipText }]}>Xu của tôi</Text>
-        <Text style={[styles.coinValue, { color: colors.ink900 }]}>
-          {formatCoins(balance)} <Text style={[styles.coinUnit, { color: colors.ink600 }]}>xu</Text>
+        <Text style={[type.label, { color: colors.ink900 }]}>
+          Xu của tôi · <Text style={{ color: colors.amberChipText }}>{formatCoins(balance)} xu</Text>
         </Text>
         <Text style={[type.caption, { color: colors.ink600 }]} numberOfLines={2}>
           {note}
@@ -306,11 +300,11 @@ function CoinsCard({ balance, rate, usable, using, onToggle }: { balance: number
             using
               ? { backgroundColor: colors.mint50, borderColor: colors.emerald500, borderWidth: 1.5 }
               : { backgroundColor: pressed ? colors.emerald800 : colors.emerald700, boxShadow: `0px ${pressed ? 1 : 3}px 0px ${colors.emeraldEdge}` },
-            pressed && { transform: [{ translateY: using ? 0 : 2 }] },
+            pressed && !using && { transform: [{ translateY: 2 }] },
           ]}
         >
           {using ? <Icon name="check" size={14} strokeWidth={3} color={colors.emerald700} /> : null}
-          <Text style={[type.label, { color: using ? colors.emerald700 : colors.onEmerald }]}>{using ? 'Đang dùng' : 'Sử dụng'}</Text>
+          <Text style={[type.captionStrong, { color: using ? colors.emerald700 : colors.onEmerald }]}>{using ? 'Đang dùng' : 'Sử dụng'}</Text>
         </Pressable>
       ) : null}
     </View>
@@ -392,17 +386,16 @@ const styles = StyleSheet.create({
   thumbSlot: { width: 76, alignItems: 'center' },
   thumbBook: { width: 46, height: 68, borderRadius: 5, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
 
-  voucher: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 16, borderWidth: 1.5, borderStyle: 'dashed' },
-  voucherIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  discRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  discIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  divider: { height: StyleSheet.hairlineWidth },
+  voucher: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 14, borderWidth: 1.5, borderStyle: 'dashed' },
+  voucherIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   voucherCode: { fontFamily: fonts.sans700, fontSize: 15, lineHeight: 20, letterSpacing: 1 },
   voucherRemove: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-
-  coinCard: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
-  coin: { width: 44, height: 44 },
+  coin: { width: 40, height: 40 },
   coinIcon: { alignItems: 'center', justifyContent: 'center' },
-  coinValue: { fontFamily: fonts.display600, fontSize: 22, lineHeight: 28 },
-  coinUnit: { fontFamily: fonts.sans600, fontSize: 14 },
-  useBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 38, paddingHorizontal: 14, borderRadius: 12 },
+  useBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 34, paddingHorizontal: 12, borderRadius: 10 },
 
   summary: { paddingVertical: 14, gap: 10 },
   sumRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

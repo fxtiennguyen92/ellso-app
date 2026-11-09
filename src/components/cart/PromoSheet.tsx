@@ -3,7 +3,7 @@ import { Platform, StyleSheet, Text, TextInput, type TextInputInstance, View } f
 
 import { useAuth } from '@/auth/AuthProvider';
 import { PrimaryButton } from '@/components/auth/AuthUI';
-import { BottomSheet } from '@/components/BottomSheet';
+import { CenterDialog } from '@/components/CenterDialog';
 import { Icon } from '@/components/Icon';
 import { apiCartPromo, type CartPromo } from '@/data/cart';
 import { ApiError } from '@/lib/api';
@@ -11,8 +11,8 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
 /**
- * Popup nhập mã khuyến mãi ở Giỏ hàng: nhập → "Kiểm tra & áp dụng" (POST /cart/promo) → hợp lệ thì trả mã về trang giỏ
- * và đóng; sai thì báo lỗi ngay dưới ô. Có ô nhập: BottomSheet đã bọc KeyboardAvoidingView, nút nằm ngay dưới ô.
+ * Popup giữa màn hình nhập mã khuyến mãi ở Giỏ hàng (giữa màn thay vì bottom sheet để bàn phím không che): nhập → "Kiểm tra & áp dụng" (POST /cart/promo) → hợp lệ thì trả mã về trang giỏ
+ * và đóng; sai thì báo lỗi ngay dưới ô. CenterDialog bọc KeyboardAvoidingView, nút nằm ngay dưới ô.
  */
 export function PromoSheet({ visible, onClose, onApplied }: { visible: boolean; onClose: () => void; onApplied: (p: CartPromo) => void }) {
   const { colors } = useTheme();
@@ -45,7 +45,7 @@ export function PromoSheet({ visible, onClose, onApplied }: { visible: boolean; 
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} title="Thêm mã khuyến mãi">
+    <CenterDialog visible={visible} onClose={onClose} title="Thêm mã khuyến mãi">
       <View style={styles.body}>
         <View style={[styles.field, { backgroundColor: colors.bg, borderColor: error ? colors.danger : colors.line }]}>
           <Icon name="ticket" size={20} color={error ? colors.danger : colors.ink400} />
@@ -79,7 +79,7 @@ export function PromoSheet({ visible, onClose, onApplied }: { visible: boolean; 
           <PrimaryButton label="Kiểm tra & áp dụng" disabled={!code.trim()} loading={busy} onPress={submit} />
         </View>
       </View>
-    </BottomSheet>
+    </CenterDialog>
   );
 }
 
