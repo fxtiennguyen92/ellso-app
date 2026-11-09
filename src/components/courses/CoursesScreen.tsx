@@ -163,20 +163,20 @@ export function CoursesScreen() {
             <Text style={[type.caption, { color: colors.ink600 }]}>Các khoá học trực tuyến phù hợp với năng lực của bạn</Text>
           </View>
 
-          {categories.length > 0 && (
-            <ScrollView
-              ref={chipsRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chips}
-              accessibilityLabel="Lọc theo danh mục"
-            >
-              <Chip label="Tất cả" active={category === null} onPress={() => setCategory(null)} />
-              {categories.map((cat) => (
-                <Chip key={cat.id} label={cat.name} active={category === cat.id} onPress={() => setCategory(cat.id)} />
-              ))}
-            </ScrollView>
-          )}
+          {/* Luôn render hàng chip (kể cả lúc danh mục chưa tải xong) để useDragScroll gắn được vào ScrollView ngay từ đầu —
+              render có điều kiện thì ref còn null lúc hook chạy → trên web không kéo ngang được */}
+          <ScrollView
+            ref={chipsRef}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chips}
+            accessibilityLabel="Lọc theo danh mục"
+          >
+            <Chip label="Tất cả" active={category === null} onPress={() => setCategory(null)} />
+            {categories.map((cat) => (
+              <Chip key={cat.id} label={cat.name} active={category === cat.id} onPress={() => setCategory(cat.id)} />
+            ))}
+          </ScrollView>
 
           <View style={[styles.pad, styles.list]}>
             {courses.map((c) => (
