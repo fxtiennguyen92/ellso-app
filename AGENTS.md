@@ -52,6 +52,7 @@ Màn hình / bottom sheet nào có `TextInput` thì phải xử lý bàn phím v
 - Chuỗi ô nhập: `returnKeyType="next"` + `onSubmitEditing` focus ô kế tiếp; ô cuối `returnKeyType="done"` gọi submit.
 - Màn form đặt ngoài nhóm `(tabs)` (vd nhóm `src/app/(account)/profile/*`) để thanh tab dưới không che ô nhập.
 - **Bottom sheet có ô nhập** (vd AddReferrerSheet, ReferralSheet) cũng bắt buộc: luôn thử khi bàn phím đang mở — ô nhập, lỗi và nút xác nhận phải còn nhìn thấy, không bị bàn phím che.
+- Hộp thoại chỉ có **một ô nhập ngắn** (vd mã khuyến mãi) → ưu tiên **popup giữa màn hình** `<CenterDialog>` (`src/components/CenterDialog.tsx`) thay vì bottom sheet: khung nằm giữa, KeyboardAvoidingView đẩy lên khi bàn phím mở nên ít bị che hơn.
 - Kiểm tra: tối thiểu giả lập trên web (thu nhỏ chiều cao viewport, focus từng ô, chụp màn hình xem ô đang nhập + nút chính còn thấy), sau đó thử trên máy Android/iOS thật. Ghi rõ trong báo cáo nếu chưa thử được trên máy thật.
 
 ## Nút chính ở đáy màn (Lưu, Đổi mật khẩu, Đăng ký…)
