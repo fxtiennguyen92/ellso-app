@@ -80,7 +80,7 @@ export function CenterDialog({ visible, onClose, title, children }: Props) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
-  backdrop: { backgroundColor: 'rgba(15,23,42,0.5)' },
+  backdrop: { backgroundColor: 'rgba(15,23,42,0.65)' },
   card: { width: '100%', maxWidth: 400, borderRadius: 24, borderWidth: 1, padding: 20, boxShadow: '0px 20px 48px rgba(15,23,42,0.28)' },
   head: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   title: { flex: 1 },
