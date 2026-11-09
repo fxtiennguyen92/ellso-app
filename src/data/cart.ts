@@ -72,7 +72,7 @@ export async function apiRemoveFromCart(token: string, type: CartItemType, id: n
 }
 
 export const kindLabel = (kind: string) =>
-  ({ course: 'Khoá học', book: 'Sách điện tử', pdf: 'Tài liệu PDF', video: 'Video' })[kind] ?? 'Sản phẩm';
+  ({ course: 'Khoá học', book: 'Sách', pdf: 'Tài liệu PDF', video: 'Video' })[kind] ?? 'Sản phẩm';
 
 export type CartPromo = {
   code: string;

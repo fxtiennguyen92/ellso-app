@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { type GestureResponderEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
 import { InstructorTag } from '@/components/InstructorTag';
@@ -25,7 +25,7 @@ export function CourseCard({
   course: CatalogCourse;
   inCart: boolean;
   busy: boolean;
-  onToggleCart: () => void;
+  onToggleCart: (e: GestureResponderEvent) => void;
   onOpen: () => void;
 }) {
   const { colors } = useTheme();

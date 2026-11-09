@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, type GestureResponderEvent, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
@@ -116,10 +116,10 @@ export function CoursesScreen() {
     }
   };
 
-  const toggleCart = async (c: CatalogCourse) => {
+  const toggleCart = async (c: CatalogCourse, e?: GestureResponderEvent) => {
     setBusyId(c.id);
     const inCart = cart.has('course', c.id);
-    const err = inCart ? await cart.remove('course', c.id) : await cart.add('course', c.id);
+    const err = inCart ? await cart.remove('course', c.id) : await cart.add('course', c.id, { from: e ? { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY } : null });
     setBusyId(null);
     showToast(err ?? (inCart ? 'Đã bỏ khỏi giỏ hàng' : 'Đã thêm vào giỏ hàng'));
   };
@@ -204,7 +204,7 @@ export function CoursesScreen() {
                 course={c}
                 inCart={cart.has('course', c.id)}
                 busy={busyId === c.id}
-                onToggleCart={() => toggleCart(c)}
+                onToggleCart={(e) => toggleCart(c, e)}
                 onOpen={() => openCourse(c)}
               />
             ))}

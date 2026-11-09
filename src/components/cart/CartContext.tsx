@@ -1,9 +1,12 @@
 import { router } from 'expo-router';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, type RefObject, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { StyleSheet, View, type ViewInstance } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { apiAddToCart, apiCart, apiRemoveFromCart, type Cart, type CartItemType, emptyCart } from '@/data/cart';
 import { ApiError } from '@/lib/api';
+
+import { CartFlyLayer, type FlyPoint } from './CartFly';
 
 type Ctx = {
   cart: Cart;
@@ -14,9 +17,13 @@ type Ctx = {
    * Thêm vào giỏ. open = "Mua ngay": thêm xong chuyển sang tab Giỏ hàng.
    * Trả thông báo lỗi (tiếng Việt) nếu không thêm được, null nếu thành công.
    */
-  add: (type: CartItemType, id: number, opts?: { open?: boolean }) => Promise<string | null>;
+  add: (type: CartItemType, id: number, opts?: { open?: boolean; from?: FlyPoint | null }) => Promise<string | null>;
   remove: (type: CartItemType, id: number) => Promise<string | null>;
   refresh: () => Promise<void>;
+  /** BottomBar gắn vào icon Giỏ hàng — đích của chấm xanh bay vào giỏ. */
+  anchorRef: RefObject<ViewInstance | null>;
+  /** Tăng mỗi lần chấm xanh rơi trúng giỏ → BottomBar cho icon "hứng" (nảy + lắc nhẹ). */
+  landTick: number;
 };
 
 const CartContext = createContext<Ctx | null>(null);
@@ -29,6 +36,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { token, status } = useAuth();
   const [cart, setCart] = useState<Cart>(emptyCart);
   const [loading, setLoading] = useState(false);
+  const anchorRef = useRef<ViewInstance | null>(null);
+  const [landTick, setLandTick] = useState(0);
+  const [flights, setFlights] = useState<{ id: number; from: FlyPoint | null }[]>([]);
+  const flightId = useRef(0);
 
   const refresh = useCallback(async () => {
     if (!token) return;
@@ -50,10 +61,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const has = useCallback((type: CartItemType, id: number) => cart.items.some((i) => i.type === type && i.id === id), [cart]);
 
   const add = useCallback(
-    async (type: CartItemType, id: number, opts?: { open?: boolean }) => {
+    async (type: CartItemType, id: number, opts?: { open?: boolean; from?: FlyPoint | null }) => {
       if (!token) return 'Bạn cần đăng nhập.';
       try {
         setCart(await apiAddToCart(token, type, id));
+        // Chấm xanh bay từ chỗ bấm vào tab Giỏ hàng (mọi nút thêm vào giỏ)
+        setFlights((f) => [...f, { id: ++flightId.current, from: opts?.from ?? null }]);
         if (opts?.open) router.navigate('/cart');
         return null;
       } catch (e) {
@@ -83,8 +96,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [token, cart],
   );
 
-  const value = useMemo(() => ({ cart, loading, has, add, remove, refresh }), [cart, loading, has, add, remove, refresh]);
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  const onFlightDone = useCallback((fid: number, landed: boolean) => {
+    setFlights((f) => f.filter((x) => x.id !== fid));
+    if (landed) setLandTick((n) => n + 1);
+  }, []);
+
+  const value = useMemo(
+    () => ({ cart, loading, has, add, remove, refresh, anchorRef, landTick }),
+    [cart, loading, has, add, remove, refresh, landTick],
+  );
+  return (
+    <CartContext.Provider value={value}>
+      <View style={styles.fill}>
+        {children}
+        <CartFlyLayer flights={flights} anchorRef={anchorRef} onDone={onFlightDone} />
+      </View>
+    </CartContext.Provider>
+  );
 }
 
 export function useCart() {
@@ -92,3 +120,5 @@ export function useCart() {
   if (!ctx) throw new Error('useCart phải nằm trong <CartProvider>');
   return ctx;
 }
+
+const styles = StyleSheet.create({ fill: { flex: 1 } });

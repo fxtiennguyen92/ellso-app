@@ -56,7 +56,7 @@ export function PromoSheet({ visible, onClose, onApplied }: { visible: boolean; 
               setCode(t.toUpperCase());
               if (error) setError(null);
             }}
-            placeholder="VD: PLUS30"
+            placeholder="VD: ELLSO"
             placeholderTextColor={colors.ink400}
             autoCapitalize="characters"
             autoCorrect={false}

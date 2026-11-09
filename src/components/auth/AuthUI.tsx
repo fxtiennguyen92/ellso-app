@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { forwardRef, useState, type ReactNode } from 'react';
 import {
   ActivityIndicator,
+  type GestureResponderEvent,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -144,7 +145,8 @@ export function PrimaryButton({
   tone,
 }: {
   label: string;
-  onPress: () => void;
+  /** Nhận sự kiện bấm (pageX/pageY) nếu cần, vd điểm xuất phát của chấm xanh bay vào giỏ. */
+  onPress: (e: GestureResponderEvent) => void;
   disabled?: boolean;
   loading?: boolean;
   /** Icon bên trái chữ (vd giỏ hàng cho nút Mua ngay). */

@@ -50,7 +50,14 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
   const reduced = useReducedMotion();
   const reveal = useRevealStyle(4, 40);
 
-  const { cart } = useCart();
+  const { cart, anchorRef, landTick } = useCart();
+  // Icon Giỏ hàng "hứng" chấm xanh: nảy + lắc nhẹ mỗi lần chấm rơi trúng
+  const catchAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!landTick || reduced) return;
+    catchAnim.setValue(0);
+    Animated.timing(catchAnim, { toValue: 1, duration: 560, easing: Easing.out(Easing.quad), useNativeDriver: NATIVE_DRIVER }).start();
+  }, [landTick, catchAnim, reduced]);
   // Bàn phím mở (vd ô mã khuyến mãi ở Giỏ hàng) → ẩn thanh tab để không nổi đè lên bàn phím / ô nhập
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   useEffect(() => {
@@ -229,7 +236,20 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                       { paddingLeft: frames ? lerp(PAD_IDLE, PAD_ACTIVE) : PAD_IDLE },
                     ]}
                   >
-                    <View style={styles.iconBox}>
+                    <Animated.View
+                      ref={route.name === 'cart' ? anchorRef : undefined}
+                      collapsable={false}
+                      style={[
+                        styles.iconBox,
+                        route.name === 'cart' && {
+                          transform: [
+                            { translateY: catchAnim.interpolate({ inputRange: [0, 0.2, 0.5, 1], outputRange: [0, 4, -3, 0] }) },
+                            { scale: catchAnim.interpolate({ inputRange: [0, 0.2, 0.5, 1], outputRange: [1, 0.86, 1.18, 1] }) },
+                            { rotate: catchAnim.interpolate({ inputRange: [0, 0.35, 0.6, 0.8, 1], outputRange: ['0deg', '-12deg', '9deg', '-4deg', '0deg'] }) },
+                          ],
+                        },
+                      ]}
+                    >
                       <Animated.View style={[StyleSheet.absoluteFill, { opacity: lerp(1, 0) }]}>
                         <Icon name={tab.icon} color={colors.navIcon} />
                       </Animated.View>
@@ -245,7 +265,7 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                         <Icon name={tab.icon} color={colors.navOn} duotone />
                       </Animated.View>
                       {route.name === 'cart' && cart.count > 0 ? <CartDot count={cart.count} /> : null}
-                    </View>
+                    </Animated.View>
                     <Animated.Text
                       style={[
                         type.label,

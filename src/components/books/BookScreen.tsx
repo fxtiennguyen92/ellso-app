@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Animated, type GestureResponderEvent, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient, Pattern, RadialGradient, Rect, Stop } from 'react-native-svg';
 
@@ -84,14 +84,14 @@ export function BookScreen() {
   const inCart = !!book && cartApi.has('document', Number(book.id));
 
   // "Mua ngay" = thêm vào giỏ rồi mở tab Giỏ hàng; nút giỏ nhỏ = chỉ thêm (đã có trong giỏ thì mở giỏ)
-  const addToCart = async (open: boolean) => {
+  const addToCart = async (open: boolean, e?: GestureResponderEvent) => {
     if (!book || buying) return;
     if (inCart && !open) {
       router.navigate('/cart');
       return;
     }
     setBuying(true);
-    const err = await cartApi.add('document', Number(book.id), { open });
+    const err = await cartApi.add('document', Number(book.id), { open, from: e ? { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY } : null });
     setBuying(false);
     if (err) showToast(err);
     else if (!open) showToast('Đã thêm vào giỏ hàng');
@@ -203,7 +203,7 @@ export function BookScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={inCart ? 'Đã có trong giỏ hàng. Mở giỏ hàng' : 'Thêm vào giỏ hàng'}
-                    onPress={() => addToCart(false)}
+                    onPress={(e) => addToCart(false, e)}
                     style={({ pressed }) => [
                       styles.cartBtn,
                       inCart
@@ -227,7 +227,7 @@ export function BookScreen() {
                       icon={onlyBuy ? 'cart' : 'lock'}
                       tone={tone}
                       loading={buying}
-                      onPress={() => (onlyBuy ? addToCart(true) : openDoc(book))}
+                      onPress={(e) => (onlyBuy ? addToCart(true, e) : openDoc(book))}
                     />
                   )}
                 </View>

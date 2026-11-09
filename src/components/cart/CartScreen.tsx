@@ -24,6 +24,13 @@ import { PromoSheet } from './PromoSheet';
 
 const formatCoins = (n: number) => n.toLocaleString('vi-VN');
 
+/** Màu chữ loại sản phẩm: Khoá học = xanh lá (thương hiệu), Sách = tím, PDF = cam đất, Video = xanh dương (bảng màu chương). */
+const kindColor = (kind: string, dark: boolean, emerald: string) => {
+  const pal = { book: chapterPalette.plum, pdf: chapterPalette.terracotta, video: chapterPalette.steel }[kind];
+  if (!pal) return emerald;
+  return dark ? pal.inkDark : pal.base;
+};
+
 /**
  * Tab Giỏ hàng (chỉ hiện trên thanh tab khi giỏ có món). Các khối:
  * 1. Sản phẩm — thẻ chứa các hàng (ảnh, loại, tên, giá, nhãn mã nếu được giảm, nút bỏ).
@@ -35,7 +42,7 @@ const formatCoins = (n: number) => n.toLocaleString('vi-VN');
  * (Sau này: khối Xuất hoá đơn doanh nghiệp trước khối Thanh toán.)
  */
 export function CartScreen() {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const insets = useSafeAreaInsets();
   const topInset = useScreenTopInset();
   const { token } = useAuth();
@@ -68,6 +75,11 @@ export function CartScreen() {
 
   // Xoá món: hỏi xác nhận trước (popup giữa màn)
   const [confirmItem, setConfirmItem] = useState<CartItem | null>(null);
+  // Giữ món vừa hỏi để nội dung popup không trống trong lúc popup mờ dần khi đóng
+  const [askedItem, setAskedItem] = useState<CartItem | null>(null);
+  useEffect(() => {
+    if (confirmItem) setAskedItem(confirmItem);
+  }, [confirmItem]);
   const [removing, setRemoving] = useState(false);
   const onRemove = async () => {
     if (!confirmItem) return;
@@ -134,6 +146,7 @@ export function CartScreen() {
               <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.line }]}>
                 {cart.items.map((item, i) => (
                   <View key={`${item.type}-${item.id}`} style={[styles.row, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line }]}>
+                    {/* Trái: ảnh · Loại (màu riêng) · Tên 1 dòng · Tác giả. Phải: giá (thẳng cột với Tổng tiền) + nút xoá */}
                     <Pressable
                       accessibilityRole={item.kind === 'book' ? 'link' : undefined}
                       accessibilityLabel={`${kindLabel(item.kind)}: ${item.title}, ${formatPrice(item.price)}`}
@@ -142,15 +155,10 @@ export function CartScreen() {
                     >
                       <Thumb item={item} />
                       <View style={styles.rowText}>
-                        <Text style={[styles.kind, { color: colors.ink600 }]} numberOfLines={1}>
-                          {kindLabel(item.kind)}
-                          {item.subtitle ? ` · ${item.subtitle}` : ''}
-                        </Text>
-                        <Text style={[styles.title, { color: colors.ink900 }]} numberOfLines={2}>
-                          {item.title}
-                        </Text>
-                        <View style={styles.priceRow}>
-                          <Text style={[styles.price, { color: colors.ink900 }]}>{formatPrice(item.price)}</Text>
+                        <View style={styles.kindRow}>
+                          <Text style={[styles.kind, { color: kindColor(item.kind, scheme === 'dark', colors.emerald700) }]} numberOfLines={1}>
+                            {kindLabel(item.kind)}
+                          </Text>
                           {eligible.has(`${item.type}${item.id}`) ? (
                             <View style={[styles.codeTag, { backgroundColor: colors.mint50 }]}>
                               <Icon name="ticket" size={11} strokeWidth={2.4} color={colors.emerald700} />
@@ -158,17 +166,28 @@ export function CartScreen() {
                             </View>
                           ) : null}
                         </View>
+                        <Text style={[styles.title, { color: colors.ink900 }]} numberOfLines={1}>
+                          {item.title}
+                        </Text>
+                        {item.subtitle ? (
+                          <Text style={[type.caption, { color: colors.ink600 }]} numberOfLines={1}>
+                            {item.subtitle}
+                          </Text>
+                        ) : null}
                       </View>
                     </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Bỏ ${item.title} khỏi giỏ`}
-                      onPress={() => setConfirmItem(item)}
-                      hitSlop={8}
-                      style={({ pressed }) => [styles.remove, { backgroundColor: pressed ? colors.surfaceAlt : 'transparent' }]}
-                    >
-                      <Icon name="trash" size={18} color={colors.ink400} />
-                    </Pressable>
+                    <View style={styles.rowRight}>
+                      <Text style={[styles.price, { color: colors.ink900 }]}>{formatPrice(item.price)}</Text>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Bỏ ${item.title} khỏi giỏ`}
+                        onPress={() => setConfirmItem(item)}
+                        hitSlop={8}
+                        style={({ pressed }) => [styles.remove, { opacity: pressed ? 0.5 : 1 }]}
+                      >
+                        <Icon name="trash" size={17} color={colors.ink400} />
+                      </Pressable>
+                    </View>
                   </View>
                 ))}
               </View>
@@ -230,10 +249,10 @@ export function CartScreen() {
             <Block title="Thanh toán">
               <View style={[styles.card, styles.summary, { backgroundColor: colors.card, borderColor: colors.line }]}>
                 {discount > 0 ? <SummaryRow icon="ticket" label={`Mã ${promo?.code}`} value={`−${formatPrice(discount)}`} /> : null}
-                {coinMoney > 0 ? <SummaryRow icon="coins" label={`Dùng ${formatCoins(coinsUsed)} xu`} value={`−${formatPrice(coinMoney)}`} /> : null}
+                {coinMoney > 0 ? <SummaryRow icon="star" label={`Dùng ${formatCoins(coinsUsed)} xu`} value={`−${formatPrice(coinMoney)}`} /> : null}
                 {discount > 0 || coinMoney > 0 ? <View style={[styles.dashed, { borderColor: colors.line }]} /> : null}
                 <View style={styles.sumTotal}>
-                  <Text style={[type.label, { color: colors.ink900 }]}>Tổng thanh toán</Text>
+                  <Text style={[type.label, { color: colors.ink900 }]}>Tổng tiền</Text>
                   <View style={styles.sumTotalRight}>
                     {total < cart.total ? <Text style={[styles.strike, { color: colors.ink400 }]}>{formatPrice(cart.total)}</Text> : null}
                     <Text style={[styles.sumTotalValue, { color: colors.ink900 }]}>{formatPrice(total)}</Text>
@@ -250,7 +269,7 @@ export function CartScreen() {
 
       <CenterDialog visible={!!confirmItem} onClose={() => !removing && setConfirmItem(null)} title="Xoá khỏi giỏ hàng?">
         <Text style={[type.body, { color: colors.ink600 }]}>
-          Bạn muốn xoá <Text style={{ fontFamily: fonts.sans700, color: colors.ink900 }}>{confirmItem?.title}</Text> khỏi giỏ hàng?
+          Bạn muốn xoá <Text style={{ fontFamily: fonts.sans700, color: colors.ink900 }}>{askedItem?.title}</Text> khỏi giỏ hàng?
         </Text>
         <View style={styles.confirmRow}>
           <Pressable
@@ -312,7 +331,7 @@ function CoinsRow({ balance, rate, usable, using, onToggle }: { balance: number;
           <Circle cx={20} cy={20} r={14.5} fill="none" stroke={illo.goldEdge} strokeOpacity={0.35} strokeWidth={1.5} />
         </Svg>
         <View style={[StyleSheet.absoluteFill, styles.coinIcon]}>
-          <Icon name="coins" size={18} strokeWidth={2.2} color={illo.goldInk} />
+          <Icon name="star" size={19} strokeWidth={2} color={illo.goldInk} fill={illo.goldHi} fillOpacity={1} />
         </View>
       </View>
       <View style={styles.grow}>
@@ -361,7 +380,7 @@ function Block({ title, action, children }: { title: string; action?: ReactNode;
   );
 }
 
-function SummaryRow({ icon, label, value }: { icon: 'ticket' | 'coins'; label: string; value: string }) {
+function SummaryRow({ icon, label, value }: { icon: 'ticket' | 'star'; label: string; value: string }) {
   const { colors } = useTheme();
   return (
     <View style={styles.sumRow}>
@@ -406,16 +425,17 @@ const styles = StyleSheet.create({
   card: { borderRadius: 20, borderWidth: 1, paddingHorizontal: 14 },
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 32, paddingHorizontal: 12, borderRadius: 9999 },
 
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, paddingVertical: 14 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14 },
   rowMain: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  rowText: { flex: 1, minWidth: 0, gap: 2 },
-  kind: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16 },
+  rowText: { flex: 1, minWidth: 0, gap: 1 },
+  kindRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rowRight: { alignItems: 'flex-end', justifyContent: 'space-between', alignSelf: 'stretch', paddingVertical: 2 },
+  kind: { fontFamily: fonts.sans700, fontSize: 12, lineHeight: 16, letterSpacing: 0.2 },
   title: { fontFamily: fonts.display600, fontSize: 15, lineHeight: 21 },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
   price: { fontFamily: fonts.sans700, fontSize: 15, lineHeight: 22 },
   codeTag: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, height: 20, borderRadius: 6 },
   codeTagText: { fontFamily: fonts.sans700, fontSize: 11, lineHeight: 14 },
-  remove: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: -6 },
+  remove: { height: 28, alignItems: 'flex-end', justifyContent: 'flex-end' },
   thumbCourse: { width: 76, height: 54, borderRadius: 10, overflow: 'hidden' },
   thumbSlot: { width: 76, alignItems: 'center' },
   thumbBook: { width: 46, height: 68, borderRadius: 5, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
