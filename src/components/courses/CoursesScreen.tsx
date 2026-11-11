@@ -144,6 +144,15 @@ export function CoursesScreen() {
         <Text accessibilityRole="header" style={[type.screenTitle, styles.grow, { color: colors.ink900 }]}>
           Khoá học
         </Text>
+        {/* Khoá học của tôi: đang học + đã hoàn thành */}
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Khoá học của tôi"
+          onPress={() => router.push('/courses/mine')}
+          style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? colors.surfaceAlt : colors.card, borderColor: colors.line }]}
+        >
+          <Icon name="library" color={colors.ink900} />
+        </Pressable>
         <Pressable
           accessibilityRole="search"
           accessibilityLabel="Tìm khoá học, giảng viên"

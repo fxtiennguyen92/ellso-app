@@ -112,6 +112,10 @@ export type ContinueCourse = {
   needsPlacementTest: boolean;
   started: boolean;
   done: boolean;
+  /** Ngày hoàn thành khoá (ISO) — null nếu chưa xong. */
+  completedAt: string | null;
+  /** Khoá miễn phí (tự vào) — chưa học bài nào thì không tính là "đang học". */
+  free: boolean;
 };
 
 type ApiMyCourseSummary = {
@@ -130,10 +134,23 @@ type ApiMyCourseSummary = {
  * và khoá miễn phí đã học ít nhất 1 bài. Server đã xếp theo lần học gần nhất; khoá đã học xong xuống cuối.
  */
 export async function apiContinueCourses(token: string): Promise<ContinueCourse[]> {
+  const list = (await apiMyCourseList(token)).filter((c) => !c.free || c.started);
+  return [...list.filter((c) => !c.done), ...list.filter((c) => c.done)];
+}
+
+/** Khoá học của tôi: Đang học (đã mua / được cấp, hoặc miễn phí đã học ≥ 1 bài, chưa xong) · Đã hoàn thành (mới nhất trước). */
+export async function apiMyCoursesSplit(token: string): Promise<{ learning: ContinueCourse[]; completed: ContinueCourse[] }> {
+  const list = await apiMyCourseList(token);
+  return {
+    learning: list.filter((c) => !c.done && (!c.free || c.started)),
+    completed: list.filter((c) => c.done).sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? '')),
+  };
+}
+
+/** GET /my/courses → mọi khoá đã ghi danh (server xếp theo lần học gần nhất). */
+async function apiMyCourseList(token: string): Promise<ContinueCourse[]> {
   const { data } = await apiRequest<{ data: ApiMyCourseSummary[] }>('GET', '/my/courses', { token });
-  const list = data
-    .filter((d) => d.source !== 'free' || d.started)
-    .map((d) => ({
+  return data.map((d) => ({
       id: d.course.id,
       title: d.course.title,
       coverUrl: d.course.cover_url,
@@ -145,6 +162,7 @@ export async function apiContinueCourses(token: string): Promise<ContinueCourse[
       needsPlacementTest: d.needs_placement_test,
       started: d.started,
       done: d.completed_at !== null || (d.progress.total > 0 && d.progress.completed >= d.progress.total),
+      completedAt: d.completed_at,
+      free: d.source === 'free',
     }));
-  return [...list.filter((c) => !c.done), ...list.filter((c) => c.done)];
 }

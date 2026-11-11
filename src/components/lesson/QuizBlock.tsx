@@ -14,7 +14,7 @@ type Result = { correct: boolean; explanation: string | null } | null;
 /**
  * Câu hỏi trắc nghiệm trong bài (server chấm — app không biết đáp án):
  * chọn (1 hoặc nhiều) → Kiểm tra → đúng: tô xanh + giải thích; sai: tô đỏ, rung nhẹ → Thử lại đến khi đúng.
- * Câu đã trả lời đúng ở lần học trước: hiện trạng thái đã xong, không cần làm lại.
+ * Câu đã trả lời đúng ở lần học trước: hiện lại đáp án đã chọn (tô xanh) + giải thích, không cần làm lại.
  */
 export function QuizBlock({
   lessonId,
@@ -32,9 +32,10 @@ export function QuizBlock({
   const { colors } = useTheme();
   const { token } = useAuth();
   const multiple = data.type === 'multiple';
-  const [picked, setPicked] = useState<string[]>([]);
+  // Đã trả lời đúng ở lần học trước → hiện lại đúng đáp án đã chọn + giải thích (như lúc vừa làm xong)
+  const [picked, setPicked] = useState<string[]>(data.answered ? (data.my_answer ?? []) : []);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<Result>(null);
+  const [result, setResult] = useState<Result>(data.answered ? { correct: true, explanation: data.explanation ?? null } : null);
   const [error, setError] = useState<string | null>(null);
   const shake = useRef(new Animated.Value(0)).current;
   const done = data.answered || result?.correct === true;
@@ -107,7 +108,7 @@ export function QuizBlock({
                 { backgroundColor: tone.bg, borderColor: tone.line },
                 // Đáp án là thứ bấm được → mép 3D; khoá (đã xong) thì phẳng
                 !locked && { boxShadow: `0px ${pressed ? 1 : 3}px 0px ${tone.edge}`, transform: [{ translateY: pressed ? 2 : 0 }] },
-                done && !sel && { opacity: data.answered ? 1 : 0.6 },
+                done && !sel && { opacity: 0.6 },
               ]}
             >
               <View
@@ -125,11 +126,9 @@ export function QuizBlock({
         })}
       </Animated.View>
 
-      {data.answered && !result ? (
-        <Text style={[type.captionStrong, { color: colors.emerald700 }]}>Bạn đã trả lời đúng câu này.</Text>
-      ) : result?.correct ? (
+      {result?.correct ? (
         <View accessibilityLiveRegion="polite" style={[styles.feedback, { backgroundColor: colors.mint50 }]}>
-          <Text style={[type.label, { color: colors.emerald800 }]}>Chính xác!</Text>
+          <Text style={[type.label, { color: colors.emerald800 }]}>{data.answered ? 'Bạn đã trả lời đúng' : 'Chính xác!'}</Text>
           {result.explanation ? <Text style={[type.input, { color: colors.ink900 }]}>{result.explanation}</Text> : null}
         </View>
       ) : result ? (

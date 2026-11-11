@@ -4,6 +4,7 @@ import { Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, useWi
 
 import { Icon } from '@/components/Icon';
 import type { ContinueCourse } from '@/data/learning';
+import { dmy } from '@/data/profile';
 import { useDragScroll } from '@/hooks/useDragScroll';
 import { useTheme } from '@/theme/ThemeProvider';
 import { WEB_MAX_WIDTH } from '@/theme/tokens';
@@ -50,10 +51,13 @@ export function ContinueCourses({ courses }: { courses: ContinueCourse[] }) {
   );
 }
 
-function ContinueCard({ course: c, width }: { course: ContinueCourse; width: number }) {
+/** Thẻ một khoá đang học / đã xong (dùng ở mục Tiếp tục khoá học và màn Khoá học của tôi). `width` bỏ trống = rộng hết hàng. */
+export function ContinueCard({ course: c, width }: { course: ContinueCourse; width?: number }) {
   const { colors } = useTheme();
   const status = c.done
-    ? 'Đã hoàn thành khoá học'
+    ? c.completedAt
+      ? `Hoàn thành ngày ${dmy(c.completedAt)}`
+      : 'Đã hoàn thành khoá học'
     : c.needsPlacementTest
       ? 'Cần làm bài đánh giá năng lực'
       : c.needsPath
@@ -68,7 +72,7 @@ function ContinueCard({ course: c, width }: { course: ContinueCourse; width: num
       onPress={() => router.push({ pathname: '/courses/[id]', params: { id: String(c.id) } })}
       style={({ pressed }) => [
         styles.card,
-        { width, backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.shadowCard, transform: [{ scale: pressed ? 0.985 : 1 }] },
+        { width: width ?? '100%', backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.shadowCard, transform: [{ scale: pressed ? 0.985 : 1 }] },
       ]}
     >
       <View style={styles.top}>

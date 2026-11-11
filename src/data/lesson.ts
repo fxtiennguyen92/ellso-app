@@ -37,7 +37,16 @@ export type LessonBlock =
   | { id: string; type: 'quiz'; data: QuizData }
   | { id?: string; type: 'video'; data: VideoData };
 
-export type QuizData = { type: 'single' | 'multiple'; question: string; options: { id: string; text: string }[]; answered: boolean };
+export type QuizData = {
+  type: 'single' | 'multiple';
+  question: string;
+  options: { id: string; text: string }[];
+  /** Đã trả lời đúng (ở lần học trước). */
+  answered: boolean;
+  /** Đáp án học viên đã chọn ở lần trả lời đúng gần nhất (null nếu chưa trả lời đúng). */
+  my_answer?: string[] | null;
+  explanation?: string | null;
+};
 export type VideoChapter = { start: number; time: string; title: string };
 export type VideoData = { video_id: number; duration_seconds: number | null; caption?: string; chapters: VideoChapter[] };
 

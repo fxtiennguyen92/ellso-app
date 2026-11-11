@@ -83,6 +83,7 @@ import ThumbsUp from 'lucide-react-native/icons/thumbs-up';
 import CirclePlay from 'lucide-react-native/icons/circle-play';
 import RotateCcw from 'lucide-react-native/icons/rotate-ccw';
 import Pause from 'lucide-react-native/icons/pause';
+import LibraryBig from 'lucide-react-native/icons/library-big';
 
 /**
  * Icon dùng trên toàn app — MỘT bộ duy nhất: Lucide (lucide.dev), nét viền 24×24, đầu nét bo tròn.
@@ -182,6 +183,7 @@ const ICONS = {
   playCircle: CirclePlay,
   retry: RotateCcw,
   pause: Pause,
+  library: LibraryBig,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

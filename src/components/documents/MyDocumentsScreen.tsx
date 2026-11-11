@@ -97,9 +97,7 @@ export function MyDocumentsScreen() {
                 onPress={() => setTab(t.type)}
                 style={[styles.tab, on && { backgroundColor: colors.emerald700 }]}
               >
-                <Text style={[type.label, { color: on ? colors.onEmerald : colors.ink600 }]}>
-                  {t.label} <Text style={[styles.tabCount, { opacity: on ? 0.8 : 1 }]}>{mine(t.type).length}</Text>
-                </Text>
+                <Text style={[type.label, { color: on ? colors.onEmerald : colors.ink600 }]}>{t.label}</Text>
               </Pressable>
             );
           })}
@@ -167,7 +165,8 @@ function Group({ title, count, children }: { title: string; count: number; child
   return (
     <View style={styles.section}>
       <Text accessibilityRole="header" style={[type.h2, { color: colors.ink900 }]}>
-        {title} <Text style={[styles.count, { color: colors.ink600 }]}>{count}</Text>
+        {title}
+        {count > 0 ? <Text style={[styles.count, { color: colors.ink600 }]}> {count}</Text> : null}
       </Text>
       {children}
     </View>
@@ -225,7 +224,6 @@ const styles = StyleSheet.create({
   author: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16, marginBottom: 4 },
   tabs: { marginHorizontal: 20, flexDirection: 'row', padding: 4, gap: 4, borderRadius: 16, borderWidth: 1 },
   tab: { flex: 1, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  tabCount: { fontFamily: fonts.sans500 },
   section: { paddingTop: 32, paddingHorizontal: 20, gap: 12 },
   count: { fontFamily: fonts.sans500, fontSize: 14 },
 
