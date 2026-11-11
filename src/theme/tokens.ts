@@ -325,6 +325,13 @@ export const illo = {
   onCoverFaint: 'rgba(255,255,255,0.4)',
   onCoverDeco: 'rgba(255,255,255,0.18)',
   scrim: 'rgba(15,23,42,0.55)',
+  /** Nút tròn "kính mờ" đặt trên ảnh / gradient (vd nút Back ở Khuyến mãi): nền tối trong, icon trắng. */
+  glassBtn: 'rgba(15,23,42,0.32)',
+  glassBtnPressed: 'rgba(15,23,42,0.48)',
+  /** Lớp phủ tối trên ảnh banner làm mờ để chữ trắng trên header luôn đọc được. */
+  bannerScrim: 'rgba(15,23,42,0.38)',
+  /** Nền lót dưới ảnh làm mờ của header (khi ảnh chưa tải / mép ảnh trong). */
+  bannerBacking: '#064e3b',
   durBg: 'rgba(15,23,42,0.7)',
   saveBg: 'rgba(15,23,42,0.45)',
   /** Nhãn giá trên ảnh bìa sách (nền trắng gần đặc, giống hai chế độ). */

@@ -13,7 +13,7 @@ import { Icon } from '@/components/Icon';
 import { useToast } from '@/components/Toast';
 import { type CampaignDetail, loadCampaign } from '@/data/home';
 import { daysUntil, dmy } from '@/data/profile';
-import { WEB_MAX_WIDTH } from '@/theme/tokens';
+import { illo, WEB_MAX_WIDTH } from '@/theme/tokens';
 import { NATIVE_DRIVER } from '@/hooks/useLoop';
 import { ApiError } from '@/lib/api';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -24,7 +24,7 @@ import { fonts, type } from '@/theme/typography';
  * - Banner luôn hiện TRỌN VẸN (16:9, đúng khổ CMS 1280×720), là một thẻ bo góc nổi trên nền "ambient":
  *   chính banner phóng to + làm mờ phủ phần đầu màn, mờ dần vào màu nền → không cắt, không đè chữ lên hình.
  * - Dưới banner: nhãn "Khuyến mãi" + còn n ngày, tiêu đề, tóm tắt, rồi các khối CMS (ContentBlocks).
- * - Cuộn: thanh trên cùng hiện nền + tiêu đề rút gọn. Nút hành động (cta) nổi ở đáy: mở link hoặc khoá học.
+ * - Cuộn: thanh trên cùng hiện nền = banner làm mờ + lớp phủ tối, tiêu đề chữ trắng; nút Back luôn là kính mờ tối. Nút hành động (cta) nổi ở đáy: mở link hoặc khoá học.
  */
 export function CampaignScreen() {
   const { colors } = useTheme();
@@ -59,7 +59,8 @@ export function CampaignScreen() {
     else router.push(`/courses/${data.cta.courseId}`);
   };
 
-  const barIn = scrollY.interpolate({ inputRange: [bannerH - 60, bannerH - 10], outputRange: [0, 1], extrapolate: 'clamp' });
+  // Nền header hiện đủ đúng lúc mép dưới banner chui hết vào dưới header (banner đáy = barH + 4 + bannerH - y)
+  const barIn = scrollY.interpolate({ inputRange: [bannerH - 40, bannerH + 4], outputRange: [0, 1], extrapolate: 'clamp' });
   const ambientShift = scrollY.interpolate({ inputRange: [-200, 0, ambientH], outputRange: [-100, 0, ambientH * 0.5], extrapolate: 'clamp' });
 
   const left = data ? daysUntil(data.endsAt) : 0;
@@ -75,7 +76,10 @@ export function CampaignScreen() {
         {/* Nền ambient: banner làm mờ, mờ dần vào màu nền */}
         <Animated.View pointerEvents="none" style={[styles.ambient, { height: ambientH, transform: [{ translateY: ambientShift }] }]}>
           {data?.bannerUrl ? (
-            <Image source={{ uri: data.bannerUrl }} style={[StyleSheet.absoluteFill, styles.ambientImg]} contentFit="cover" blurRadius={40} />
+            // Ảnh chỉ phủ 85% trên (phần dưới gradient đã đặc màu nền) → mép dưới ảnh không bao giờ lộ thành vạch khi cuộn
+            <View style={styles.ambientClip}>
+              <Image source={{ uri: data.bannerUrl }} style={[StyleSheet.absoluteFill, styles.ambientImg]} contentFit="cover" blurRadius={40} />
+            </View>
           ) : (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.mint50 }]} />
           )}
@@ -83,7 +87,9 @@ export function CampaignScreen() {
             <Defs>
               <LinearGradient id="campFade" x1="0" y1="0" x2="0" y2="1">
                 <Stop offset="0" stopColor={colors.bg} stopOpacity={0.15} />
-                <Stop offset="0.55" stopColor={colors.bg} stopOpacity={0.45} />
+                <Stop offset="0.5" stopColor={colors.bg} stopOpacity={0.45} />
+                {/* 15% cuối đặc màu nền: mép dưới ảnh làm mờ (web: bộ lọc blur làm mép trong / sẫm) không lộ thành đường kẻ khi cuộn */}
+                <Stop offset="0.85" stopColor={colors.bg} stopOpacity={1} />
                 <Stop offset="1" stopColor={colors.bg} stopOpacity={1} />
               </LinearGradient>
             </Defs>
@@ -139,27 +145,35 @@ export function CampaignScreen() {
                 {data.title}
               </Text>
               {data.summary ? <RichText text={data.summary} style={[styles.summary, { color: colors.ink600 }]} /> : null}
+              {data.blocks.length > 0 && <View style={styles.spacer} />}
 
-              {data.blocks.length > 0 && <View style={[styles.divider, { backgroundColor: colors.line }]} />}
               <ContentBlocks blocks={data.blocks} onCopied={(c) => showToast(`Đã sao chép mã ${c}`)} />
             </View>
           ) : null}
         </View>
       </Animated.ScrollView>
 
-      {/* Thanh trên cùng: trong suốt trên banner, cuộn qua banner thì hiện nền + tiêu đề */}
+      {/* Thanh trên cùng: luôn trong suốt (không nền trắng, không đường kẻ). Cuộn qua banner thì hiện dần nền là CHÍNH ảnh
+          banner làm mờ (cùng ambient phía sau) + lớp phủ tối → tiêu đề chữ trắng đọc được với mọi màu banner. */}
       <View pointerEvents="box-none" style={[styles.topBar, { paddingTop: topInset, height: barH }]}>
-        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: colors.bg, borderBottomColor: colors.line, opacity: barIn }, styles.topBarBg]} />
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.barBg, { opacity: barIn, backgroundColor: illo.bannerBacking }]}>
+          {data?.bannerUrl ? (
+            <Image source={{ uri: data.bannerUrl }} style={[styles.barImg, { height: ambientH }]} contentFit="cover" blurRadius={40} />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.emerald700 }]} />
+          )}
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: illo.bannerScrim }]} />
+        </Animated.View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Quay lại"
           onPress={back}
           hitSlop={6}
-          style={({ pressed }) => [styles.back, { backgroundColor: colors.card, borderColor: colors.line, opacity: pressed ? 0.8 : 1 }]}
+          style={({ pressed }) => [styles.back, { backgroundColor: pressed ? illo.glassBtnPressed : illo.glassBtn }]}
         >
-          <Icon name="chevronLeft" size={22} color={colors.ink900} />
+          <Icon name="chevronLeft" size={22} color="#ffffff" />
         </Pressable>
-        <Animated.Text numberOfLines={1} style={[styles.barTitle, { color: colors.ink900, opacity: barIn }]}>
+        <Animated.Text numberOfLines={1} style={[styles.barTitle, { opacity: barIn }]}>
           {data?.title ?? ''}
         </Animated.Text>
       </View>
@@ -179,6 +193,7 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   center: { textAlign: 'center' },
   ambient: { position: 'absolute', top: 0, left: 0, right: 0, overflow: 'hidden' },
+  ambientClip: { position: 'absolute', top: 0, left: 0, right: 0, bottom: '15%', overflow: 'hidden' },
   ambientImg: { transform: [{ scale: 1.4 }] },
   bannerCard: { marginHorizontal: 16, borderRadius: 20, overflow: 'hidden' },
   sheet: { minHeight: 320 },
@@ -189,10 +204,12 @@ const styles = StyleSheet.create({
   eyebrow: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 26, borderRadius: 9999 },
   eyebrowText: { fontFamily: fonts.sans600, fontSize: 12, lineHeight: 16 },
   title: { fontFamily: fonts.display700, fontSize: 26, lineHeight: 34 },
+  spacer: { height: 6 },
   summary: { fontFamily: fonts.sans400, fontSize: 16, lineHeight: 25 },
-  divider: { height: StyleSheet.hairlineWidth, marginVertical: 6 },
   topBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 16 },
-  topBarBg: { borderBottomWidth: StyleSheet.hairlineWidth },
-  back: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  barTitle: { flex: 1, fontFamily: fonts.display600, fontSize: 17, lineHeight: 24 },
+  barBg: { overflow: 'hidden' },
+  // Ảnh nền header đặt y hệt ambient lúc chưa cuộn (top 0, phóng 1.4) → hiện ra liền mạch, không thấy "mép"
+  barImg: { position: 'absolute', top: 0, left: 0, right: 0, transform: [{ scale: 1.4 }] },
+  back: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  barTitle: { flex: 1, fontFamily: fonts.display600, fontSize: 17, lineHeight: 24, color: '#ffffff' },
 });
