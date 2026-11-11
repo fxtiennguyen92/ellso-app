@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
@@ -12,6 +12,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
 import { ContinueCard } from './ContinueCourses';
+import { ProgressCardBones } from '@/components/skeletons';
 
 /**
  * Khoá học của tôi (/courses/mine, mở từ nút cạnh nút tìm kiếm ở tab Khoá học):
@@ -55,15 +56,18 @@ export function MyCoursesScreen() {
         scrolled={scrollY > 4}
       />
 
-      {!data ? (
+      {!data && !failed ? (
+        <View style={styles.section}>
+          <Text accessibilityRole="header" style={[type.h2, { color: colors.ink900 }]}>
+            Đang học
+          </Text>
+          <ProgressCardBones count={3} />
+        </View>
+      ) : !data ? (
         <View style={styles.center}>
-          {failed ? (
-            <Pressable accessibilityRole="button" onPress={load}>
-              <Text style={[type.label, { color: colors.emerald700 }]}>Không tải được. Bấm để thử lại</Text>
-            </Pressable>
-          ) : (
-            <ActivityIndicator color={colors.emerald700} />
-          )}
+          <Pressable accessibilityRole="button" onPress={load}>
+            <Text style={[type.label, { color: colors.emerald700 }]}>Không tải được. Bấm để thử lại</Text>
+          </Pressable>
         </View>
       ) : (
         <ScrollView

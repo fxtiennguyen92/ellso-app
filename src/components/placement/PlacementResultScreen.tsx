@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
@@ -16,6 +16,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
 import { Confetti } from './Confetti';
+import { Bone, Skeleton } from '@/components/Skeleton';
 
 const fmtDate = (iso: string) => {
   const d = new Date(iso);
@@ -53,7 +54,12 @@ export function PlacementResultScreen() {
     return (
       <View style={[styles.screen, styles.center, { backgroundColor: colors.bg }]}>
         {state === 'loading' ? (
-          <ActivityIndicator color={colors.emerald700} />
+          <Skeleton label="Đang tải kết quả" style={styles.resultBones}>
+            <Bone w={140} h={140} r={70} />
+            <Bone w={200} h={26} />
+            <Bone w={240} h={14} />
+            <Bone w={280} h={90} r={20} />
+          </Skeleton>
         ) : (
           <Text style={[type.body, { color: colors.ink600, textAlign: 'center' }]}>
             {state === 'none' ? 'Bạn chưa làm bài kiểm tra này.' : 'Không tải được kết quả, thử lại sau.'}
@@ -323,6 +329,7 @@ function DimensionRow({ dim, index }: { dim: PlacementResult['dimensions'][numbe
 }
 
 const styles = StyleSheet.create({
+  resultBones: { alignItems: 'center', gap: 16 },
   screen: { flex: 1 },
   grow: { flex: 1, minWidth: 0 },
   center: { alignItems: 'center', justifyContent: 'center' },

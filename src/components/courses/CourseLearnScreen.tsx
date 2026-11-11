@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
@@ -14,6 +14,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
 import { CourseMapScreen } from './CourseMapScreen';
+import { MapBones } from '@/components/skeletons';
 
 /**
  * Vào học một khoá (/courses/[id]) — tải GET /my/courses/{id} rồi chọn màn:
@@ -47,9 +48,7 @@ export function CourseLearnScreen({ courseId }: { courseId: string }) {
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
       <SubpageHeader title={data?.courseTitle ?? 'Khoá học'} fallback="/courses" />
       {state === 'loading' ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.emerald700} />
-        </View>
+        <MapBones />
       ) : state === 'not_enrolled' ? (
         <Message
           icon="lock"

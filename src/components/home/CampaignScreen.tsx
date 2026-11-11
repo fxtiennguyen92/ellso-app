@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
@@ -18,6 +18,7 @@ import { NATIVE_DRIVER } from '@/hooks/useLoop';
 import { ApiError } from '@/lib/api';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
+import { Bone, BoneLines, Skeleton } from '@/components/Skeleton';
 
 /**
  * Khuyến mãi › chi tiết (/campaign/[id], GET /v1/campaigns/{id}):
@@ -109,15 +110,23 @@ export function CampaignScreen() {
               accessibilityLabel={data.title}
               accessibilityIgnoresInvertColors
             />
+          ) : !data && !error ? (
+            <Skeleton style={StyleSheet.absoluteFill}>
+              <Bone h="100%" r={0} />
+            </Skeleton>
           ) : null}
         </View>
 
         {/* Nội dung */}
         <View style={styles.sheet}>
           {!data && !error ? (
-            <View style={styles.loading}>
-              <ActivityIndicator color={colors.emerald700} />
-            </View>
+            <Skeleton label="Đang tải khuyến mãi" style={styles.skeleton}>
+              <Bone w="45%" h={24} r={12} />
+              <Bone w="85%" h={28} />
+              <BoneLines lines={2} />
+              <Bone h={120} r={18} style={styles.skeletonGap} />
+              <BoneLines lines={3} last="40%" />
+            </Skeleton>
           ) : error ? (
             <View style={styles.errorBox}>
               <Icon name="ticket" size={36} strokeWidth={1.7} color={colors.ink400} />
@@ -189,6 +198,8 @@ export function CampaignScreen() {
 }
 
 const styles = StyleSheet.create({
+  skeleton: { gap: 14, paddingTop: 4 },
+  skeletonGap: { marginVertical: 6 },
   screen: { flex: 1 },
   grow: { flex: 1 },
   center: { textAlign: 'center' },

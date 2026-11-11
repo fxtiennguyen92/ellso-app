@@ -1,8 +1,9 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { dmy } from '@/data/profile';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
+import { RowBones } from '@/components/skeletons';
 
 /** "Hôm nay" · "Hôm qua" · "05/11/2026" */
 export function dayLabel(iso: string): string {
@@ -29,12 +30,8 @@ export function ListFooter({ loading, error, done, empty, onRetry }: { loading: 
         <Text style={[type.label, { color: colors.emerald700 }]}>Không tải được. Thử lại</Text>
       </Pressable>
     );
-  if (loading)
-    return (
-      <View style={styles.footer}>
-        <ActivityIndicator color={colors.emerald700} />
-      </View>
-    );
+  // Đang tải: lần đầu vài dòng skeleton, tải thêm một dòng
+  if (loading) return <RowBones count={empty ? 5 : 1} thumb={40} card={false} />;
   if (done && !empty)
     return (
       <View style={styles.footer}>

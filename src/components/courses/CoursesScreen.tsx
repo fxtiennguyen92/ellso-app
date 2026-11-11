@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, type GestureResponderEvent, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
+import { type GestureResponderEvent, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
@@ -27,6 +27,7 @@ import { fonts, type } from '@/theme/typography';
 import { ContinueCourses } from './ContinueCourses';
 import { CourseCard } from './CourseCard';
 import { PlacementTests } from './PlacementTests';
+import { CourseCardBones } from '@/components/skeletons';
 
 
 /**
@@ -42,14 +43,15 @@ export function CoursesScreen() {
   const cart = useCart();
   const { showToast } = useDocuments();
 
-  const [tests, setTests] = useState<PlacementTestSummary[]>([]);
-  const [continuing, setContinuing] = useState<ContinueCourse[]>([]);
+  // null = đang tải lần đầu (hiện skeleton)
+  const [tests, setTests] = useState<PlacementTestSummary[] | null>(null);
+  const [continuing, setContinuing] = useState<ContinueCourse[] | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [category, setCategory] = useState<string | null>(null);
   const [courses, setCourses] = useState<CatalogCourse[]>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(true);
   const [error, setError] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const loadingRef = useRef(false);
@@ -67,9 +69,9 @@ export function CoursesScreen() {
   useFocusEffect(
     useCallback(() => {
       if (!token) return;
-      apiPlacementTests(token).then(setTests).catch(() => {});
+      apiPlacementTests(token).then(setTests).catch(() => setTests((t) => t ?? []));
       // Tiếp tục khoá học: tải lại khi quay về tab (vừa học xong bài thì % đổi)
-      apiContinueCourses(token).then(setContinuing).catch(() => {});
+      apiContinueCourses(token).then(setContinuing).catch(() => setContinuing((c) => c ?? []));
     }, [token]),
   );
 
@@ -212,11 +214,8 @@ export function CoursesScreen() {
                 onStart={() => start(c)}
               />
             ))}
-            {loadingMore && (
-              <View style={styles.loading}>
-                <ActivityIndicator color={colors.emerald700} />
-              </View>
-            )}
+            {/* Đang tải (trang đầu: 2 thẻ, tải thêm: 1 thẻ) → skeleton đúng hình thẻ khoá học */}
+            {loadingMore && <CourseCardBones count={courses.length ? 1 : 2} />}
             {error && (
               <Pressable accessibilityRole="button" onPress={() => loadPage(page + 1, category)} style={styles.loading}>
                 <Text style={[type.label, { color: colors.emerald700 }]}>Không tải được. Bấm để thử lại</Text>

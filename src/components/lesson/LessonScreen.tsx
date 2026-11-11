@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
@@ -20,6 +20,7 @@ import { LessonFeedback } from './LessonFeedback';
 import { QuizBlock } from './QuizBlock';
 import { useLessonTracking } from './useLessonTracking';
 import { VideoBlock } from './VideoBlock';
+import { ArticleBones } from '@/components/skeletons';
 
 type LoadState = 'loading' | 'ready' | ReturnType<typeof lessonErrorKind>;
 
@@ -161,9 +162,7 @@ export function LessonScreen({ lessonId, color, courseId }: { lessonId: string; 
       </View>
 
       {state === 'loading' ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.emerald700} />
-        </View>
+        <ArticleBones />
       ) : state !== 'ready' ? (
         <ErrorView kind={state} onRetry={load} onBack={goBack} />
       ) : lesson?.kind === 'coaching' ? (

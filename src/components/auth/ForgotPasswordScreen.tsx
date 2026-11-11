@@ -58,7 +58,7 @@ export function ForgotPasswordScreen() {
               setError(null);
             }}
             error={error}
-            placeholder="ban@email.com"
+            placeholder="email@ellso.edu.vn"
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}

@@ -11,6 +11,8 @@ import { CartFlyLayer, type FlyPoint } from './CartFly';
 type Ctx = {
   cart: Cart;
   loading: boolean;
+  /** Đã tải giỏ ít nhất một lần (chưa → trang giỏ hiện skeleton, không báo "giỏ trống"). */
+  loaded: boolean;
   /** Món (type, id) đang có trong giỏ không. */
   has: (type: CartItemType, id: number) => boolean;
   /**
@@ -36,6 +38,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const { token, status } = useAuth();
   const [cart, setCart] = useState<Cart>(emptyCart);
   const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const anchorRef = useRef<ViewInstance | null>(null);
   const [landTick, setLandTick] = useState(0);
   const [flights, setFlights] = useState<{ id: number; from: FlyPoint | null }[]>([]);
@@ -50,12 +53,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // giữ giỏ cũ khi mất mạng
     } finally {
       setLoading(false);
+      setLoaded(true);
     }
   }, [token]);
 
   useEffect(() => {
     if (status === 'signedIn') refresh();
-    else setCart(emptyCart);
+    else {
+      setCart(emptyCart);
+      setLoaded(false);
+    }
   }, [status, refresh]);
 
   const has = useCallback((type: CartItemType, id: number) => cart.items.some((i) => i.type === type && i.id === id), [cart]);
@@ -102,8 +109,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ cart, loading, has, add, remove, refresh, anchorRef, landTick }),
-    [cart, loading, has, add, remove, refresh, landTick],
+    () => ({ cart, loading, loaded, has, add, remove, refresh, anchorRef, landTick }),
+    [cart, loading, loaded, has, add, remove, refresh, landTick],
   );
   return (
     <CartContext.Provider value={value}>

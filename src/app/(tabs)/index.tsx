@@ -9,6 +9,7 @@ import { HomeBooks } from '@/components/home/HomeBooks';
 import { HomeHeader, SEARCH_HEIGHT } from '@/components/home/HomeHeader';
 import { TrainingSchedule } from '@/components/home/TrainingSchedule';
 import { TrainingSheet } from '@/components/home/TrainingSheet';
+import { HomeSkeleton } from '@/components/skeletons';
 import { WorkshopSchedule } from '@/components/home/WorkshopSchedule';
 import { useAuth } from '@/auth/AuthProvider';
 import { cachedHomeFeed, emptyFeed, type HomeFeed, type HomeTraining, loadHomeFeed } from '@/data/home';
@@ -118,10 +119,17 @@ export default function HomeScreen() {
                   Một số mục chưa tải được. Kéo xuống để thử lại.
                 </Text>
               )}
-              <CampaignCarousel campaigns={feed.campaigns} />
-              <TrainingSchedule trainings={feed.trainings} onOpen={setOpenTraining} />
-              <WorkshopSchedule workshops={feed.workshops} />
-              <HomeBooks books={feed.books} />
+              {/* Lần đầu chưa có dữ liệu (chưa tải trước lúc splash): skeleton đúng bố cục */}
+              {!loaded ? (
+                <HomeSkeleton />
+              ) : (
+                <>
+                  <CampaignCarousel campaigns={feed.campaigns} />
+                  <TrainingSchedule trainings={feed.trainings} onOpen={setOpenTraining} />
+                  <WorkshopSchedule workshops={feed.workshops} />
+                  <HomeBooks books={feed.books} />
+                </>
+              )}
               {loaded && empty && !feed.failed && (
                 <Text style={[styles.empty, { color: colors.ink600 }]}>Chưa có khuyến mãi hay lịch sắp tới. Quay lại sau nhé!</Text>
               )}

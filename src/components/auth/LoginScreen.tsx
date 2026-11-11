@@ -86,7 +86,7 @@ export function LoginScreen() {
             if (errors.email || errors.form) setErrors((e) => ({ ...e, email: undefined, form: undefined }));
           }}
           error={errors.email}
-          placeholder="ban@email.com"
+          placeholder="email@ellso.edu.vn"
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}

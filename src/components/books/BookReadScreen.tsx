@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
@@ -15,6 +15,7 @@ import { fonts, type } from '@/theme/typography';
 
 import { BookReader } from './BookReader';
 import type { ReaderMessage } from './readerTypes';
+import { ArticleBones } from '@/components/skeletons';
 
 /**
  * Sách › đọc (/books/[id]/read?mode=preview|full): header (quay lại, tên sách, "Đọc thử · Trang 3 / 8") + trình đọc
@@ -106,9 +107,7 @@ export function BookReadScreen() {
         ) : url ? (
           <BookReader url={url} onMessage={onMessage} />
         ) : (
-          <View style={styles.center}>
-            <ActivityIndicator color={colors.emerald700} />
-          </View>
+          <ArticleBones />
         )}
       </View>
 

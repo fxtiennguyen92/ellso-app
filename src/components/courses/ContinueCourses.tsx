@@ -11,24 +11,26 @@ import { WEB_MAX_WIDTH } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
 
 import { CourseCover } from './CourseCover';
+import { ProgressCardBones } from '@/components/skeletons';
 
 /**
  * Mục "Tiếp tục khoá học" (trên Khoá học E-learning): khoá đã mua / được cấp + khoá miễn phí đã học ≥ 1 bài.
  * Thẻ ngang cuộn được (khoá sau ló ra một chút), mỗi thẻ: ảnh bìa nhỏ · tên · bài tiếp theo · thanh tiến độ.
  * Bấm → bản đồ lộ trình /courses/[id]. Một khoá thì thẻ rộng hết hàng.
  */
-export function ContinueCourses({ courses }: { courses: ContinueCourse[] }) {
+/** `courses` = null: đang tải lần đầu → skeleton (một thẻ). */
+export function ContinueCourses({ courses }: { courses: ContinueCourse[] | null }) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const rowRef = useRef<ScrollViewInstance>(null);
   useDragScroll(rowRef);
 
   const screenW = Math.min(width, WEB_MAX_WIDTH);
-  const single = courses.length === 1;
+  const single = (courses?.length ?? 0) <= 1;
   const cardW = single ? screenW - 32 : Math.min(screenW - 56, 340);
 
   return (
-    <View style={[styles.section, !courses.length && styles.hidden]}>
+    <View style={[styles.section, courses?.length === 0 && styles.hidden]}>
       <View style={styles.head}>
         <Text accessibilityRole="header" style={[type.h2, { color: colors.ink900 }]}>
           Tiếp tục khoá học
@@ -43,9 +45,13 @@ export function ContinueCourses({ courses }: { courses: ContinueCourse[] }) {
         decelerationRate="fast"
         contentContainerStyle={styles.row}
       >
-        {courses.map((c) => (
-          <ContinueCard key={c.id} course={c} width={cardW} />
-        ))}
+        {courses === null ? (
+          <View style={{ width: cardW }}>
+            <ProgressCardBones count={1} />
+          </View>
+        ) : (
+          courses.map((c) => <ContinueCard key={c.id} course={c} width={cardW} />)
+        )}
       </ScrollView>
     </View>
   );

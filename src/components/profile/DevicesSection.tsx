@@ -9,6 +9,7 @@ import { dmy } from '@/data/profile';
 import { ApiError } from '@/lib/api';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
+import { RowBones } from '@/components/skeletons';
 
 const PLATFORM: Record<NonNullable<Device['platform']>, string> = { ios: 'iOS', android: 'Android', web: 'Web' };
 
@@ -78,15 +79,15 @@ export const DevicesSection = forwardRef<DevicesSectionHandle, { onToast: (m: st
 
   return (
     <View style={styles.wrap}>
-      {devices === null ? (
+      {devices === null && !loadError ? (
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.line, padding: 16 }]}>
+          <RowBones count={2} thumb={40} card={false} />
+        </View>
+      ) : devices === null ? (
         <View style={[styles.card, styles.center, { backgroundColor: colors.card, borderColor: colors.line }]}>
-          {loadError ? (
-            <Pressable accessibilityRole="button" onPress={load} hitSlop={8}>
-              <Text style={[type.label, { color: colors.emerald700 }]}>Không tải được. Thử lại</Text>
-            </Pressable>
-          ) : (
-            <ActivityIndicator color={colors.emerald700} />
-          )}
+          <Pressable accessibilityRole="button" onPress={load} hitSlop={8}>
+            <Text style={[type.label, { color: colors.emerald700 }]}>Không tải được. Thử lại</Text>
+          </Pressable>
         </View>
       ) : (
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.line }]}>

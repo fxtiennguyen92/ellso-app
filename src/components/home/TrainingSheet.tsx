@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Linking, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/auth/AuthUI';
 import { BottomSheet } from '@/components/BottomSheet';
@@ -21,6 +21,7 @@ import {
 import { ApiError } from '@/lib/api';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
+import { RowBones } from '@/components/skeletons';
 
 type Tab = 'overview' | 'schedule';
 type Session = TrainingDetail['sessions'][number];
@@ -128,7 +129,7 @@ export function TrainingSheet({ training, onClose, onChanged }: { training: Home
           ) : loadError ? (
             <Text style={[type.caption, { color: colors.danger }]}>{loadError}</Text>
           ) : (
-            <ActivityIndicator color={colors.emerald700} style={styles.loading} />
+            <RowBones count={3} thumb={44} card={false} />
           )}
         </ScrollView>
 

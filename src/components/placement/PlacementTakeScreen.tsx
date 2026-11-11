@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
@@ -13,6 +13,7 @@ import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 import { ApiError } from '@/lib/api';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
+import { QuestionBones } from '@/components/skeletons';
 
 /** Câu đã trả lời đủ điều kiện để đi tiếp chưa (chọn 1 / chọn từ min đến max / sắp xếp đủ mục). */
 function isAnswered(q: PlacementQuestion, chosen: number[]) {
@@ -123,16 +124,12 @@ export function PlacementTakeScreen() {
         </View>
       </View>
 
-      {!test ? (
+      {!test && !error ? (
+        <QuestionBones />
+      ) : !test ? (
         <View style={styles.center}>
-          {error ? (
-            <>
-              <Text style={[type.body, { color: colors.ink600, textAlign: 'center' }]}>{error}</Text>
-              <SecondaryButton label="Quay lại" onPress={exit} />
-            </>
-          ) : (
-            <ActivityIndicator color={colors.emerald700} />
-          )}
+          <Text style={[type.body, { color: colors.ink600, textAlign: 'center' }]}>{error}</Text>
+          <SecondaryButton label="Quay lại" onPress={exit} />
         </View>
       ) : q ? (
         <View style={styles.grow}>

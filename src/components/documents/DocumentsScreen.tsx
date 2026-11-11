@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Platform, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Platform, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
@@ -17,6 +17,8 @@ import { fonts, type } from '@/theme/typography';
 
 import { BookCard, EmptyState, Grid, PdfRow, SectionHead, TopicChips, VideoCard } from './DocParts';
 import { useDocuments } from './DocumentsContext';
+import { Bone, Skeleton } from '@/components/Skeleton';
+import { BookGridBones, RowBones } from '@/components/skeletons';
 
 /**
  * Tab Tài liệu (GET /documents): tìm + lọc chủ đề (dính trên cùng) · Tài liệu của tôi · Video · PDF · Sách.
@@ -95,7 +97,7 @@ export function DocumentsScreen() {
 
         {/* 2 · nội dung */}
         <View>
-          {!searching && <MyDocsBanner saved={savedCount} bought={boughtCount} />}
+          {!searching && !(loading && docs.length === 0) && <MyDocsBanner saved={savedCount} bought={boughtCount} />}
 
           {videos.length > 0 && (
             <View style={styles.section}>
@@ -129,9 +131,14 @@ export function DocumentsScreen() {
           )}
 
           {loading && docs.length === 0 ? (
-            <View style={styles.loading}>
-              <ActivityIndicator color={colors.emerald700} />
-            </View>
+            // Lần đầu tải: skeleton thẻ Tài liệu của tôi + dòng PDF + lưới sách
+            <Skeleton label="Đang tải tài liệu" style={styles.bones}>
+              <Bone h={96} r={22} />
+              <Bone w="35%" h={20} style={styles.bonesTitle} />
+              <RowBones count={2} />
+              <Bone w="25%" h={20} style={styles.bonesTitle} />
+              <BookGridBones count={3} />
+            </Skeleton>
           ) : failed && docs.length === 0 ? (
             <Pressable accessibilityRole="button" onPress={refresh} style={styles.loading}>
               <Text style={[type.label, { color: colors.emerald700 }]}>Không tải được tài liệu. Bấm để thử lại</Text>
@@ -258,6 +265,8 @@ const styles = StyleSheet.create({
 
   section: { paddingTop: 36, paddingHorizontal: 20, gap: 16 },
   loading: { paddingVertical: 48, alignItems: 'center' },
+  bones: { paddingTop: 16, paddingHorizontal: 20, gap: 14 },
+  bonesTitle: { marginTop: 18 },
 
   banner: { marginTop: 16, marginHorizontal: 20, overflow: 'hidden', flexDirection: 'row', alignItems: 'center', gap: 18, paddingVertical: 18, paddingLeft: 20, paddingRight: 16, borderRadius: 22 },
   bannerRing: { position: 'absolute', width: 140, height: 140, borderRadius: 70, borderWidth: 22, right: -46, top: -60 },

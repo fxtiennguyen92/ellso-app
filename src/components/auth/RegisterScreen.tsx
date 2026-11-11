@@ -106,7 +106,7 @@ export function RegisterScreen() {
               if (errors.email) setErrors((e) => ({ ...e, email: undefined }));
             }}
             error={errors.email}
-            placeholder="ban@email.com"
+            placeholder="email@ellso.edu.vn"
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}

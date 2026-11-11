@@ -21,6 +21,7 @@ import { fonts, type } from '@/theme/typography';
 
 import { useCart } from './CartContext';
 import { PromoSheet } from './PromoSheet';
+import { RowBones } from '@/components/skeletons';
 
 const formatCoins = (n: number) => n.toLocaleString('vi-VN');
 
@@ -46,7 +47,7 @@ export function CartScreen() {
   const insets = useSafeAreaInsets();
   const topInset = useScreenTopInset();
   const { token } = useAuth();
-  const { cart, refresh, remove, loading } = useCart();
+  const { cart, refresh, remove, loading, loaded } = useCart();
   const { showToast } = useDocuments();
   const [scrolled, setScrolled] = useState(false);
 
@@ -125,9 +126,11 @@ export function CartScreen() {
         onScroll={(e) => setScrolled(e.nativeEvent.contentOffset.y > 4)}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={loading && !empty} onRefresh={refresh} tintColor={colors.emerald700} />}
-        contentContainerStyle={[styles.content, { paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 24 }, empty && styles.contentEmpty]}
+        contentContainerStyle={[styles.content, { paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 24 }, empty && loaded && styles.contentEmpty]}
       >
-        {empty ? (
+        {empty && !loaded ? (
+          <RowBones count={2} thumb={64} />
+        ) : empty ? (
           <View style={styles.empty}>
             <View style={[styles.emptyIcon, { backgroundColor: colors.mint50 }]}>
               <Icon name="cart" size={34} strokeWidth={1.8} color={colors.emerald700} duotone />

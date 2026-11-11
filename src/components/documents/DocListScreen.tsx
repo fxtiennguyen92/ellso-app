@@ -13,12 +13,15 @@ import { fonts, type } from '@/theme/typography';
 import { BookCard, EmptyState, Grid, PdfRow, TopicChips, VideoCard } from './DocParts';
 import { useDocuments } from './DocumentsContext';
 import { SubHeader } from './SubHeader';
+import { Skeleton } from '@/components/Skeleton';
+import { BookGridBones, RowBones } from '@/components/skeletons';
 
 /** "Xem tất cả" của một loại: Video (lưới 2 cột) · PDF (danh sách) · Sách (lưới 3 cột). */
 export function DocListScreen({ docType }: { docType: DocType }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { docs } = useDocuments();
+  const { docs, loading } = useDocuments();
+  const firstLoad = loading && docs.length === 0;
 
   const [topic, setTopic] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -72,6 +75,7 @@ export function DocListScreen({ docType }: { docType: DocType }) {
         </View>
 
         <View style={styles.body}>
+          {firstLoad && (docType === 'book' ? <Skeleton><BookGridBones count={6} /></Skeleton> : <RowBones count={4} />)}
           {docType === 'video' && (
             <Grid columns={2} rowGap={26}>
               {list.map((d) => (
@@ -93,7 +97,7 @@ export function DocListScreen({ docType }: { docType: DocType }) {
               ))}
             </Grid>
           )}
-          {list.length === 0 && <EmptyState text={query.trim() ? `Không tìm thấy ${label.unit} cho "${query.trim()}".` : `Chưa có ${label.unit} trong chủ đề này.`} />}
+          {list.length === 0 && !firstLoad && <EmptyState text={query.trim() ? `Không tìm thấy ${label.unit} cho "${query.trim()}".` : `Chưa có ${label.unit} trong chủ đề này.`} />}
         </View>
       </ScrollView>
 

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/auth/AuthProvider';
@@ -17,6 +17,7 @@ import { fonts, type } from '@/theme/typography';
 
 import { AccessChip, SaveButton } from './DocParts';
 import { useDocuments } from './DocumentsContext';
+import { ArticleBones } from '@/components/skeletons';
 
 type State = 'loading' | 'ready' | 'locked' | 'missing' | 'error';
 
@@ -94,9 +95,7 @@ export function DocViewerScreen({ id }: { id: string }) {
       </View>
 
       {state === 'loading' ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.emerald700} />
-        </View>
+        <ArticleBones />
       ) : state === 'locked' && doc ? (
         <Message
           icon="lock"

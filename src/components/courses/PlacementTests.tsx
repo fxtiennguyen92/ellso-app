@@ -10,6 +10,7 @@ import type { PlacementTestSummary } from '@/data/placement';
 import { useTheme } from '@/theme/ThemeProvider';
 import { illo } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
+import { TileGridBones } from '@/components/skeletons';
 
 /** Bảng màu thẻ: chưa làm = vàng → cam (màu bài test cũ), đã làm = xanh lá. Cố định cho cả 2 chế độ sáng / tối. */
 const TONES = {
@@ -21,9 +22,22 @@ const TONES = {
  * Mục "Đánh giá năng lực" (bài test đầu vào) ở tab Khoá học: lưới 2 cột, bài chưa làm xếp trước, mỗi bài một thẻ bấm được (icon, tên, nút). Không ghi trạng thái bằng chữ —
  * màu + nút đã nói lên: chưa làm = vàng/cam "Làm thử"; đã làm = xanh "Xem kết quả", bấm mở kết quả. Chưa làm → bấm hỏi xác nhận (số câu, thời gian ước tính) rồi mới vào làm.
  */
-export function PlacementTests({ tests }: { tests: PlacementTestSummary[] }) {
+/** `tests` = null: đang tải lần đầu → skeleton. */
+export function PlacementTests({ tests }: { tests: PlacementTestSummary[] | null }) {
   const { colors } = useTheme();
   const [confirm, setConfirm] = useState<PlacementTestSummary | null>(null);
+  if (tests === null)
+    return (
+      <View style={styles.section}>
+        <View style={styles.title}>
+          <Text accessibilityRole="header" style={[type.h2, { color: colors.ink900 }]}>
+            Đánh giá năng lực
+          </Text>
+          <Text style={[type.caption, { color: colors.ink600 }]}>Đánh giá năng lực hiện tại của bạn qua các bài kiểm tra ngắn</Text>
+        </View>
+        <TileGridBones count={2} />
+      </View>
+    );
   if (tests.length === 0) return null;
   // Bài chưa làm lên trước, bài đã hoàn thành xuống sau (giữ thứ tự CMS trong từng nhóm)
   const ordered = [...tests.filter((t) => !t.completed), ...tests.filter((t) => t.completed)];

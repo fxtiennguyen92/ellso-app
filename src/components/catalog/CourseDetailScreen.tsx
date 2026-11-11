@@ -1,7 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   type GestureResponderEvent,
   Platform,
@@ -30,6 +29,7 @@ import { ApiError } from '@/lib/api';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type ChapterColor, chapterPalette, illo, WEB_MAX_WIDTH } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
+import { DetailBones } from '@/components/skeletons';
 
 /**
  * Trang giới thiệu khoá học E-learning (/catalog/[id], mở từ thẻ khoá ở tab Khoá học).
@@ -102,9 +102,7 @@ export function CourseDetailScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
       >
         {!course && !error ? (
-          <View style={[styles.center, { paddingTop: barH + 80 }]}>
-            <ActivityIndicator color={colors.emerald700} />
-          </View>
+          <DetailBones heroH={260} />
         ) : error ? (
           <View style={[styles.center, { paddingTop: barH + 60, gap: 12 }]}>
             <Icon name="courses" size={34} strokeWidth={1.7} color={colors.ink400} />

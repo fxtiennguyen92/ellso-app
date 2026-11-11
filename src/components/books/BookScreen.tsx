@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, type GestureResponderEvent, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Animated, type GestureResponderEvent, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient, Pattern, RadialGradient, Rect, Stop } from 'react-native-svg';
 
@@ -19,6 +19,7 @@ import { ApiError } from '@/lib/api';
 import { useTheme } from '@/theme/ThemeProvider';
 import { chapterPalette, WEB_MAX_WIDTH } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
+import { DetailBones } from '@/components/skeletons';
 
 /**
  * Sách › thông tin (/books/[id]) — bố cục theo trang sách của Amazon (bản di động), phần đầu làm riêng:
@@ -101,9 +102,7 @@ export function BookScreen() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
       >
         {!book && !error ? (
-          <View style={[styles.loading, { paddingTop: barH + 80 }]}>
-            <ActivityIndicator color={colors.emerald700} />
-          </View>
+          <DetailBones heroH={320} />
         ) : error ? (
           <View style={[styles.errorBox, { paddingTop: barH + 60 }]}>
             <Icon name="book" size={34} strokeWidth={1.7} color={colors.ink400} />

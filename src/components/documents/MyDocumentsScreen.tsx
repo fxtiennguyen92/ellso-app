@@ -14,6 +14,7 @@ import { fonts, type } from '@/theme/typography';
 import { AccessChip, BookCover, EmptyState, PdfThumb, SaveButton, VideoCover } from './DocParts';
 import { useDocuments } from './DocumentsContext';
 import { SubHeader } from './SubHeader';
+import { RowBones } from '@/components/skeletons';
 
 const TABS: { type: DocType; label: string }[] = [
   { type: 'video', label: 'Video' },
@@ -28,7 +29,8 @@ const TABS: { type: DocType; label: string }[] = [
 export function MyDocumentsScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { docs, refresh } = useDocuments();
+  const { docs, refresh, loading } = useDocuments();
+  const firstLoad = loading && docs.length === 0;
   const { token } = useAuth();
   const [owned, setOwned] = useState<Set<string>>(new Set());
   useFocusEffect(
@@ -112,10 +114,11 @@ export function MyDocumentsScreen() {
         contentContainerStyle={{ paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 16 }}
       >
         <Group title="Đã lưu" count={saved.length}>
+          {firstLoad && <RowBones count={3} thumb={88} />}
           {saved.map((d) => (
             <MyDocRow key={d.id} doc={d} withSave />
           ))}
-          {saved.length === 0 && <EmptyState text={query.trim() ? 'Không tìm thấy.' : `Chưa lưu ${unit} nào. Bấm biểu tượng lưu trên tài liệu để thêm vào đây.`} />}
+          {saved.length === 0 && !firstLoad && <EmptyState text={query.trim() ? 'Không tìm thấy.' : `Chưa lưu ${unit} nào. Bấm biểu tượng lưu trên tài liệu để thêm vào đây.`} />}
         </Group>
 
         {bought.length > 0 && (

@@ -115,3 +115,8 @@ Nếu thấy chỗ nào trong code đang lệch so với branding, báo lại th
 ## Tab Tài liệu
 - Dữ liệu thật từ server (`useDocuments()`: `docs`, `topics`, `refresh`), tải lại khi quay về tab / mở Tài liệu của tôi. Không còn dữ liệu giả trong `src/data/documents.ts`.
 - Bấm sách → trang sách `/books/[id]`. Bấm video / PDF: mở được → trình xem `/documents/view/[id]` (nhóm `(learn)`, không thanh tab: video HLS + mốc thời gian; PDF qua trang đọc pdf.js của server); đang khoá → bảng "Cách mở tài liệu".
+
+## Đang tải dữ liệu: dùng skeleton
+- Chỗ nào chắc chắn sẽ có dữ liệu (danh sách, thẻ, trang chi tiết, nội dung bài…) thì khi tải lần đầu hiện **skeleton đúng hình bố cục thật** — không dùng vòng xoay `ActivityIndicator`, không hiện "Chưa có…" trước khi tải xong.
+- Dùng `<Skeleton>` + `<Bone>` / `<BoneLines>` / `<SkeletonCard>` (`src/components/Skeleton.tsx`, một nhịp sáng–mờ chung cho cả nhóm) và các bố cục dựng sẵn trong `src/components/skeletons.tsx` (HomeSkeleton, CourseCardBones, ProgressCardBones, TileGridBones, RowBones, BookGridBones, DetailBones, ArticleBones, MapBones, QuestionBones). Màn mới thì thêm bố cục vào file này.
+- Vòng xoay chỉ còn cho: nút đang xử lý (loading của nút), kiểm tra mã khi đang gõ, nút phát video, chỉ báo kéo-để-làm-mới.
