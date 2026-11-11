@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   pad: { paddingHorizontal: 16 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 16, borderBottomWidth: 1, zIndex: 10 },
-  list: { gap: 28, paddingTop: 8 },
+  list: { gap: 16, paddingTop: 8 },
   loading: { paddingVertical: 20, alignItems: 'center' },
   iconBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 
