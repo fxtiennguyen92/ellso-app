@@ -77,7 +77,7 @@ Màn hình / bottom sheet nào có `TextInput` thì phải xử lý bàn phím v
 
 - Mọi thứ mua được (sách, khoá học, sau này tài liệu khác) đi qua **giỏ hàng trên server** (`useCart()` từ `src/components/cart/CartContext.tsx`, API `/v1/cart`). Không tự làm luồng thanh toán riêng ở từng màn.
 - Trang chi tiết (Sách, Khoá học) chỉ **một nút mua**: chưa trong giỏ → **"Thêm vào giỏ hàng"** = `add(type, id)` (ở lại màn, toast, chấm xanh bay vào giỏ); đã trong giỏ → **"Xem giỏ hàng"** (`router.navigate('/cart')`). Thẻ khoá học: "Thêm vào" → "Xem giỏ hàng". Bảng "Cách mở tài liệu" (vd nút Mở khoá để đọc tiếp ở màn đọc thử) cũng vậy: nút 3D "Thêm vào giỏ hàng" (icon giỏ, không ghi giá — giá nằm ở dòng mô tả) ↔ "Xem giỏ hàng".
-- Khoá **đã sở hữu hoặc miễn phí**: không hiện giá / nút giỏ; thẻ có nút (i) → trang giới thiệu + nút **"Bắt đầu học" / "Tiếp tục học"** (`useStartCourse`: khoá miễn phí tự ghi danh `POST /v1/courses/{id}/enroll` rồi mở `/courses/[id]`).
+- Khoá **đã sở hữu hoặc miễn phí**: không hiện giá / nút giỏ; thẻ chỉ có nút **"Bắt đầu học" / "Tiếp tục học"** (bấm ảnh / tên khoá → trang giới thiệu, không cần nút (i)) (`useStartCourse`: khoá miễn phí tự ghi danh `POST /v1/courses/{id}/enroll` rồi mở `/courses/[id]`).
 - Mọi nút thêm vào giỏ truyền điểm bấm `from: { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY }` → chấm xanh bay từ đó vào icon Giỏ hàng (`cart/CartFly.tsx`), icon "hứng" (nảy + lắc). Không truyền thì bay từ giữa màn.
 - Tab **Giỏ hàng** (bên trái Hồ sơ) chỉ hiện khi giỏ có món (hoặc đang mở), icon có chấm vàng gây chú ý (không viền). Nút Thanh toán nằm cuối nội dung trang giỏ, không nổi. Mã khuyến mãi áp ở trang giỏ (`POST /v1/cart/promo`).
 

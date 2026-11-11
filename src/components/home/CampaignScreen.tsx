@@ -24,7 +24,7 @@ import { fonts, type } from '@/theme/typography';
  * - Banner luôn hiện TRỌN VẸN (16:9, đúng khổ CMS 1280×720), là một thẻ bo góc nổi trên nền "ambient":
  *   chính banner phóng to + làm mờ phủ phần đầu màn, mờ dần vào màu nền → không cắt, không đè chữ lên hình.
  * - Dưới banner: nhãn "Khuyến mãi" + còn n ngày, tiêu đề, tóm tắt, rồi các khối CMS (ContentBlocks).
- * - Cuộn: thanh trên cùng hiện nền = banner làm mờ + lớp phủ tối, tiêu đề chữ trắng; nút Back luôn là kính mờ tối. Nút hành động (cta) nổi ở đáy: mở link hoặc khoá học.
+ * - Cuộn: thanh trên cùng hiện nền = banner làm mờ + lớp phủ tối, tiêu đề chữ trắng; nút Back luôn là kính mờ trắng. Nút hành động (cta) nổi ở đáy: mở link hoặc khoá học.
  */
 export function CampaignScreen() {
   const { colors } = useTheme();
@@ -169,7 +169,7 @@ export function CampaignScreen() {
           accessibilityLabel="Quay lại"
           onPress={back}
           hitSlop={6}
-          style={({ pressed }) => [styles.back, { backgroundColor: pressed ? illo.glassBtnPressed : illo.glassBtn }]}
+          style={({ pressed }) => [styles.back, { backgroundColor: pressed ? illo.glassBtnPressed : illo.glassBtn, borderColor: illo.glassBtnLine }]}
         >
           <Icon name="chevronLeft" size={22} color="#ffffff" />
         </Pressable>
@@ -210,6 +210,6 @@ const styles = StyleSheet.create({
   barBg: { overflow: 'hidden' },
   // Ảnh nền header đặt y hệt ambient lúc chưa cuộn (top 0, phóng 1.4) → hiện ra liền mạch, không thấy "mép"
   barImg: { position: 'absolute', top: 0, left: 0, right: 0, transform: [{ scale: 1.4 }] },
-  back: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  back: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   barTitle: { flex: 1, fontFamily: fonts.display600, fontSize: 17, lineHeight: 24, color: '#ffffff' },
 });
