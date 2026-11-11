@@ -308,8 +308,16 @@ type ApiCatalogCourse = {
   started: boolean;
 };
 
-export async function apiCatalog(token: string, page: number, categoryId: number | null): Promise<CatalogPage> {
-  const q = `?page=${page}${categoryId ? `&category_id=${categoryId}` : ''}`;
+/** `search`: tìm theo tên / mô tả ngắn / người hướng dẫn (màn Tìm kiếm); `perPage`: số khoá mỗi đợt (mặc định server 10). */
+export async function apiCatalog(
+  token: string,
+  page: number,
+  categoryId: number | null,
+  opts: { search?: string; perPage?: number } = {},
+): Promise<CatalogPage> {
+  const q =
+    `?page=${page}${categoryId ? `&category_id=${categoryId}` : ''}` +
+    `${opts.search ? `&q=${encodeURIComponent(opts.search)}` : ''}${opts.perPage ? `&per_page=${opts.perPage}` : ''}`;
   const res = await apiRequest<{ data: ApiCatalogCourse[]; meta: { page: number; has_more: boolean; total: number } }>('GET', `/courses${q}`, { token });
   return {
     page: res.meta.page,

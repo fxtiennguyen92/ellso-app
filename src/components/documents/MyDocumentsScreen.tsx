@@ -176,14 +176,17 @@ function Group({ title, count, children }: { title: string; count: number; child
   );
 }
 
-/** Dòng tài liệu trong "Tài liệu của tôi": bìa bên trái theo loại · nút bỏ lưu (Đã lưu) hoặc mũi tên (Đã mua). */
-function MyDocRow({ doc, withSave = false }: { doc: Doc; withSave?: boolean }) {
+/**
+ * Dòng tài liệu (Tài liệu của tôi, Tìm kiếm): bìa bên trái theo loại · nút lưu (withSave) hoặc mũi tên.
+ * `onOpen` thay hành vi bấm mặc định (mở tài liệu / bảng Cách mở).
+ */
+export function MyDocRow({ doc, withSave = false, onOpen }: { doc: Doc; withSave?: boolean; onOpen?: (doc: Doc) => void }) {
   const { colors } = useTheme();
   const { openDoc } = useDocuments();
   const sub = doc.bought && doc.boughtAt && !withSave ? `${doc.author} · Mua ngày ${formatDate(doc.boughtAt)}` : doc.author;
   return (
     <View style={[styles.myRow, { backgroundColor: colors.card, borderColor: colors.line }]}>
-      <Pressable accessibilityRole="link" accessibilityLabel={doc.title} onPress={() => openDoc(doc)} style={({ pressed }) => [styles.myMain, { opacity: pressed ? 0.85 : 1 }]}>
+      <Pressable accessibilityRole="link" accessibilityLabel={doc.title} onPress={() => (onOpen ?? openDoc)(doc)} style={({ pressed }) => [styles.myMain, { opacity: pressed ? 0.85 : 1 }]}>
         <View style={styles.myCover}>
           {doc.type === 'video' && <VideoCover doc={doc} height="100%" compact />}
           {doc.type === 'pdf' && (

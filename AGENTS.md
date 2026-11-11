@@ -120,3 +120,7 @@ Nếu thấy chỗ nào trong code đang lệch so với branding, báo lại th
 - Chỗ nào chắc chắn sẽ có dữ liệu (danh sách, thẻ, trang chi tiết, nội dung bài…) thì khi tải lần đầu hiện **skeleton đúng hình bố cục thật** — không dùng vòng xoay `ActivityIndicator`, không hiện "Chưa có…" trước khi tải xong.
 - Dùng `<Skeleton>` + `<Bone>` / `<BoneLines>` / `<SkeletonCard>` (`src/components/Skeleton.tsx`, một nhịp sáng–mờ chung cho cả nhóm) và các bố cục dựng sẵn trong `src/components/skeletons.tsx` (HomeSkeleton, CourseCardBones, ProgressCardBones, TileGridBones, RowBones, BookGridBones, DetailBones, ArticleBones, MapBones, QuestionBones). Màn mới thì thêm bố cục vào file này.
 - Vòng xoay chỉ còn cho: nút đang xử lý (loading của nút), kiểm tra mã khi đang gõ, nút phát video, chỉ báo kéo-để-làm-mới.
+
+## Tìm kiếm
+- Một màn `/search` (`components/search/SearchScreen.tsx`) dùng chung: Trang chủ (ô tìm kiếm) → `scope=all` (Khoá học + Tài liệu); tab Khoá học → `scope=courses`; tab Tài liệu → `scope=documents`. Header các tab chỉ có **nút** tìm kiếm (không ô nhập trong tab).
+- Mỗi phần hiện tối đa **7 kết quả**, nút "Xem thêm kết quả" tải tiếp 7 (server: `/courses?q=&page=&per_page=7`, `/documents?q=&page=&per_page=7`). Gõ xong 0,35 giây mới tìm, từ 2 ký tự.

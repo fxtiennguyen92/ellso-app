@@ -1,13 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Platform, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { Icon } from '@/components/Icon';
 import { SCROLL_TOP_SPACE, ScrollTopButton } from '@/components/ScrollTopButton';
-import { matchQuery, type Doc, typeLabel } from '@/data/documents';
+import { type Doc, typeLabel } from '@/data/documents';
 import { useKeepScroll } from '@/hooks/useKeepScroll';
 import { useLoop } from '@/hooks/useLoop';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
@@ -21,7 +21,8 @@ import { Bone, Skeleton } from '@/components/Skeleton';
 import { BookGridBones, RowBones } from '@/components/skeletons';
 
 /**
- * Tab Tài liệu (GET /documents): tìm + lọc chủ đề (dính trên cùng) · Tài liệu của tôi · Video · PDF · Sách.
+ * Tab Tài liệu (GET /documents): header (tiêu đề + nút tìm kiếm → /search?scope=documents) · lọc chủ đề (dính trên cùng)
+ * · Tài liệu của tôi · Video · PDF · Sách.
  * Tải lại mỗi lần quay về tab (vừa mua / lưu ở nơi khác).
  */
 export function DocumentsScreen() {
@@ -36,13 +37,12 @@ export function DocumentsScreen() {
   );
 
   const [topic, setTopic] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
   const [scrollY, setScrollY] = useState(0);
   const scrollRef = useRef<ScrollViewInstance>(null);
   // Mở sách / video rồi quay lại: giữ vị trí cuộn (web)
   const trackScroll = useKeepScroll(scrollRef);
 
-  const visible = useMemo(() => docs.filter((d) => (!topic || d.topicId === topic) && matchQuery(d, query)), [docs, topic, query]);
+  const visible = useMemo(() => docs.filter((d) => !topic || d.topicId === topic), [docs, topic]);
   const byType = (t: Doc['type']) => visible.filter((d) => d.type === t);
   const videos = byType('video').slice(0, 4);
   const pdfs = byType('pdf').slice(0, 4);
@@ -50,13 +50,26 @@ export function DocumentsScreen() {
 
   const savedCount = docs.filter((d) => d.saved).length;
   const boughtCount = docs.filter((d) => d.bought).length;
-  const searching = query.trim().length > 0;
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+      {/* Header cố định giống tab Khoá học: tiêu đề + nút tìm kiếm (mở màn Tìm kiếm, chỉ tìm tài liệu) */}
+      <View style={[styles.header, { paddingTop: topInset, backgroundColor: colors.bg }]}>
+        <Text accessibilityRole="header" style={[type.screenTitle, styles.grow, { color: colors.ink900 }]}>
+          Tài liệu
+        </Text>
+        <Pressable
+          accessibilityRole="search"
+          accessibilityLabel="Tìm video, PDF, sách, tác giả"
+          onPress={() => router.push({ pathname: '/search', params: { scope: 'documents' } })}
+          style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? colors.surfaceAlt : colors.card, borderColor: colors.line }]}
+        >
+          <Icon name="search" color={colors.ink900} />
+        </Pressable>
+      </View>
       <ScrollView
         ref={scrollRef}
-        stickyHeaderIndices={[1]}
+        stickyHeaderIndices={[0]}
         scrollEventThrottle={16}
         onScroll={(e) => {
           setScrollY(e.nativeEvent.contentOffset.y);
@@ -66,38 +79,14 @@ export function DocumentsScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + SCROLL_TOP_SPACE + 8 }}
       >
-        {/* 0 · Tiêu đề (cuộn đi) */}
-        <View style={[styles.titleWrap, { paddingTop: topInset }]}>
-          <Text accessibilityRole="header" style={[type.screenTitle, { color: colors.ink900 }]}>
-            Tài liệu
-          </Text>
-        </View>
-
-        {/* 1 · Tìm + chủ đề (dính trên cùng) */}
-        <View style={[styles.sticky, { backgroundColor: colors.bg, borderBottomColor: scrollY > 60 ? colors.line : 'transparent' }]}>
-          <View style={[styles.search, { backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.shadowCard }]}>
-            <Icon name="search" size={20} color={colors.ink600} />
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Tìm video, PDF, sách, tác giả…"
-              placeholderTextColor={colors.ink600}
-              accessibilityLabel="Tìm tài liệu"
-              returnKeyType="search"
-              style={[type.input, styles.input, { color: colors.ink900 }]}
-            />
-            {searching && (
-              <Pressable accessibilityRole="button" accessibilityLabel="Xoá tìm kiếm" onPress={() => setQuery('')} hitSlop={8} style={[styles.clear, { backgroundColor: colors.surfaceAlt }]}>
-                <Icon name="close" size={14} color={colors.ink600} />
-              </Pressable>
-            )}
-          </View>
+        {/* 0 · Lọc chủ đề (dính trên cùng khi cuộn) */}
+        <View style={[styles.sticky, { backgroundColor: colors.bg, borderBottomColor: scrollY > 8 ? colors.line : 'transparent' }]}>
           <TopicChips value={topic} onChange={setTopic} />
         </View>
 
         {/* 2 · nội dung */}
         <View>
-          {!searching && !(loading && docs.length === 0) && <MyDocsBanner saved={savedCount} bought={boughtCount} />}
+          {!(loading && docs.length === 0) && <MyDocsBanner saved={savedCount} bought={boughtCount} />}
 
           {videos.length > 0 && (
             <View style={styles.section}>
@@ -145,7 +134,7 @@ export function DocumentsScreen() {
             </Pressable>
           ) : (
             videos.length + pdfs.length + books.length === 0 && (
-              <EmptyState text={searching ? `Không tìm thấy tài liệu cho "${query.trim()}".` : 'Chưa có tài liệu trong chủ đề này.'} />
+              <EmptyState text="Chưa có tài liệu trong chủ đề này." />
             )
           )}
         </View>
@@ -257,8 +246,9 @@ const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   small: { fontFamily: fonts.sans400, fontSize: 12, lineHeight: 16 },
   author: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16, marginBottom: 2 },
-  titleWrap: { paddingHorizontal: 20 },
-  sticky: { paddingTop: 16, paddingBottom: 12, gap: 12, borderBottomWidth: 1, zIndex: 10 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingBottom: 16, zIndex: 10 },
+  iconBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  sticky: { paddingBottom: 12, borderBottomWidth: 1, zIndex: 10 },
   search: { marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 10, height: 52, paddingLeft: 16, paddingRight: 10, borderRadius: 16, borderWidth: 1 },
   input: { flex: 1, minWidth: 0, height: '100%', paddingVertical: 0, ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null) },
   clear: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },

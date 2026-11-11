@@ -114,6 +114,16 @@ export async function apiDocuments(token: string): Promise<Doc[]> {
   return data.map(fromApiDoc);
 }
 
+/** Tìm tài liệu (video · PDF · sách) theo tên / tác giả, từng đợt `perPage` — màn Tìm kiếm. */
+export async function apiSearchDocuments(token: string, search: string, page: number, perPage: number): Promise<{ items: Doc[]; hasMore: boolean; total: number }> {
+  const res = await apiRequest<{ data: ApiDoc[]; meta: { has_more: boolean; total: number } }>(
+    'GET',
+    `/documents?q=${encodeURIComponent(search)}&page=${page}&per_page=${perPage}`,
+    { token },
+  );
+  return { items: res.data.map(fromApiDoc), hasMore: res.meta.has_more, total: res.meta.total };
+}
+
 /** GET /documents/topics — chủ đề để lọc. */
 export async function apiDocumentTopics(token: string): Promise<Topic[]> {
   const { data } = await apiRequest<{ data: { id: number; name: string }[] }>('GET', '/documents/topics', { token });

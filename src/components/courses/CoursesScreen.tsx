@@ -158,7 +158,7 @@ export function CoursesScreen() {
         <Pressable
           accessibilityRole="search"
           accessibilityLabel="Tìm khoá học, giảng viên"
-          onPress={() => router.push('/search')}
+          onPress={() => router.push({ pathname: '/search', params: { scope: 'courses' } })}
           style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? colors.surfaceAlt : colors.card, borderColor: colors.line }]}
         >
           <Icon name="search" color={colors.ink900} />

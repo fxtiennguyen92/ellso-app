@@ -87,7 +87,7 @@ export function HomeHeader({ student, tagline, scrolled, topInset, onHeroHeight 
       {/* Ô tìm kiếm nổi đè mép dưới hero. Chỉ là ô giả: bấm vào mở trang tìm kiếm riêng (/search) */}
       <Pressable
         accessibilityRole="search"
-        accessibilityLabel="Tìm khoá học, bài học, tài liệu"
+        accessibilityLabel="Tìm khoá học, tài liệu, sách"
         accessibilityHint="Mở trang tìm kiếm"
         onPress={() => router.push('/search')}
         style={({ pressed, hovered }) => [
@@ -102,11 +102,8 @@ export function HomeHeader({ student, tagline, scrolled, topInset, onHeroHeight 
       >
         <Icon name="search" size={20} color={colors.emerald700} />
         <Text style={[type.input, styles.placeholder, { color: colors.ink600 }]} numberOfLines={1}>
-          Tìm khoá học, bài học, tài liệu…
+          Tìm khoá học, tài liệu, sách...
         </Text>
-        <View style={[styles.filter, { backgroundColor: colors.emerald700 }]}>
-          <Icon name="filter" size={18} color={colors.onEmerald} />
-        </View>
       </Pressable>
     </Animated.View>
   );
@@ -161,10 +158,9 @@ const styles = StyleSheet.create({
     marginTop: -SEARCH_H / 2,
     marginHorizontal: 16,
     paddingLeft: 16,
-    paddingRight: 8,
+    paddingRight: 16,
     borderRadius: 18,
     borderWidth: 1,
   },
   placeholder: { flex: 1, minWidth: 0 },
-  filter: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 });
