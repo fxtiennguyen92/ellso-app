@@ -108,3 +108,10 @@ Nếu thấy chỗ nào trong code đang lệch so với branding, báo lại th
 - Thêm loại khối mới ở server (`LessonContent::BLOCK_TYPES`) → thêm type vào `src/data/lesson.ts` + render ở `StaticBlock`.
 - Tracking: `useLessonTracking` (phiên học, giây học thực, độ sâu cuộn, đọc hết, giây xem video) + `LessonFeedback` cuối bài. Lỗi tracking bỏ qua im lặng.
 - Expo chạy với `CI=1` không theo dõi file → sửa code xong phải khởi động lại Metro mới thấy thay đổi.
+
+## Tab Khoá học: Tiếp tục khoá học
+- Mục "Tiếp tục khoá học" (`courses/ContinueCourses.tsx`, `apiContinueCourses` trong `src/data/learning.ts`, GET `/v1/my/courses`) nằm ngay trên Khoá học E-learning: mọi khoá **đã mua / được cấp** (kể cả chưa học) + khoá **miễn phí đã học ≥ 1 bài** (`source`, `started` từ server). Khoá học xong xuống cuối. Bấm → bản đồ `/courses/[id]`. Không có khoá nào → ẩn mục.
+
+## Tab Tài liệu
+- Dữ liệu thật từ server (`useDocuments()`: `docs`, `topics`, `refresh`), tải lại khi quay về tab / mở Tài liệu của tôi. Không còn dữ liệu giả trong `src/data/documents.ts`.
+- Bấm sách → trang sách `/books/[id]`. Bấm video / PDF: mở được → trình xem `/documents/view/[id]` (nhóm `(learn)`, không thanh tab: video HLS + mốc thời gian; PDF qua trang đọc pdf.js của server); đang khoá → bảng "Cách mở tài liệu".

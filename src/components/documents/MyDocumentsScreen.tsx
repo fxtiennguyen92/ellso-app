@@ -1,13 +1,13 @@
-import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { Icon } from '@/components/Icon';
-import { getEnrolledCourses } from '@/data/courses';
+import { useAuth } from '@/auth/AuthProvider';
 import { formatDate } from '@/data/profile';
-import { type Doc, type DocType, matchQuery, typeLabel } from '@/data/documents';
+import { apiMyCourseIds, type Doc, type DocType, matchQuery, typeLabel } from '@/data/documents';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
@@ -21,11 +21,22 @@ const TABS: { type: DocType; label: string }[] = [
   { type: 'book', label: 'Sách' },
 ];
 
-/** Tài liệu của tôi: tab Video / PDF / Sách · Đã lưu · Đã mua · Từ khoá học của bạn. */
+/**
+ * Tài liệu của tôi: tab Video / PDF / Sách · Đã lưu · Đã mua · Từ khoá học của bạn (tài liệu gắn với khoá học viên đang có,
+ * GET /my/courses). Dữ liệu dùng chung với tab Tài liệu (useDocuments), tải lại khi mở màn.
+ */
 export function MyDocumentsScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { docs } = useDocuments();
+  const { docs, refresh } = useDocuments();
+  const { token } = useAuth();
+  const [owned, setOwned] = useState<Set<string>>(new Set());
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      if (token) apiMyCourseIds(token).then(setOwned).catch(() => {});
+    }, [refresh, token]),
+  );
 
   const [tab, setTab] = useState<DocType>('video');
   const [query, setQuery] = useState('');
@@ -33,13 +44,20 @@ export function MyDocumentsScreen() {
   const [scrollY, setScrollY] = useState(0);
 
   const mine = (t: DocType) => docs.filter((d) => d.type === t && (d.saved || d.bought));
+  // Mở màn: chọn sẵn tab đầu tiên có tài liệu (đừng mở vào tab trống khi tab khác có)
+  const picked = useRef(false);
+  useEffect(() => {
+    if (picked.current || !docs.length) return;
+    picked.current = true;
+    const first = TABS.find((t) => mine(t.type).length > 0);
+    if (first) setTab(first.type);
+  }, [docs]); // eslint-disable-line react-hooks/exhaustive-deps -- chỉ lần đầu có dữ liệu
   const ofTab = useMemo(() => docs.filter((d) => d.type === tab && matchQuery(d, query)), [docs, tab, query]);
   const saved = ofTab.filter((d) => d.saved);
   const bought = ofTab.filter((d) => d.bought && !d.saved);
 
   // Tài liệu đi kèm các khoá học viên đang có (theo khoá học / theo bài học)
   const fromCourses = useMemo(() => {
-    const owned = new Set(getEnrolledCourses().map((c) => c.id));
     const map = new Map<string, { courseId: string; title: string; total: number; open: number }>();
     docs
       .filter((d) => d.type === tab)
@@ -53,7 +71,7 @@ export function MyDocumentsScreen() {
         }),
       );
     return [...map.values()];
-  }, [docs, tab]);
+  }, [docs, tab, owned]);
 
   const unit = typeLabel[tab].unit;
 

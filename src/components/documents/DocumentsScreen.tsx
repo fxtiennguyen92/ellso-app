@@ -1,13 +1,13 @@
-import { router } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, TextInput, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Platform, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { Icon } from '@/components/Icon';
 import { SCROLL_TOP_SPACE, ScrollTopButton } from '@/components/ScrollTopButton';
-import { getWatching, matchQuery, type Doc, typeLabel } from '@/data/documents';
+import { matchQuery, type Doc, typeLabel } from '@/data/documents';
 import { useKeepScroll } from '@/hooks/useKeepScroll';
 import { useLoop } from '@/hooks/useLoop';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
@@ -18,12 +18,20 @@ import { fonts, type } from '@/theme/typography';
 import { BookCard, EmptyState, Grid, PdfRow, SectionHead, TopicChips, VideoCard } from './DocParts';
 import { useDocuments } from './DocumentsContext';
 
-/** Tab Tài liệu: tìm + lọc chủ đề (dính trên cùng) · Tài liệu của tôi · Đang xem · Video · PDF · Sách. */
+/**
+ * Tab Tài liệu (GET /documents): tìm + lọc chủ đề (dính trên cùng) · Tài liệu của tôi · Video · PDF · Sách.
+ * Tải lại mỗi lần quay về tab (vừa mua / lưu ở nơi khác).
+ */
 export function DocumentsScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const topInset = useScreenTopInset();
-  const { docs, openDoc } = useDocuments();
+  const { docs, loading, failed, refresh } = useDocuments();
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
+  );
 
   const [topic, setTopic] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -40,8 +48,6 @@ export function DocumentsScreen() {
 
   const savedCount = docs.filter((d) => d.saved).length;
   const boughtCount = docs.filter((d) => d.bought).length;
-  const w = getWatching();
-  const watching = docs.find((d) => d.id === w.docId);
   const searching = query.trim().length > 0;
 
   return (
@@ -91,36 +97,6 @@ export function DocumentsScreen() {
         <View>
           {!searching && <MyDocsBanner saved={savedCount} bought={boughtCount} />}
 
-          {!searching && watching && (
-            <View style={styles.section}>
-              <SectionHead title="Đang xem" />
-              <Pressable
-                accessibilityRole="link"
-                accessibilityLabel={`Tiếp tục ${watching.title}, đã xem ${w.progress}%, ${w.remaining}`}
-                onPress={() => openDoc(watching)}
-                style={({ pressed }) => [styles.watching, { backgroundColor: colors.card, borderColor: colors.line, opacity: pressed ? 0.85 : 1 }]}
-              >
-                <View style={[styles.watchIcon, { backgroundColor: illo.typeVideo }]}>
-                  <Icon name="video" size={26} strokeWidth={1.8} color="#ffffff" />
-                </View>
-                <View style={styles.grow}>
-                  <Text style={[styles.author, { color: colors.ink600 }]} numberOfLines={1}>
-                    {watching.author}
-                  </Text>
-                  <Text style={[styles.watchTitle, { color: colors.ink900 }]} numberOfLines={1}>
-                    {watching.title}
-                  </Text>
-                  <View style={styles.progressRow}>
-                    <View style={[styles.track, { backgroundColor: colors.line }]}>
-                      <View style={[styles.fill, { width: `${w.progress}%`, backgroundColor: colors.emerald500 }]} />
-                    </View>
-                    <Text style={[type.chip, { color: colors.emerald700 }]}>{w.remaining}</Text>
-                  </View>
-                </View>
-              </Pressable>
-            </View>
-          )}
-
           {videos.length > 0 && (
             <View style={styles.section}>
               <SectionHead title={typeLabel.video.title} onAll={() => router.push('/documents/videos')} />
@@ -152,8 +128,18 @@ export function DocumentsScreen() {
             </View>
           )}
 
-          {videos.length + pdfs.length + books.length === 0 && (
-            <EmptyState text={searching ? `Không tìm thấy tài liệu cho "${query.trim()}".` : 'Chưa có tài liệu trong chủ đề này.'} />
+          {loading && docs.length === 0 ? (
+            <View style={styles.loading}>
+              <ActivityIndicator color={colors.emerald700} />
+            </View>
+          ) : failed && docs.length === 0 ? (
+            <Pressable accessibilityRole="button" onPress={refresh} style={styles.loading}>
+              <Text style={[type.label, { color: colors.emerald700 }]}>Không tải được tài liệu. Bấm để thử lại</Text>
+            </Pressable>
+          ) : (
+            videos.length + pdfs.length + books.length === 0 && (
+              <EmptyState text={searching ? `Không tìm thấy tài liệu cho "${query.trim()}".` : 'Chưa có tài liệu trong chủ đề này.'} />
+            )
           )}
         </View>
       </ScrollView>
@@ -271,6 +257,7 @@ const styles = StyleSheet.create({
   clear: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 
   section: { paddingTop: 36, paddingHorizontal: 20, gap: 16 },
+  loading: { paddingVertical: 48, alignItems: 'center' },
 
   banner: { marginTop: 16, marginHorizontal: 20, overflow: 'hidden', flexDirection: 'row', alignItems: 'center', gap: 18, paddingVertical: 18, paddingLeft: 20, paddingRight: 16, borderRadius: 22 },
   bannerRing: { position: 'absolute', width: 140, height: 140, borderRadius: 70, borderWidth: 22, right: -46, top: -60 },
@@ -290,10 +277,4 @@ const styles = StyleSheet.create({
   statLabel: { fontFamily: fonts.sans400, fontSize: 13, lineHeight: 18 },
   statDivider: { width: 1, height: 18 },
 
-  watching: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16, borderRadius: 20, borderWidth: 1 },
-  watchIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  watchTitle: { fontFamily: fonts.sans600, fontSize: 15, lineHeight: 22 },
-  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
-  track: { flex: 1, height: 6, borderRadius: 9999, overflow: 'hidden' },
-  fill: { height: 6, borderRadius: 9999 },
 });

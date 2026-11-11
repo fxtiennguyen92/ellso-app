@@ -94,7 +94,14 @@ function AppShell() {
           // DocumentsProvider: trạng thái đã lưu + bảng cách mở tài liệu dùng chung cho tab Tài liệu, Home và trang sách (ngoài tab)
           // CartProvider: giỏ hàng dùng chung (tab Giỏ hàng chỉ hiện khi có món), bọc ngoài để bảng cách mở tài liệu cũng thêm vào giỏ được
           <CartProvider>
-          <DocumentsProvider onView={(doc) => router.push(`/documents/view/${doc.id}`)}>
+          <DocumentsProvider
+            // Tài liệu đã mở được: sách → trình đọc cả cuốn; video / PDF → trình xem
+            onView={(doc) =>
+              doc.type === 'book'
+                ? router.push({ pathname: '/books/[id]/read', params: { id: doc.id, mode: 'full' } })
+                : router.push({ pathname: '/documents/view/[id]', params: { id: doc.id } })
+            }
+          >
           {/* Chặn theo trạng thái đăng nhập: đổi status (đăng nhập / đổi mật khẩu / đăng xuất) là router tự chuyển nhóm màn. */}
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
             <Stack.Protected guard={signedIn}>
@@ -105,6 +112,7 @@ function AppShell() {
               {/* Bản đồ bài học: ngoài nhóm (tabs) để không có thanh tab, đường dẫn vẫn /courses/[id] */}
               <Stack.Screen name="(learn)/courses/[id]" />
               <Stack.Screen name="(learn)/lessons/[id]" />
+              <Stack.Screen name="(learn)/documents/view/[id]" />
               <Stack.Screen name="books/[id]/index" />
               <Stack.Screen name="books/[id]/read" />
               <Stack.Screen name="placement-tests/[id]/index" />

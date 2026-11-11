@@ -1,9 +1,8 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { useAuth } from '@/auth/AuthProvider';
 import { Icon } from '@/components/Icon';
-import { apiPlayVideo, type VideoData } from '@/data/lesson';
+import type { VideoChapter } from '@/data/lesson';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/typography';
 
@@ -11,13 +10,24 @@ import { PlatformPlayer } from './PlatformPlayer';
 
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
+export type VideoBlockData = { duration_seconds: number | null; caption?: string; chapters: VideoChapter[] };
+
 /**
- * Video bài học: ảnh chờ + nút phát → xin link HLS có hạn (POST …/play) → phát. Mục lục (chương) bấm để tua.
- * `onWatch(giây)` báo số giây thực sự xem (đang phát, không tính tua) để thống kê.
+ * Video (bài học / tài liệu video): ảnh chờ + nút phát → `load()` xin link HLS có hạn (POST …/play) → phát. Mục lục bấm để tua.
+ * `autoStart`: tải và phát ngay khi mở (trình xem tài liệu). `onWatch(giây)` báo số giây thực sự xem (không tính tua).
  */
-export function VideoBlock({ lessonId, data, onWatch }: { lessonId: number; data: VideoData; onWatch: (seconds: number) => void }) {
+export function VideoBlock({
+  data,
+  load,
+  onWatch,
+  autoStart = false,
+}: {
+  data: VideoBlockData;
+  load: () => Promise<string>;
+  onWatch?: (seconds: number) => void;
+  autoStart?: boolean;
+}) {
   const { colors } = useTheme();
-  const { token } = useAuth();
   const [url, setUrl] = useState<string | null>(null);
   const [state, setState] = useState<'idle' | 'loading' | 'error'>('idle');
   const [seek, setSeek] = useState<{ t: number; n: number } | null>(null);
@@ -29,11 +39,9 @@ export function VideoBlock({ lessonId, data, onWatch }: { lessonId: number; data
       if (at !== undefined) setSeek((s) => ({ t: at, n: (s?.n ?? 0) + 1 }));
       return;
     }
-    if (!token) return;
     setState('loading');
     try {
-      const r = await apiPlayVideo(token, lessonId, data.video_id);
-      setUrl(r.url);
+      setUrl(await load());
       setState('idle');
       if (at) setSeek({ t: at, n: 1 });
     } catch {
@@ -46,8 +54,12 @@ export function VideoBlock({ lessonId, data, onWatch }: { lessonId: number; data
     const prev = lastT.current;
     lastT.current = t;
     // Chỉ cộng khi đang phát và tiến đều (bỏ qua tua tới / lui)
-    if (playing && prev !== null && t > prev && t - prev <= 2.5) onWatch(t - prev);
+    if (playing && prev !== null && t > prev && t - prev <= 2.5) onWatch?.(t - prev);
   };
+
+  useEffect(() => {
+    if (autoStart) start();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- chỉ một lần khi mở
 
   const chapters = data.chapters ?? [];
   const activeIdx = chapters.reduce((acc, c, i) => (now >= c.start ? i : acc), -1);

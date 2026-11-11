@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useId } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
@@ -14,7 +15,8 @@ export const coursePalette = (id: number) => chapterPalette[CHAPTER_COLOR_ORDER[
  */
 export function CourseCover({ id, coverUrl, iconSize = 64 }: { id: number; coverUrl: string | null; iconSize?: number }) {
   const pal = coursePalette(id);
-  const gid = `courseCover-${id}`;
+  // id gradient riêng cho mỗi lần vẽ: cùng một khoá có thể hiện 2 nơi (Tiếp tục + danh sách) — trùng id thì web mất nền
+  const gid = `courseCover-${id}-${useId().replace(/:/g, '')}`;
   return (
     <View style={[StyleSheet.absoluteFill, { backgroundColor: pal.base }]}>
       {coverUrl ? (

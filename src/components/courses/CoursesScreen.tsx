@@ -16,6 +16,7 @@ import {
   type CatalogCourse,
   type Category,
 } from '@/data/courses';
+import { apiContinueCourses, type ContinueCourse } from '@/data/learning';
 import { apiPlacementTests, type PlacementTestSummary } from '@/data/placement';
 import { useDragScroll } from '@/hooks/useDragScroll';
 import { useKeepScroll } from '@/hooks/useKeepScroll';
@@ -23,13 +24,15 @@ import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
+import { ContinueCourses } from './ContinueCourses';
 import { CourseCard } from './CourseCard';
 import { PlacementTests } from './PlacementTests';
 
 
 /**
  * Tab Khoá học: header (tiêu đề + nút tìm kiếm) · Đánh giá năng lực (bài test đầu vào, lưới 2 cột) · Khoá học E-learning
- * (nối CMS, lọc danh mục, tải thêm khi cuộn gần cuối; bấm thẻ → /catalog/[id]). Mục "Đang học" tạm ẩn. Giỏ hàng nằm ở tab riêng (BottomBar).
+ * (nối CMS, lọc danh mục, tải thêm khi cuộn gần cuối; bấm thẻ → /catalog/[id]). Giữa hai mục: Tiếp tục khoá học (khoá đã mua / được cấp
+ * + khoá miễn phí đã học ≥ 1 bài → bản đồ lộ trình). Giỏ hàng nằm ở tab riêng (BottomBar).
  */
 export function CoursesScreen() {
   const { colors } = useTheme();
@@ -40,6 +43,7 @@ export function CoursesScreen() {
   const { showToast } = useDocuments();
 
   const [tests, setTests] = useState<PlacementTestSummary[]>([]);
+  const [continuing, setContinuing] = useState<ContinueCourse[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [category, setCategory] = useState<string | null>(null);
   const [courses, setCourses] = useState<CatalogCourse[]>([]);
@@ -64,6 +68,8 @@ export function CoursesScreen() {
     useCallback(() => {
       if (!token) return;
       apiPlacementTests(token).then(setTests).catch(() => {});
+      // Tiếp tục khoá học: tải lại khi quay về tab (vừa học xong bài thì % đổi)
+      apiContinueCourses(token).then(setContinuing).catch(() => {});
     }, [token]),
   );
 
@@ -157,6 +163,9 @@ export function CoursesScreen() {
       >
         {/* BÀI TEST ĐẦU VÀO */}
         <PlacementTests tests={tests} />
+
+        {/* TIẾP TỤC KHOÁ HỌC (ẩn khi chưa có khoá nào) */}
+        <ContinueCourses courses={continuing} />
 
         {/* KHOÁ HỌC E-LEARNING */}
         <View style={[styles.section, { paddingTop: 32, paddingHorizontal: 0 }]}>

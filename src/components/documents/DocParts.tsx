@@ -1,9 +1,10 @@
+import { router } from 'expo-router';
 import { Image } from 'expo-image';
 import { useRef, type ReactNode } from 'react';
 import { Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { type Doc, topics } from '@/data/documents';
+import { type Doc } from '@/data/documents';
 import { useDragScroll } from '@/hooks/useDragScroll';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -201,13 +202,12 @@ export function PdfRow({ doc }: { doc: Doc }) {
   );
 }
 
-/** `onOpen`: thay hành vi bấm mặc định (vd Trang chủ mở trang thông tin sách /books/[id]). */
+/** Bấm sách → trang thông tin sách /books/[id] (đọc thử / mua / đọc nằm ở đó). `onOpen` để thay hành vi này. */
 export function BookCard({ doc, onOpen }: { doc: Doc; onOpen?: (doc: Doc) => void }) {
   const { colors } = useTheme();
-  const { openDoc } = useDocuments();
   return (
     <View style={styles.cardCol}>
-      <Pressable accessibilityRole="link" accessibilityLabel={a11yDoc(doc)} onPress={() => (onOpen ? onOpen(doc) : openDoc(doc))} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
+      <Pressable accessibilityRole="link" accessibilityLabel={a11yDoc(doc)} onPress={() => (onOpen ? onOpen(doc) : router.push({ pathname: '/books/[id]', params: { id: doc.id } }))} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
         <View style={styles.bookWrap}>
           <BookCover doc={doc} />
           <PriceBadge doc={doc} />
@@ -235,9 +235,9 @@ function PriceBadge({ doc }: { doc: Doc }) {
   const { colors } = useTheme();
   const a = primaryAccess(doc);
   const s = accessStyle(a, !!doc.bought, colors);
-  const fg = a.kind === 'buy' && !doc.bought ? chapterPalette[doc.cover].edge : s.fg;
+  const fg = a?.kind === 'buy' && !doc.bought ? chapterPalette[doc.cover].edge : s.fg;
   return (
-    <View style={[styles.priceBadge, { backgroundColor: a.kind === 'buy' && !doc.bought ? illo.badgeLight : s.bg }]} pointerEvents="none">
+    <View style={[styles.priceBadge, { backgroundColor: a?.kind === 'buy' && !doc.bought ? illo.badgeLight : s.bg }]} pointerEvents="none">
       <Text style={[styles.priceBadgeText, { color: fg }]} numberOfLines={1}>
         {s.short}
       </Text>
@@ -283,6 +283,7 @@ export function TopicChips({ value, onChange }: { value: string | null; onChange
   const { colors } = useTheme();
   const ref = useRef<ScrollViewInstance>(null);
   useDragScroll(ref);
+  const { topics } = useDocuments();
   const all = [{ id: null as string | null, name: 'Tất cả' }, ...topics];
   return (
     <ScrollView ref={ref} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} accessibilityLabel="Lọc theo chủ đề">

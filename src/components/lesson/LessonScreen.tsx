@@ -9,7 +9,7 @@ import { Icon, type IconName } from '@/components/Icon';
 import { Confetti } from '@/components/placement/Confetti';
 import { SCROLL_TOP_SPACE, ScrollTopButton } from '@/components/ScrollTopButton';
 import { useToast } from '@/components/Toast';
-import { apiLesson, apiMarkRead, type Lesson, lessonErrorKind, type LessonProgress, readingMinutes } from '@/data/lesson';
+import { apiLesson, apiMarkRead, apiPlayVideo, type Lesson, lessonErrorKind, type LessonProgress, readingMinutes } from '@/data/lesson';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 import { useTheme } from '@/theme/ThemeProvider';
 import { CHAPTER_COLOR_ORDER, type ChapterColor, chapterPalette } from '@/theme/tokens';
@@ -222,7 +222,14 @@ export function LessonScreen({ lessonId, color, courseId }: { lessonId: string; 
               );
             }
             if (b.type === 'video') {
-              return <VideoBlock key={b.id ?? i} lessonId={ready.id} data={b.data} onWatch={track.addVideo} />;
+              return (
+                <VideoBlock
+                  key={b.id ?? i}
+                  data={b.data}
+                  load={() => apiPlayVideo(token ?? '', ready.id, b.data.video_id).then((r) => r.url)}
+                  onWatch={track.addVideo}
+                />
+              );
             }
             return <StaticBlock key={b.id ?? i} block={b} accent={accent} onCopied={() => showToast('Đã sao chép code')} />;
           })}

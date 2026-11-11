@@ -96,3 +96,55 @@ export async function apiChoosePath(token: string, id: string | number, answers:
 }
 
 export const isNotEnrolled = (e: unknown) => e instanceof ApiError && e.status === 404;
+
+// ── Tiếp tục khoá học (tab Khoá học) ──────────────────────
+
+export type ContinueCourse = {
+  id: number;
+  title: string;
+  coverUrl: string | null;
+  percent: number;
+  completed: number;
+  total: number;
+  /** Bài học kế tiếp (null: chưa chọn lộ trình / còn bài đánh giá / đã xong hết). */
+  nextLesson: string | null;
+  needsPath: boolean;
+  needsPlacementTest: boolean;
+  started: boolean;
+  done: boolean;
+};
+
+type ApiMyCourseSummary = {
+  course: { id: number; title: string; cover_url: string | null };
+  needs_path: boolean;
+  needs_placement_test: boolean;
+  progress: { total: number; completed: number; percent: number | null };
+  next_lesson: { id: number; title: string } | null;
+  source: 'admin' | 'purchase' | 'free' | 'code';
+  started: boolean;
+  completed_at: string | null;
+};
+
+/**
+ * GET /my/courses → các khoá cho mục "Tiếp tục khoá học": mọi khoá đã mua / được cấp (kể cả chưa học),
+ * và khoá miễn phí đã học ít nhất 1 bài. Server đã xếp theo lần học gần nhất; khoá đã học xong xuống cuối.
+ */
+export async function apiContinueCourses(token: string): Promise<ContinueCourse[]> {
+  const { data } = await apiRequest<{ data: ApiMyCourseSummary[] }>('GET', '/my/courses', { token });
+  const list = data
+    .filter((d) => d.source !== 'free' || d.started)
+    .map((d) => ({
+      id: d.course.id,
+      title: d.course.title,
+      coverUrl: d.course.cover_url,
+      percent: d.progress.percent ?? 0,
+      completed: d.progress.completed,
+      total: d.progress.total,
+      nextLesson: d.next_lesson?.title ?? null,
+      needsPath: d.needs_path,
+      needsPlacementTest: d.needs_placement_test,
+      started: d.started,
+      done: d.completed_at !== null || (d.progress.total > 0 && d.progress.completed >= d.progress.total),
+    }));
+  return [...list.filter((c) => !c.done), ...list.filter((c) => c.done)];
+}
