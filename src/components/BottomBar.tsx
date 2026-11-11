@@ -1,10 +1,12 @@
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
+import { useCart } from '@/components/cart/CartContext';
 import { Icon, type IconName } from '@/components/Icon';
 import { useRevealStyle } from '@/components/splash/RevealContext';
+import { NATIVE_DRIVER } from '@/hooks/useLoop';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useTheme } from '@/theme/ThemeProvider';
 import { type } from '@/theme/typography';
@@ -16,6 +18,7 @@ const TABS: Record<string, { label: string; icon: IconName }> = {
   index: { label: 'Trang chủ', icon: 'home' },
   courses: { label: 'Khoá học', icon: 'courses' },
   documents: { label: 'Tài liệu', icon: 'documents' },
+  cart: { label: 'Giỏ hàng', icon: 'cart' },
   profile: { label: 'Hồ sơ', icon: 'profile' },
 };
 
@@ -34,6 +37,7 @@ const BAR_BORDER = 1;
 
 /**
  * Thanh điều hướng viên thuốc, nổi cách đáy 20px, căn giữa và chỉ rộng vừa các tab.
+ * Luôn tối ở cả chế độ sáng / tối (token nav*), tab đang chọn là khối emerald.
  * Đổi tab: khối 3D trượt sang tab mới (spring), tab cũ thu lại, tab mới giãn ra và hiện chữ;
  * cả thanh phình ra / co lại theo độ dài nhãn của tab đang chọn.
  *
@@ -46,7 +50,30 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
   const reduced = useReducedMotion();
   const reveal = useRevealStyle(4, 40);
 
-  const routes = state.routes.filter((r) => TABS[r.name]);
+  const { cart, anchorRef, landTick } = useCart();
+  // Icon Giỏ hàng "hứng" chấm xanh: nảy + lắc nhẹ mỗi lần chấm rơi trúng
+  const catchAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!landTick || reduced) return;
+    catchAnim.setValue(0);
+    Animated.timing(catchAnim, { toValue: 1, duration: 560, easing: Easing.out(Easing.quad), useNativeDriver: NATIVE_DRIVER }).start();
+  }, [landTick, catchAnim, reduced]);
+  // Bàn phím mở (vd ô mã khuyến mãi ở Giỏ hàng) → ẩn thanh tab để không nổi đè lên bàn phím / ô nhập
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardOpen(true));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardOpen(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  const currentName = state.routes[state.index]?.name;
+  // Tab Giỏ hàng (trước Hồ sơ) chỉ hiện khi giỏ có món, hoặc đang mở tab đó (vd vừa bỏ món cuối cùng ra)
+  const routes = useMemo(
+    () => state.routes.filter((r) => TABS[r.name] && (r.name !== 'cart' || cart.count > 0 || currentName === 'cart')),
+    [state.routes, cart.count, currentName],
+  );
   const activeIndex = Math.max(
     0,
     routes.findIndex((r) => r.key === state.routes[state.index]?.key),
@@ -115,7 +142,10 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
   const activePressed = pressedKey === routes[activeIndex]?.key;
 
   return (
-    <Animated.View pointerEvents="box-none" style={[styles.wrap, { bottom: 20 + insets.bottom }, reveal]}>
+    <Animated.View
+      pointerEvents={keyboardOpen ? 'none' : 'box-none'}
+      style={[styles.wrap, { bottom: 20 + insets.bottom }, reveal, keyboardOpen && styles.hidden]}
+    >
       {/* Đo nhãn chữ (ẩn) */}
       <View pointerEvents="none" style={styles.measure} aria-hidden>
         {routes.map((r) => (
@@ -135,7 +165,7 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
       <View
         accessibilityRole="tablist"
         accessibilityLabel="Điều hướng chính"
-        style={[styles.bar, { backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.shadowNav }]}
+        style={[styles.bar, { backgroundColor: colors.navBg, borderColor: colors.navLine, boxShadow: colors.navShadow }]}
       >
         <Animated.View style={[styles.track, frames ? { width: frames.trackWidth } : styles.trackStatic]}>
           {frames && (
@@ -146,11 +176,11 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                 {
                   left: frames.pillLeft,
                   width: frames.pillWidth,
-                  backgroundColor: colors.pillBottom,
+                  backgroundColor: colors.navPillBottom,
                   // Mép đáy đậm + quầng bóng = cảm giác khối nổi; nhấn xuống thì "lún" 2px
                   boxShadow: activePressed
-                    ? `0px 1px 0px ${colors.pillEdge}, 0px 3px 6px ${colors.pillGlow}`
-                    : `0px 3px 0px ${colors.pillEdge}, 0px 8px 16px ${colors.pillGlow}`,
+                    ? `0px 1px 0px ${colors.navPillEdge}, 0px 3px 6px ${colors.navPillGlow}`
+                    : `0px 3px 0px ${colors.navPillEdge}, 0px 8px 16px ${colors.navPillGlow}`,
                   transform: [{ translateY: activePressed ? 2 : 0 }],
                 },
               ]}
@@ -159,8 +189,8 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                 <Svg width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 10 10">
                   <Defs>
                     <LinearGradient id="pillFace" x1="0" y1="0" x2="0" y2="1">
-                      <Stop offset="0" stopColor={colors.pillTop} />
-                      <Stop offset="1" stopColor={colors.pillBottom} />
+                      <Stop offset="0" stopColor={colors.navPillTop} />
+                      <Stop offset="1" stopColor={colors.navPillBottom} />
                     </LinearGradient>
                   </Defs>
                   <Rect x="0" y="0" width="10" height="10" fill="url(#pillFace)" />
@@ -188,7 +218,7 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                 <Pressable
                   accessibilityRole="tab"
                   accessibilityState={{ selected: active }}
-                  accessibilityLabel={tab.label}
+                  accessibilityLabel={route.name === 'cart' && cart.count > 0 ? `${tab.label}, ${cart.count} sản phẩm` : tab.label}
                   onPressIn={() => setPressedKey(route.key)}
                   onPressOut={() => setPressedKey(null)}
                   onPress={() => {
@@ -206,9 +236,22 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                       { paddingLeft: frames ? lerp(PAD_IDLE, PAD_ACTIVE) : PAD_IDLE },
                     ]}
                   >
-                    <View style={styles.iconBox}>
+                    <Animated.View
+                      ref={route.name === 'cart' ? anchorRef : undefined}
+                      collapsable={false}
+                      style={[
+                        styles.iconBox,
+                        route.name === 'cart' && {
+                          transform: [
+                            { translateY: catchAnim.interpolate({ inputRange: [0, 0.2, 0.5, 1], outputRange: [0, 4, -3, 0] }) },
+                            { scale: catchAnim.interpolate({ inputRange: [0, 0.2, 0.5, 1], outputRange: [1, 0.86, 1.18, 1] }) },
+                            { rotate: catchAnim.interpolate({ inputRange: [0, 0.35, 0.6, 0.8, 1], outputRange: ['0deg', '-12deg', '9deg', '-4deg', '0deg'] }) },
+                          ],
+                        },
+                      ]}
+                    >
                       <Animated.View style={[StyleSheet.absoluteFill, { opacity: lerp(1, 0) }]}>
-                        <Icon name={tab.icon} color={colors.ink600} />
+                        <Icon name={tab.icon} color={colors.navIcon} />
                       </Animated.View>
                       <Animated.View
                         style={[
@@ -219,16 +262,17 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                           },
                         ]}
                       >
-                        <Icon name={tab.icon} color={colors.onEmerald} duotone />
+                        <Icon name={tab.icon} color={colors.navOn} duotone />
                       </Animated.View>
-                    </View>
+                      {route.name === 'cart' && cart.count > 0 ? <CartDot count={cart.count} /> : null}
+                    </Animated.View>
                     <Animated.Text
                       style={[
                         type.label,
                         styles.label,
                         {
                           width: labelW[route.name],
-                          color: colors.onEmerald,
+                          color: colors.navOn,
                           opacity: labelOpacity,
                           transform: [{ translateX: lerp(-8, 0) }],
                         },
@@ -247,7 +291,59 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
   );
 }
 
+/**
+ * Dấu chấm vàng trên icon tab Giỏ hàng (không ghi số): vòng sóng lan ra định kỳ để gây chú ý,
+ * nảy mạnh một lần mỗi khi số món thay đổi. Giảm chuyển động → chỉ chấm tĩnh.
+ */
+function CartDot({ count }: { count: number }) {
+  const { colors } = useTheme();
+  const reduced = useReducedMotion();
+  const pop = useRef(new Animated.Value(1)).current;
+  const ping = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (reduced) return;
+    pop.setValue(0.3);
+    Animated.spring(pop, { toValue: 1, stiffness: 300, damping: 9, mass: 1, useNativeDriver: NATIVE_DRIVER }).start();
+  }, [count, pop, reduced]);
+
+  useEffect(() => {
+    if (reduced) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(ping, { toValue: 1, duration: 1300, easing: Easing.out(Easing.quad), useNativeDriver: NATIVE_DRIVER }),
+        Animated.delay(900),
+        Animated.timing(ping, { toValue: 0, duration: 0, useNativeDriver: NATIVE_DRIVER }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [ping, reduced]);
+
+  return (
+    <View pointerEvents="none" style={styles.dotWrap}>
+      {!reduced && (
+        <Animated.View
+          style={[
+            styles.dotRing,
+            {
+              backgroundColor: colors.spark500,
+              opacity: ping.interpolate({ inputRange: [0, 1], outputRange: [0.7, 0] }),
+              transform: [{ scale: ping.interpolate({ inputRange: [0, 1], outputRange: [1, 2.2] }) }],
+            },
+          ]}
+        />
+      )}
+      <Animated.View style={[styles.dot, { backgroundColor: colors.spark500, transform: [{ scale: pop }] }]} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  dotWrap: { position: 'absolute', top: -2, right: -3, width: 9, height: 9, alignItems: 'center', justifyContent: 'center' },
+  dotRing: { position: 'absolute', width: 9, height: 9, borderRadius: 5 },
+  dot: { width: 9, height: 9, borderRadius: 5 },
+  hidden: { opacity: 0 },
   wrap: { position: 'absolute', left: 16, right: 16, alignItems: 'center' },
   measure: { position: 'absolute', opacity: 0, left: 0, top: 0, flexDirection: 'row' },
   bar: {

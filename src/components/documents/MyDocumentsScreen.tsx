@@ -1,19 +1,20 @@
-import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { Icon } from '@/components/Icon';
-import { getEnrolledCourses } from '@/data/courses';
+import { useAuth } from '@/auth/AuthProvider';
 import { formatDate } from '@/data/profile';
-import { type Doc, type DocType, matchQuery, typeLabel } from '@/data/documents';
+import { apiMyCourseIds, type Doc, type DocType, matchQuery, typeLabel } from '@/data/documents';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
 import { AccessChip, BookCover, EmptyState, PdfThumb, SaveButton, VideoCover } from './DocParts';
 import { useDocuments } from './DocumentsContext';
 import { SubHeader } from './SubHeader';
+import { RowBones } from '@/components/skeletons';
 
 const TABS: { type: DocType; label: string }[] = [
   { type: 'video', label: 'Video' },
@@ -21,11 +22,23 @@ const TABS: { type: DocType; label: string }[] = [
   { type: 'book', label: 'Sách' },
 ];
 
-/** Tài liệu của tôi: tab Video / PDF / Sách · Đã lưu · Đã mua · Từ khoá học của bạn. */
+/**
+ * Tài liệu của tôi: tab Video / PDF / Sách · Đã lưu · Đã mua · Từ khoá học của bạn (tài liệu gắn với khoá học viên đang có,
+ * GET /my/courses). Dữ liệu dùng chung với tab Tài liệu (useDocuments), tải lại khi mở màn.
+ */
 export function MyDocumentsScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { docs } = useDocuments();
+  const { docs, refresh, loading } = useDocuments();
+  const firstLoad = loading && docs.length === 0;
+  const { token } = useAuth();
+  const [owned, setOwned] = useState<Set<string>>(new Set());
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      if (token) apiMyCourseIds(token).then(setOwned).catch(() => {});
+    }, [refresh, token]),
+  );
 
   const [tab, setTab] = useState<DocType>('video');
   const [query, setQuery] = useState('');
@@ -33,13 +46,20 @@ export function MyDocumentsScreen() {
   const [scrollY, setScrollY] = useState(0);
 
   const mine = (t: DocType) => docs.filter((d) => d.type === t && (d.saved || d.bought));
+  // Mở màn: chọn sẵn tab đầu tiên có tài liệu (đừng mở vào tab trống khi tab khác có)
+  const picked = useRef(false);
+  useEffect(() => {
+    if (picked.current || !docs.length) return;
+    picked.current = true;
+    const first = TABS.find((t) => mine(t.type).length > 0);
+    if (first) setTab(first.type);
+  }, [docs]); // eslint-disable-line react-hooks/exhaustive-deps -- chỉ lần đầu có dữ liệu
   const ofTab = useMemo(() => docs.filter((d) => d.type === tab && matchQuery(d, query)), [docs, tab, query]);
   const saved = ofTab.filter((d) => d.saved);
   const bought = ofTab.filter((d) => d.bought && !d.saved);
 
   // Tài liệu đi kèm các khoá học viên đang có (theo khoá học / theo bài học)
   const fromCourses = useMemo(() => {
-    const owned = new Set(getEnrolledCourses().map((c) => c.id));
     const map = new Map<string, { courseId: string; title: string; total: number; open: number }>();
     docs
       .filter((d) => d.type === tab)
@@ -53,7 +73,7 @@ export function MyDocumentsScreen() {
         }),
       );
     return [...map.values()];
-  }, [docs, tab]);
+  }, [docs, tab, owned]);
 
   const unit = typeLabel[tab].unit;
 
@@ -79,9 +99,7 @@ export function MyDocumentsScreen() {
                 onPress={() => setTab(t.type)}
                 style={[styles.tab, on && { backgroundColor: colors.emerald700 }]}
               >
-                <Text style={[type.label, { color: on ? colors.onEmerald : colors.ink600 }]}>
-                  {t.label} <Text style={[styles.tabCount, { opacity: on ? 0.8 : 1 }]}>{mine(t.type).length}</Text>
-                </Text>
+                <Text style={[type.label, { color: on ? colors.onEmerald : colors.ink600 }]}>{t.label}</Text>
               </Pressable>
             );
           })}
@@ -96,10 +114,11 @@ export function MyDocumentsScreen() {
         contentContainerStyle={{ paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 16 }}
       >
         <Group title="Đã lưu" count={saved.length}>
+          {firstLoad && <RowBones count={3} thumb={88} />}
           {saved.map((d) => (
             <MyDocRow key={d.id} doc={d} withSave />
           ))}
-          {saved.length === 0 && <EmptyState text={query.trim() ? 'Không tìm thấy.' : `Chưa lưu ${unit} nào. Bấm biểu tượng lưu trên tài liệu để thêm vào đây.`} />}
+          {saved.length === 0 && !firstLoad && <EmptyState text={query.trim() ? 'Không tìm thấy.' : `Chưa lưu ${unit} nào. Bấm biểu tượng lưu trên tài liệu để thêm vào đây.`} />}
         </Group>
 
         {bought.length > 0 && (
@@ -149,21 +168,25 @@ function Group({ title, count, children }: { title: string; count: number; child
   return (
     <View style={styles.section}>
       <Text accessibilityRole="header" style={[type.h2, { color: colors.ink900 }]}>
-        {title} <Text style={[styles.count, { color: colors.ink600 }]}>{count}</Text>
+        {title}
+        {count > 0 ? <Text style={[styles.count, { color: colors.ink600 }]}> {count}</Text> : null}
       </Text>
       {children}
     </View>
   );
 }
 
-/** Dòng tài liệu trong "Tài liệu của tôi": bìa bên trái theo loại · nút bỏ lưu (Đã lưu) hoặc mũi tên (Đã mua). */
-function MyDocRow({ doc, withSave = false }: { doc: Doc; withSave?: boolean }) {
+/**
+ * Dòng tài liệu (Tài liệu của tôi, Tìm kiếm): bìa bên trái theo loại · nút lưu (withSave) hoặc mũi tên.
+ * `onOpen` thay hành vi bấm mặc định (mở tài liệu / bảng Cách mở).
+ */
+export function MyDocRow({ doc, withSave = false, onOpen }: { doc: Doc; withSave?: boolean; onOpen?: (doc: Doc) => void }) {
   const { colors } = useTheme();
   const { openDoc } = useDocuments();
   const sub = doc.bought && doc.boughtAt && !withSave ? `${doc.author} · Mua ngày ${formatDate(doc.boughtAt)}` : doc.author;
   return (
     <View style={[styles.myRow, { backgroundColor: colors.card, borderColor: colors.line }]}>
-      <Pressable accessibilityRole="link" accessibilityLabel={doc.title} onPress={() => openDoc(doc)} style={({ pressed }) => [styles.myMain, { opacity: pressed ? 0.85 : 1 }]}>
+      <Pressable accessibilityRole="link" accessibilityLabel={doc.title} onPress={() => (onOpen ?? openDoc)(doc)} style={({ pressed }) => [styles.myMain, { opacity: pressed ? 0.85 : 1 }]}>
         <View style={styles.myCover}>
           {doc.type === 'video' && <VideoCover doc={doc} height="100%" compact />}
           {doc.type === 'pdf' && (
@@ -207,7 +230,6 @@ const styles = StyleSheet.create({
   author: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16, marginBottom: 4 },
   tabs: { marginHorizontal: 20, flexDirection: 'row', padding: 4, gap: 4, borderRadius: 16, borderWidth: 1 },
   tab: { flex: 1, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  tabCount: { fontFamily: fonts.sans500 },
   section: { paddingTop: 32, paddingHorizontal: 20, gap: 12 },
   count: { fontFamily: fonts.sans500, fontSize: 14 },
 

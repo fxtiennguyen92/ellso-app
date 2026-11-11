@@ -1,13 +1,7 @@
 /**
- * DỮ LIỆU TẠM cho màn Hồ sơ — chưa nối CMS.
- * Quy tắc giới thiệu bạn bè (đã chốt 22/10/2026):
- * - mỗi học viên có 1 mã + 1 link + 1 mã QR riêng;
- * - người được mời mua gói thành viên → người mời nhận `ratePercent`% giá trị đơn thành credit (tỉ lệ lưu ở DB, mặc định 10%);
- * - 1 credit = 1.000đ, không hết hạn, trừ không giới hạn vào mọi thanh toán.
+ * Màn Hồ sơ: tên, email, mã giới thiệu, số xu, gói thành viên lấy từ GET /me (AuthProvider).
+ * Phần dưới đây là DỮ LIỆU TẠM còn lại (mẫu link giới thiệu…) + danh sách trang con.
  */
-import { formatPrice } from './courses';
-
-export const CREDIT_VND = 1000;
 
 export type Profile = {
   name: string;
@@ -51,21 +45,32 @@ export const formatDate = (iso: string) => {
   return `${d}/${m}/${y}`;
 };
 
+/** "2026-11-30T…" (ISO) → "30/11/2026" */
+export const dmy = (iso: string) => {
+  const d = new Date(iso);
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+};
+
+/** Số ngày còn lại tới ISO (làm tròn lên, tối thiểu 0). */
+export const daysUntil = (iso: string) => Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000));
+
+/** 1250 → "1.250" */
+export const groupThousands = (n: number) => String(Math.max(0, Math.floor(n))).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
 /** Link hiển thị gọn (bỏ https://) */
 export const displayLink = (url: string) => url.replace(/^https?:\/\//, '');
 
-export const creditToVnd = (credit: number) => formatPrice(credit * CREDIT_VND);
-
-/** Các trang con của Hồ sơ (đang là màn tạm) — key = đường dẫn /profile/<key>. */
+/** Trang con của Hồ sơ — key = đường dẫn /profile/<key> (tiếng Anh). */
 export const profileSections = {
-  'thong-tin': 'Thông tin cá nhân',
-  'doi-mat-khau': 'Đổi mật khẩu',
-  'lich-su-mua-hang': 'Lịch sử mua hàng',
-  'ma-kich-hoat': 'Nhập mã kích hoạt',
-  'quan-ly-goi': 'Quản lý gói',
-  'lich-su-credit': 'Lịch sử credit',
-  'tro-giup': 'Trung tâm trợ giúp',
-  'dieu-khoan': 'Điều khoản & quyền riêng tư',
+  'personal-info': 'Thông tin cá nhân',
+  password: 'Mật khẩu',
+  devices: 'Thiết bị',
+  friends: 'Bạn bè',
+  wallet: 'Xu của tôi',
+  payments: 'Lịch sử thanh toán',
+  membership: 'Gói thành viên',
+  help: 'Trung tâm trợ giúp',
+  terms: 'Điều khoản & quyền riêng tư',
 } as const;
 
 export type ProfileSection = keyof typeof profileSections;

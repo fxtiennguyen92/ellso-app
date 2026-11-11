@@ -1,39 +1,118 @@
 import * as Clipboard from 'expo-clipboard';
-import { router } from 'expo-router';
-import { useState } from 'react';
-import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
+import { Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
+import { useAuth } from '@/auth/AuthProvider';
 import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { BottomSheet } from '@/components/BottomSheet';
+import { HeroBackground } from '@/components/HeroBackground';
 import { Icon } from '@/components/Icon';
 import { QrCode } from '@/components/QrCode';
 import { useToast } from '@/components/Toast';
-import { displayLink, formatDate, getProfile, type ProfileSection } from '@/data/profile';
-import { useScreenTopInset } from '@/hooks/useScreenTopInset';
+import { UserAvatar } from '@/components/UserAvatar';
+import { daysUntil, displayLink, dmy, getProfile, groupThousands, type ProfileSection } from '@/data/profile';
+import { NATIVE_DRIVER } from '@/hooks/useLoop';
+import { appVersionLabel } from '@/lib/appVersion';
 import { useTheme } from '@/theme/ThemeProvider';
 import { illo } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
 
-import { ReferralCard } from './ReferralCard';
 import { RowIcon, SettingsGroup, SettingsRow, settingsStyles, ThemeSegment, Toggle } from './SettingsParts';
 
+// Trang con của Hồ sơ: /profile/<key> (tên tiếng Anh). Màn đã làm nằm ngoài thanh tab (nhóm (account)),
+// các key còn lại là trang tạm (tabs)/profile/[section].
 const go = (section: ProfileSection) => router.push(`/profile/${section}`);
 
-/** Tab Hồ sơ. */
+const COMPACT_H = 52;
+/** Khoảng đệm dưới hàng nội dung của thanh thu gọn. */
+const BAR_PAD = 10;
+const HERO_RADIUS = 32;
+
+/**
+ * Tab Hồ sơ.
+ * - Hero emerald (cùng kiểu Home): tiêu đề + nút QR, avatar lớn (bấm → Thông tin cá nhân), tên, email, loại tài khoản:
+ *   chưa có gói → pill kính mờ (chữ trắng) "Tài khoản cơ bản" + nút "Nâng cấp"; có gói → pill vàng "Tài khoản thành viên", bấm mở sheet
+ *   (ngày bắt đầu, ngày hết hạn, nút Gia hạn). Số xu đã chuyển sang màn Thông tin cá nhân.
+ * - Các nhóm cài đặt: icon một kiểu (Lucide, ô mint). Giao diện Sáng / Tối / Hệ thống lưu trên máy.
+ * - Cuộn: hàng tiêu đề + nút luôn cố định; hero cuộn lên rồi dính lại làm nền thanh thu gọn (một lớp nền liền mạch),
+ *   tiêu đề đổi chéo thành avatar nhỏ + tên + loại tài khoản (chi tiết ở phần "Thu gọn header"). Nút làm mới (bên trái QR) tải lại số xu / gói / ảnh; mỗi lần vào tab cũng tự làm mới.
+ * - Phiên bản lấy từ bản cài (appVersionLabel), không đặt cứng.
+ */
 export function ProfileScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const topInset = useScreenTopInset();
-  const profile = getProfile();
-  const { referral } = profile;
+  const { user, logout, refreshUser } = useAuth();
 
-  const [scrollY, setScrollY] = useState(0);
+  // Mã / link giới thiệu: mã thật từ tài khoản, link theo mẫu tạm
+  const mock = getProfile();
+  const code = user?.referralCode ?? mock.referral.code;
+  const referralLink = `https://ellso.app/r/${code}`;
+  const name = user?.name ?? '';
+  const initials = user?.initials ?? '?';
+  const membership =
+    user?.membership?.active && user.membership.endsAt ? { endsAt: user.membership.endsAt, startedAt: user.membership.startedAt } : null;
+
+  const topInset = Platform.OS === 'web' ? 20 : insets.top + 8;
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const [heroH, setHeroH] = useState(320);
+  const [compact, setCompact] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [memberOpen, setMemberOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [systemNotif, setSystemNotif] = useState(true);
   const [toast, showToast] = useToast();
+
+  // Mỗi lần vào tab: làm mới số xu / gói (lỗi mạng bỏ qua, giữ số cũ)
+  useFocusEffect(
+    useCallback(() => {
+      refreshUser();
+    }, [refreshUser]),
+  );
+
+  // Nút làm mới trên thanh trên cùng (không dùng kéo xuống: lộ nền hero phía trên, không đẹp).
+  // Icon quay liên tục trong lúc tải, tối thiểu 1 vòng để người dùng thấy đã bấm.
+  const spin = useRef(new Animated.Value(0)).current;
+  const onRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    spin.setValue(0);
+    const loop = Animated.loop(Animated.timing(spin, { toValue: 1, duration: 700, easing: Easing.linear, useNativeDriver: NATIVE_DRIVER }));
+    loop.start();
+    await Promise.all([refreshUser(), new Promise((res) => setTimeout(res, 700))]);
+    loop.stop();
+    spin.setValue(0);
+    setRefreshing(false);
+    showToast('Đã cập nhật hồ sơ');
+  };
+
+  // Thu gọn header — mọi chuyển động theo cùng một mốc `collapse` (= cuộn bao nhiêu thì hero còn đúng bằng thanh thu gọn):
+  // - Hero cuộn lên bình thường. Nền thanh thu gọn là bản sao nền hero vẽ CÙNG kích thước và CÙNG vị trí với phần đáy hero,
+  //   chỉ bật đúng lúc mép dưới hero chạm mép dưới thanh → hai lớp trùng khít từng điểm, chuyển đổi không nhìn thấy.
+  //   (Không "dính" hero bằng transform trong ScrollView: trên web lớp SVG bên trong có lúc trễ, lệch nền.)
+  // - Khối tên trên hero trôi chậm (parallax), thu nhỏ và mờ dần trong nửa đầu quãng thu gọn.
+  // - Tiêu đề "Hồ sơ" mờ hẳn rồi avatar nhỏ + tên mới trượt vào (nối tiếp, không chồng chữ lên nhau).
+  // - Bóng đổ của thanh hiện dần quanh mốc dính.
+  const barH = topInset + COMPACT_H + BAR_PAD;
+  const collapse = Math.max(1, heroH - barH);
+  const at = (f: number) => collapse * f;
+  const barBg = scrollY.interpolate({ inputRange: [collapse - 0.5, collapse], outputRange: [0, 1], extrapolate: 'clamp' });
+  const barShadow = scrollY.interpolate({ inputRange: [collapse, collapse + 28], outputRange: [0, 1], extrapolate: 'clamp' });
+  const identityOpacity = scrollY.interpolate({ inputRange: [0, at(0.45)], outputRange: [1, 0], extrapolate: 'clamp' });
+  const identityShift = scrollY.interpolate({ inputRange: [-120, 0, collapse], outputRange: [-30, 0, collapse * 0.45], extrapolate: 'clamp' });
+  const identityScale = scrollY.interpolate({ inputRange: [-120, 0, collapse], outputRange: [1.08, 1, 0.85], extrapolate: 'clamp' });
+  const titleOut = scrollY.interpolate({ inputRange: [at(0.3), at(0.55)], outputRange: [1, 0], extrapolate: 'clamp' });
+  const compactIn = scrollY.interpolate({ inputRange: [at(0.6), at(0.95)], outputRange: [0, 1], extrapolate: 'clamp' });
+  const onScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+    useNativeDriver: NATIVE_DRIVER,
+    listener: (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+      const on = e.nativeEvent.contentOffset.y > at(0.75);
+      setCompact((c) => (c === on ? c : on));
+    },
+  });
 
   const copy = async (text: string, message: string) => {
     try {
@@ -45,127 +124,138 @@ export function ProfileScreen() {
   };
 
   const share = async () => {
-    const message = `Học cùng mình trên Ellso! Dùng mã ${referral.code} khi đăng ký: ${referral.link}`;
+    const message = `Học cùng mình trên Ellso! Dùng mã ${code} khi đăng ký: ${referralLink}`;
     // Web: trình duyệt không hỗ trợ share sheet → sao chép link thay thế
     if (Platform.OS === 'web' && !(typeof navigator !== 'undefined' && 'share' in navigator)) {
-      return copy(referral.link, 'Đã sao chép link giới thiệu');
+      return copy(referralLink, 'Đã sao chép link giới thiệu');
     }
     try {
-      await Share.share({ message, url: referral.link, title: 'Mời bạn học Ellso' });
+      await Share.share({ message, url: referralLink, title: 'Mời bạn học Ellso' });
     } catch {
-      copy(referral.link, 'Đã sao chép link giới thiệu');
+      copy(referralLink, 'Đã sao chép link giới thiệu');
     }
   };
 
+  const refreshButton = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={refreshing ? 'Đang làm mới hồ sơ' : 'Làm mới hồ sơ'}
+      accessibilityState={{ busy: refreshing }}
+      onPress={onRefresh}
+      style={({ pressed }) => [styles.glassBtn, { backgroundColor: colors.heroGlass, borderColor: colors.heroGlassLine, opacity: pressed ? 0.75 : 1 }]}
+    >
+      <Animated.View style={{ transform: [{ rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }}>
+        <Icon name="refresh" size={20} color={colors.heroOn} />
+      </Animated.View>
+    </Pressable>
+  );
+
+  const qrButton = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Mã QR giới thiệu của bạn"
+      onPress={() => setQrOpen(true)}
+      style={({ pressed }) => [styles.glassBtn, { backgroundColor: colors.heroGlass, borderColor: colors.heroGlassLine, opacity: pressed ? 0.75 : 1 }]}
+    >
+      <Icon name="qr" size={20} color={colors.heroOn} />
+    </Pressable>
+  );
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
-      {/* Header cố định */}
-      <View
-        style={[
-          styles.header,
-          { paddingTop: topInset, backgroundColor: colors.bg, borderBottomColor: scrollY > 4 ? colors.line : 'transparent' },
-        ]}
-      >
-        <Text accessibilityRole="header" style={[type.screenTitle, styles.grow, { color: colors.ink900 }]}>
-          Hồ sơ
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Mã QR giới thiệu của bạn"
-          onPress={() => setQrOpen(true)}
-          style={({ pressed }) => [styles.iconBtn, { backgroundColor: colors.card, borderColor: colors.line, opacity: pressed ? 0.7 : 1 }]}
-        >
-          <Icon name="qr" strokeWidth={1.9} color={colors.ink900} />
-        </Pressable>
-      </View>
+      {/* Nền emerald phía sau nửa trên: kéo quá đầu trang (iOS) vẫn thấy màu hero, không lộ khoảng trắng */}
+      <View pointerEvents="none" style={[styles.overscroll, { backgroundColor: colors.heroFrom }]} />
 
-      <ScrollView
+      <Animated.ScrollView
         scrollEventThrottle={16}
-        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+        onScroll={onScroll}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 4, paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 16 }}
+        contentContainerStyle={{ paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + 16, backgroundColor: colors.bg }}
       >
-        {/* Thẻ hồ sơ */}
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel={`${profile.name}, ${profile.email}. Sửa thông tin cá nhân`}
-          onPress={() => go('thong-tin')}
-          style={({ pressed }) => [styles.profileCard, { opacity: pressed ? 0.8 : 1 }]}
-        >
-          <Avatar initials={profile.initials} />
-          <Text style={[type.sectionTitle, { color: colors.ink900 }]}>{profile.name}</Text>
-          <Text style={[styles.email, { color: colors.ink600 }]}>{profile.email}</Text>
-        </Pressable>
+        {/* ---------- Hero ---------- */}
+        <View style={[styles.hero, { paddingTop: topInset, backgroundColor: colors.heroMid }]} onLayout={(e) => setHeroH(e.nativeEvent.layout.height)}>
+          <HeroBackground id="profile-hero" ringsY={topInset + 30} />
 
-        {/* Gói thành viên */}
-        {profile.membership && (
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel={`Gói ${profile.membership.name}, còn hạn đến ${formatDate(profile.membership.expiresAt)}. Quản lý gói`}
-            onPress={() => go('quan-ly-goi')}
-            style={({ pressed }) => [styles.member, { backgroundColor: colors.amberChip, transform: [{ scale: pressed ? 0.99 : 1 }] }]}
+          {/* chỗ cho thanh trên cùng cố định (tiêu đề + QR nằm ở thanh đó) */}
+          <View style={styles.heroTop} />
+
+          <Animated.View
+            style={[
+              styles.identity,
+              {
+                opacity: identityOpacity,
+                transform: [{ translateY: identityShift }, { scale: identityScale }],
+              },
+            ]}
           >
-            <View style={[styles.crown, { boxShadow: `0px 4px 0px ${illo.goldEdge}` }]}>
-              <Svg width={44} height={44} style={StyleSheet.absoluteFill}>
-                <Defs>
-                  <LinearGradient id="crownBg" x1="0.15" y1="0" x2="0.85" y2="1">
-                    <Stop offset="0" stopColor={illo.goldHi} />
-                    <Stop offset="1" stopColor={illo.goldLo} />
-                  </LinearGradient>
-                </Defs>
-                <Rect x="0" y="0" width="44" height="44" rx="14" fill="url(#crownBg)" />
-              </Svg>
-              {/* bọc để icon nằm trên lớp gradient (web vẽ lớp absolute đè phần tử thường) */}
-              <View style={styles.onTop}>
-                <Icon name="crown" strokeWidth={2.1} color="#ffffff" />
+            <Pressable accessibilityRole="link" accessibilityLabel={`${name}. Xem thông tin cá nhân`} onPress={() => go('personal-info')} style={styles.avatarPress}>
+              <BigAvatar initials={initials} uri={user?.avatar} />
+            </Pressable>
+            <Text style={[styles.name, { color: colors.heroOn }]} numberOfLines={1}>
+              {name}
+            </Text>
+            <Text style={[styles.email, { color: colors.heroOnMuted }]} numberOfLines={1}>
+              {user?.email}
+            </Text>
+
+            {membership ? (
+              // Thành viên: pill vàng nổi bật, bấm → sheet thời hạn gói
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Tài khoản thành viên, hết hạn ${dmy(membership.endsAt)}. Xem chi tiết gói`}
+                onPress={() => setMemberOpen(true)}
+                style={({ pressed }) => [styles.memberPill, { boxShadow: `0px 3px 0px ${illo.goldEdge}`, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+              >
+                <GoldFill id="member-pill" />
+                <View style={styles.pillInner}>
+                  <Icon name="crown" size={16} strokeWidth={2.3} color={illo.goldInk} />
+                  <Text style={[styles.pillText, { color: illo.goldInk }]}>Tài khoản thành viên</Text>
+                  <Icon name="chevronRight" size={15} strokeWidth={2.4} color={illo.goldInk} />
+                </View>
+              </Pressable>
+            ) : (
+              // Cơ bản: pill trắng + nút Nâng cấp kế bên
+              <View style={styles.accountRow}>
+                <View accessible accessibilityLabel="Tài khoản cơ bản" style={[styles.basicPill, { backgroundColor: colors.heroGlass, borderColor: colors.heroGlassLine }]}>
+                  <Icon name="basicAccount" size={16} strokeWidth={2.2} color={colors.heroOn} />
+                  <Text style={[styles.pillText, { color: colors.heroOn }]}>Tài khoản cơ bản</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Nâng cấp lên tài khoản thành viên"
+                  onPress={() => go('membership')}
+                  style={({ pressed }) => [styles.upgrade, { boxShadow: `0px 3px 0px ${illo.goldEdge}`, transform: [{ scale: pressed ? 0.97 : 1 }] }]}
+                >
+                  <GoldFill id="upgrade-btn" />
+                  <View style={styles.pillInner}>
+                    <Icon name="crown" size={15} strokeWidth={2.3} color={illo.goldInk} />
+                    <Text style={[styles.pillText, { color: illo.goldInk }]}>Nâng cấp</Text>
+                  </View>
+                </Pressable>
               </View>
-            </View>
-            <View style={styles.grow}>
-              <Text style={[styles.memberName, { color: colors.ink900 }]}>{profile.membership.name}</Text>
-              <Text style={[styles.memberSub, { color: colors.amberChipText }]}>
-                Còn hạn đến {formatDate(profile.membership.expiresAt)}
-              </Text>
-            </View>
-            <Text style={[type.captionStrong, { color: colors.amberChipText }]}>Quản lý gói</Text>
-            <Icon name="chevronRight" size={18} color={colors.amberChipText} />
-          </Pressable>
-        )}
+            )}
+          </Animated.View>
+        </View>
 
-        <ReferralCard referral={referral} />
-
+        {/* ---------- Cài đặt ---------- */}
         <SettingsGroup title="Tài khoản">
-          <SettingsRow
-            first
-            icon={<RowIcon name="user" bg={colors.mint50} fg={colors.emerald700} />}
-            label="Thông tin cá nhân"
-            onPress={() => go('thong-tin')}
-          />
-          <SettingsRow
-            icon={<RowIcon name="lock" bg={colors.surfaceAlt} fg={colors.ink600} />}
-            label="Đổi mật khẩu"
-            onPress={() => go('doi-mat-khau')}
-          />
-          <SettingsRow
-            icon={<RowIcon name="receipt" bg={colors.skyTint} fg={colors.skyText} />}
-            label="Lịch sử mua hàng"
-            onPress={() => go('lich-su-mua-hang')}
-          />
-          <SettingsRow
-            icon={<RowIcon name="ticket" bg={colors.violetTint} fg={colors.violetText} />}
-            label="Nhập mã kích hoạt"
-            onPress={() => go('ma-kich-hoat')}
-          />
+          <SettingsRow first icon={<RowIcon name="user" />} label="Thông tin cá nhân" onPress={() => go('personal-info')} />
+          <SettingsRow icon={<RowIcon name="lock" />} label="Mật khẩu" onPress={() => go('password')} />
+          <SettingsRow icon={<RowIcon name="phone" />} label="Thiết bị" onPress={() => go('devices')} />
+          <SettingsRow icon={<RowIcon name="people" />} label="Bạn bè" onPress={() => go('friends')} />
+          <SettingsRow icon={<RowIcon name="coins" />} label="Xu của tôi" value={`${groupThousands(user?.coins ?? 0)} xu`} onPress={() => go('wallet')} />
+          <SettingsRow icon={<RowIcon name="receipt" />} label="Lịch sử thanh toán" onPress={() => go('payments')} />
         </SettingsGroup>
 
         <SettingsGroup title="Ứng dụng">
           <View style={settingsStyles.rowStatic}>
-            <RowIcon name="bell" bg={colors.orangeTint} fg={colors.orangeText} />
+            <RowIcon name="bell" />
             <Text style={[styles.rowLabel, { color: colors.ink900 }]}>Thông báo hệ thống</Text>
             <Toggle value={systemNotif} onChange={setSystemNotif} label="Thông báo hệ thống" />
           </View>
           <View style={[styles.themeBlock, { borderTopWidth: 1, borderTopColor: colors.line }]}>
             <View style={styles.themeHead}>
-              <RowIcon name="moon" bg={colors.violetTint} fg={colors.violetText} />
+              <RowIcon name="palette" />
               <Text style={[styles.rowLabel, { color: colors.ink900 }]}>Giao diện</Text>
             </View>
             <ThemeSegment />
@@ -173,17 +263,8 @@ export function ProfileScreen() {
         </SettingsGroup>
 
         <SettingsGroup title="Hỗ trợ">
-          <SettingsRow
-            first
-            icon={<RowIcon name="help" bg={colors.surfaceAlt} fg={colors.ink600} />}
-            label="Trung tâm trợ giúp"
-            onPress={() => go('tro-giup')}
-          />
-          <SettingsRow
-            icon={<RowIcon name="shield" bg={colors.surfaceAlt} fg={colors.ink600} />}
-            label="Điều khoản & quyền riêng tư"
-            onPress={() => go('dieu-khoan')}
-          />
+          <SettingsRow first icon={<RowIcon name="help" />} label="Trung tâm trợ giúp" onPress={() => go('help')} />
+          <SettingsRow icon={<RowIcon name="shield" />} label="Điều khoản & quyền riêng tư" onPress={() => go('terms')} />
         </SettingsGroup>
 
         <View style={styles.footer}>
@@ -195,30 +276,72 @@ export function ProfileScreen() {
             <Icon name="logout" size={18} color={colors.danger} />
             <Text style={[styles.logoutText, { color: colors.danger }]}>Đăng xuất</Text>
           </Pressable>
-          <Text style={[styles.version, { color: colors.ink400 }]}>Ellso · Phiên bản {profile.appVersion}</Text>
+          <Text style={[styles.version, { color: colors.ink400 }]}>Ellso · Phiên bản {appVersionLabel()}</Text>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      {/* ---------- Thanh trên cùng cố định ----------
+          Luôn trong suốt (nền là chính hero đã dính lại). Đầu trang: tiêu đề "Hồ sơ" + nút làm mới / QR;
+          cuộn xuống: tiêu đề đổi chéo thành avatar nhỏ + tên + loại tài khoản. */}
+      <View pointerEvents="box-none" style={[styles.topBar, { paddingTop: topInset, height: topInset + COMPACT_H }]}>
+        {/* bóng đổ hiện dần sau khi thanh đã có nền (lớp đặc nằm dưới nền thanh, chỉ lộ phần bóng) */}
+        <Animated.View pointerEvents="none" style={[styles.topBarBg, { height: barH, backgroundColor: colors.heroMid, boxShadow: colors.navShadow, opacity: barShadow }]} />
+        <Animated.View pointerEvents="none" style={[styles.topBarBg, { height: barH, backgroundColor: colors.heroMid, opacity: barBg }]}>
+          {/* nền hero đầy đủ, dịch lên để phần đáy khớp đúng vị trí đáy hero lúc thu gọn */}
+          <View style={[styles.barHero, { top: -collapse, height: heroH }]}>
+            <HeroBackground id="profile-bar" ringsY={topInset + 30} glow={false} />
+          </View>
+        </Animated.View>
+        <View style={styles.topBarRow} pointerEvents="box-none">
+          <Animated.Text
+            accessibilityRole="header"
+            style={[type.screenTitle, styles.topTitle, { color: colors.heroOn, opacity: titleOut }]}
+            numberOfLines={1}
+          >
+            Hồ sơ
+          </Animated.Text>
+          <Animated.View
+            pointerEvents="none"
+            accessibilityElementsHidden={!compact}
+            importantForAccessibility={compact ? 'auto' : 'no-hide-descendants'}
+            style={[
+              styles.compactIdentity,
+              { opacity: compactIn, transform: [{ translateY: compactIn.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] },
+            ]}
+          >
+            <UserAvatar uri={user?.avatar} initials={initials} size={36} bg={colors.mint100} fg={colors.emerald800} borderColor={colors.heroGlassLine} borderWidth={2} />
+            <View style={styles.grow}>
+              <Text style={[styles.compactName, { color: colors.heroOn }]} numberOfLines={1}>
+                {name}
+              </Text>
+              <Text style={[type.caption, { color: colors.heroOnMuted }]} numberOfLines={1}>
+                {membership ? 'Tài khoản thành viên' : 'Tài khoản cơ bản'}
+              </Text>
+            </View>
+          </Animated.View>
+          {refreshButton}
+          {qrButton}
+        </View>
+      </View>
 
       {/* QR giới thiệu */}
       <BottomSheet visible={qrOpen} onClose={() => setQrOpen(false)} title="Mã QR giới thiệu">
         <View style={styles.qrWrap}>
           <View style={[styles.qrBox, { borderColor: colors.line }]}>
             {/* QR luôn đen trên trắng để máy quét đọc tốt ở cả chế độ tối */}
-            <QrCode value={referral.link} size={220} color="#0f172a" background="#ffffff" />
+            <QrCode value={referralLink} size={220} color="#0f172a" background="#ffffff" />
           </View>
-          <Text style={[type.caption, styles.center, { color: colors.ink600 }]}>
-            Bạn bè quét mã này để đăng ký với mã giới thiệu của bạn
-          </Text>
+          <Text style={[type.caption, styles.center, { color: colors.ink600 }]}>Bạn bè quét mã này để đăng ký với mã giới thiệu của bạn</Text>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Sao chép mã ${referral.code}`}
-            onPress={() => copy(referral.code, `Đã sao chép mã ${referral.code}`)}
+            accessibilityLabel={`Sao chép mã ${code}`}
+            onPress={() => copy(code, `Đã sao chép mã ${code}`)}
             style={({ pressed }) => [styles.qrCode, { backgroundColor: colors.mint50, borderColor: colors.emerald500, opacity: pressed ? 0.8 : 1 }]}
           >
-            <Text style={[styles.qrCodeText, { color: colors.ink900 }]}>{referral.code}</Text>
+            <Text style={[styles.qrCodeText, { color: colors.ink900 }]}>{code}</Text>
             <Icon name="copy" size={16} color={colors.emerald700} />
           </Pressable>
-          <Text style={[type.caption, { color: colors.ink600 }]}>{displayLink(referral.link)}</Text>
+          <Text style={[type.caption, { color: colors.ink600 }]}>{displayLink(referralLink)}</Text>
           <Pressable
             accessibilityRole="button"
             onPress={share}
@@ -230,11 +353,47 @@ export function ProfileScreen() {
         </View>
       </BottomSheet>
 
+      {/* Gói thành viên: thời hạn + Gia hạn */}
+      <BottomSheet visible={memberOpen} onClose={() => setMemberOpen(false)} title="Tài khoản thành viên">
+        {membership ? (
+          <View style={styles.memberSheet}>
+            <View style={[styles.memberCard, { boxShadow: `0px 4px 0px ${illo.goldEdge}` }]}>
+              <GoldFill id="member-card" />
+              <View style={styles.memberCardInner}>
+                <Icon name="crown" size={22} strokeWidth={2.2} color={illo.goldInk} />
+                <View style={styles.grow}>
+                  <Text style={[styles.memberCardTitle, { color: illo.goldInk }]}>Gói thành viên Ellso</Text>
+                  <Text style={[type.caption, { color: illo.goldInk }]}>Mở toàn bộ tài liệu và các khoá huấn luyện</Text>
+                </View>
+                <View style={[styles.daysLeft, { backgroundColor: illo.goldInk }]}>
+                  <Text style={[styles.daysLeftText, { color: illo.goldHi }]}>còn {daysUntil(membership.endsAt)} ngày</Text>
+                </View>
+              </View>
+            </View>
+            <View style={[styles.dates, { borderColor: colors.line }]}>
+              <DateRow icon="calendarStart" label="Bắt đầu" value={membership.startedAt ? dmy(membership.startedAt) : '—'} />
+              <View style={[styles.datesDivider, { backgroundColor: colors.line }]} />
+              <DateRow icon="calendarEnd" label="Hết hạn" value={dmy(membership.endsAt)} />
+            </View>
+            <Text style={[type.caption, { color: colors.ink600 }]}>Gia hạn khi còn hạn: thời gian mới được cộng nối tiếp ngay sau ngày hết hạn hiện tại.</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setMemberOpen(false);
+                go('membership');
+              }}
+              style={({ pressed }) => [styles.primary, { backgroundColor: pressed ? colors.emerald800 : colors.emerald700 }]}
+            >
+              <Icon name="refresh" size={18} color={colors.onEmerald} />
+              <Text style={[type.label, { color: colors.onEmerald }]}>Gia hạn</Text>
+            </Pressable>
+          </View>
+        ) : null}
+      </BottomSheet>
+
       {/* Xác nhận đăng xuất (dùng sheet vì Alert không chạy trên web) */}
       <BottomSheet visible={logoutOpen} onClose={() => setLogoutOpen(false)} title="Đăng xuất khỏi Ellso?">
-        <Text style={[type.body, { color: colors.ink600 }]}>
-          Bạn sẽ cần đăng nhập lại để tiếp tục học. Tiến độ học vẫn được lưu trên tài khoản.
-        </Text>
+        <Text style={[type.body, { color: colors.ink600 }]}>Bạn sẽ cần đăng nhập lại để tiếp tục học. Tiến độ học vẫn được lưu trên tài khoản.</Text>
         <View style={styles.confirmRow}>
           <Pressable
             accessibilityRole="button"
@@ -247,12 +406,12 @@ export function ProfileScreen() {
             accessibilityRole="button"
             onPress={() => {
               setLogoutOpen(false);
-              // TODO: khi có đăng nhập — xoá token + chuyển về màn đăng nhập
-              showToast('Chưa có màn đăng nhập');
+              // Xoá phiên → status "signedOut" → router tự về màn đăng nhập
+              logout();
             }}
             style={({ pressed }) => [styles.danger, { backgroundColor: colors.danger, opacity: pressed ? 0.85 : 1 }]}
           >
-            <Text style={[type.label, { color: '#ffffff' }]}>Đăng xuất</Text>
+            <Text style={[type.label, { color: colors.onEmerald }]}>Đăng xuất</Text>
           </Pressable>
         </View>
       </BottomSheet>
@@ -262,24 +421,50 @@ export function ProfileScreen() {
   );
 }
 
-/** Avatar 88px với viền gradient vàng–xanh. */
-function Avatar({ initials }: { initials: string }) {
-  const { colors } = useTheme();
+/** Avatar lớn trên hero: viền kính mờ + vòng gradient mảnh, chữ viết tắt. */
+function BigAvatar({ initials, uri }: { initials: string; uri?: string | null }) {
+  const { colors, scheme } = useTheme();
+  const id = `avatarRing-${scheme}`;
   return (
     <View style={styles.avatarWrap}>
-      <Svg width={88} height={88} style={StyleSheet.absoluteFill}>
+      <Svg width={104} height={104} style={StyleSheet.absoluteFill}>
         <Defs>
-          <LinearGradient id="avatarRing" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={illo.goldMid} />
-            <Stop offset="0.5" stopColor={colors.emerald500} />
-            <Stop offset="1" stopColor={illo.goldMid} />
+          <LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor={colors.heroGlow} />
+            <Stop offset="0.5" stopColor={colors.heroOn} stopOpacity={0.9} />
+            <Stop offset="1" stopColor={colors.heroGlow} />
           </LinearGradient>
         </Defs>
-        <Circle cx="44" cy="44" r="42.5" fill="none" stroke="url(#avatarRing)" strokeWidth={3} />
+        <Circle cx="52" cy="52" r="50" fill="none" stroke={`url(#${id})`} strokeWidth={2.5} />
       </Svg>
-      <View style={[styles.avatar, { backgroundColor: colors.mint100, borderColor: colors.card }]}>
-        <Text style={[styles.avatarText, { color: colors.emerald800 }]}>{initials}</Text>
-      </View>
+      <UserAvatar uri={uri} initials={initials} size={90} bg={colors.mint100} fg={colors.emerald800} borderColor={colors.heroGlassLine} borderWidth={3} />
+    </View>
+  );
+}
+
+/** Nền vàng gradient phủ kín phần tử cha (pill / thẻ thành viên). Cha cần overflow hidden + bo góc. */
+function GoldFill({ id }: { id: string }) {
+  return (
+    <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} preserveAspectRatio="none">
+      <Defs>
+        <LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor={illo.goldHi} />
+          <Stop offset="0.55" stopColor={illo.goldMid} />
+          <Stop offset="1" stopColor={illo.goldLo} />
+        </LinearGradient>
+      </Defs>
+      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${id})`} />
+    </Svg>
+  );
+}
+
+function DateRow({ icon, label, value }: { icon: 'calendarStart' | 'calendarEnd'; label: string; value: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.dateRow}>
+      <RowIcon name={icon} />
+      <Text style={[styles.rowLabel, { color: colors.ink600 }]}>{label}</Text>
+      <Text style={[styles.dateValue, { color: colors.ink900 }]}>{value}</Text>
     </View>
   );
 }
@@ -289,19 +474,33 @@ const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   center: { textAlign: 'center' },
   onTop: { position: 'relative', zIndex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, zIndex: 10 },
-  iconBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  overscroll: { position: 'absolute', top: 0, left: 0, right: 0, height: '50%' },
 
-  profileCard: { marginTop: 8, marginHorizontal: 16, paddingTop: 8, paddingBottom: 8, alignItems: 'center', gap: 4 },
-  avatarWrap: { width: 88, height: 88, marginBottom: 8, alignItems: 'center', justifyContent: 'center' },
-  avatar: { width: 82, height: 82, borderRadius: 41, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontFamily: fonts.display600, fontSize: 28, lineHeight: 34 },
-  email: { fontFamily: fonts.sans400, fontSize: 14, lineHeight: 20 },
+  hero: { paddingHorizontal: 16, paddingBottom: 32, borderBottomLeftRadius: HERO_RADIUS, borderBottomRightRadius: HERO_RADIUS, overflow: 'hidden' },
+  heroTop: { height: COMPACT_H },
+  glassBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  identity: { alignItems: 'center', paddingTop: 8 },
+  avatarPress: { marginBottom: 12 },
+  avatarWrap: { width: 104, height: 104, alignItems: 'center', justifyContent: 'center' },
+  name: { fontFamily: fonts.display600, fontSize: 24, lineHeight: 32, maxWidth: '100%' },
+  email: { fontFamily: fonts.sans500, fontSize: 14, lineHeight: 20, marginTop: 2 },
+  accountRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 },
+  basicPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 9999, borderWidth: 1 },
+  upgrade: { height: 34, borderRadius: 9999, overflow: 'hidden', justifyContent: 'center' },
+  memberPill: { marginTop: 14, height: 36, borderRadius: 9999, overflow: 'hidden', justifyContent: 'center' },
+  pillInner: { position: 'relative', zIndex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14 },
+  pillText: { fontFamily: fonts.sans700, fontSize: 13, lineHeight: 18 },
 
-  member: { marginTop: 12, marginHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingLeft: 14, paddingRight: 12, borderRadius: 20 },
-  crown: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  memberName: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
-  memberSub: { fontFamily: fonts.sans400, fontSize: 12, lineHeight: 16 },
+  memberSheet: { gap: 14 },
+  memberCard: { borderRadius: 18, overflow: 'hidden' },
+  memberCardInner: { position: 'relative', zIndex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
+  memberCardTitle: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
+  daysLeft: { paddingHorizontal: 10, height: 26, borderRadius: 9999, justifyContent: 'center' },
+  daysLeftText: { fontFamily: fonts.sans700, fontSize: 12, lineHeight: 16 },
+  dates: { borderWidth: 1, borderRadius: 16, paddingHorizontal: 14 },
+  datesDivider: { height: StyleSheet.hairlineWidth },
+  dateRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56 },
+  dateValue: { fontFamily: fonts.sans700, fontSize: 15, lineHeight: 22 },
 
   themeBlock: { gap: 12, paddingTop: 12, paddingRight: 12, paddingBottom: 14, paddingLeft: 14 },
   themeHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -311,6 +510,15 @@ const styles = StyleSheet.create({
   logout: { alignSelf: 'stretch', height: 52, borderRadius: 16, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   logoutText: { fontFamily: fonts.sans600, fontSize: 15, lineHeight: 22 },
   version: { fontFamily: fonts.sans400, fontSize: 12, lineHeight: 16 },
+
+  topBar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 20, paddingHorizontal: 16 },
+  // nền thanh thu gọn: cao = topInset + hàng nội dung + BAR_PAD, bo góc bằng hero để mép trùng nhau
+  topBarBg: { position: 'absolute', top: 0, left: 0, right: 0, borderBottomLeftRadius: HERO_RADIUS, borderBottomRightRadius: HERO_RADIUS, overflow: 'hidden' },
+  barHero: { position: 'absolute', left: 0, right: 0 },
+  topBarRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  topTitle: { position: 'absolute', left: 0, right: 108 },
+  compactIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  compactName: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
 
   qrWrap: { alignItems: 'center', gap: 12 },
   qrBox: { padding: 12, borderRadius: 20, borderWidth: 1, backgroundColor: '#ffffff' },

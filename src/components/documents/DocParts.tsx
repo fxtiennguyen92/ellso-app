@@ -1,8 +1,10 @@
+import { router } from 'expo-router';
+import { Image } from 'expo-image';
 import { useRef, type ReactNode } from 'react';
 import { Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { type Doc, topics } from '@/data/documents';
+import { type Doc } from '@/data/documents';
 import { useDragScroll } from '@/hooks/useDragScroll';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -30,22 +32,27 @@ export function AccessChip({ doc, long = false, small = false }: { doc: Doc; lon
 
 // ------------------------------------------------------------------ Lớp phủ & nút lưu
 
-/** Lớp tối + ổ khoá cho tài liệu chưa mở. */
+/**
+ * Dấu khoá cho tài liệu chưa mở: một nhãn nhỏ kính tối ở góc trên bên trái bìa (không phủ tối cả bìa,
+ * không vòng tròn trắng giữa bìa) → bìa vẫn đẹp, vẫn nhận ra là đang khoá. Góc phải trên dành cho nút lưu.
+ */
 export function LockOverlay({ size = 32 }: { size?: number }) {
+  const tag = Math.round(size * 0.78);
   return (
-    <View style={[StyleSheet.absoluteFill, styles.scrim]} pointerEvents="none">
-      <View style={[styles.lockDot, { width: size, height: size, borderRadius: size / 2 }]}>
-        <Icon name="lock" size={Math.round(size * 0.46)} strokeWidth={2.2} color={illo.lockInk} />
-      </View>
+    <View pointerEvents="none" style={[styles.lockTag, { width: tag, height: tag, borderRadius: Math.round(tag * 0.32) }]}>
+      <Icon name="lock" size={Math.round(tag * 0.54)} strokeWidth={2.4} color="#ffffff" />
     </View>
   );
 }
 
-/** Nút lưu (bookmark). `variant="overlay"`: tròn mờ trên ảnh bìa · `"row"`: nằm cuối dòng. Bật = vàng. */
+/**
+ * Nút lưu (bookmark). `variant="overlay"`: nằm trên ảnh bìa — KHÔNG vòng tròn nền, icon to (≈ 0.72 × size), thân icon
+ * tô tối mờ + nét trắng để nổi trên mọi màu bìa · `"row"`: nằm cuối dòng. Bật = vàng (tô kín).
+ */
 export function SaveButton({ doc, variant, size = 36 }: { doc: Doc; variant: 'overlay' | 'row'; size?: number }) {
   const { colors } = useTheme();
-  const { toggleSave } = useDocuments();
-  const on = doc.saved;
+  const { toggleSave, isSaved } = useDocuments();
+  const on = isSaved(doc);
   const color = on ? colors.fav : variant === 'overlay' ? '#ffffff' : colors.ink400;
   return (
     <Pressable
@@ -55,11 +62,22 @@ export function SaveButton({ doc, variant, size = 36 }: { doc: Doc; variant: 'ov
       onPress={() => toggleSave(doc)}
       hitSlop={4}
       style={({ pressed }) => [
-        variant === 'overlay' ? [styles.saveOverlay, { width: size, height: size, borderRadius: size / 2 }] : styles.saveRow,
+        variant === 'overlay' ? [styles.saveOverlay, { width: size, height: size }] : styles.saveRow,
         { transform: [{ scale: pressed ? 0.88 : 1 }] },
       ]}
     >
-      <Icon name={on ? 'bookmarkFilled' : 'bookmark'} size={variant === 'overlay' ? Math.round(size * 0.44) : 20} strokeWidth={1.8} color={color} />
+      {variant === 'overlay' ? (
+        <Icon
+          name="bookmark"
+          size={Math.round(size * 0.72)}
+          strokeWidth={1.9}
+          color={on ? colors.fav : '#ffffff'}
+          fill={on ? colors.fav : '#0f172a'}
+          fillOpacity={on ? 1 : 0.35}
+        />
+      ) : (
+        <Icon name={on ? 'bookmarkFilled' : 'bookmark'} size={20} strokeWidth={1.8} color={color} />
+      )}
     </Pressable>
   );
 }
@@ -116,11 +134,15 @@ export function BookCover({ doc }: { doc: Doc }) {
   const { colors } = useTheme();
   return (
     <View style={[styles.book, { backgroundColor: coverColor(doc), boxShadow: colors.shadowBook }]}>
-      <View style={styles.bookPlaceholder}>
-        <Icon name="image" size={22} strokeWidth={1.6} color={illo.onCoverFaint} />
-        <Text style={styles.bookPlaceholderText}>Ảnh bìa</Text>
-      </View>
-      {!doc.unlocked && <LockOverlay size={30} />}
+      {doc.coverUrl ? (
+        <Image source={{ uri: doc.coverUrl }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} accessibilityIgnoresInvertColors />
+      ) : (
+        <View style={styles.bookPlaceholder}>
+          <Icon name="image" size={22} strokeWidth={1.6} color={illo.onCoverFaint} />
+          <Text style={styles.bookPlaceholderText}>Ảnh bìa</Text>
+        </View>
+      )}
+      {/* Sách không có dấu khoá: nhãn giá / "Đã mua" / "Miễn phí" trên bìa đã cho biết tình trạng */}
     </View>
   );
 }
@@ -180,26 +202,45 @@ export function PdfRow({ doc }: { doc: Doc }) {
   );
 }
 
-export function BookCard({ doc }: { doc: Doc }) {
+/** Bấm sách → trang thông tin sách /books/[id] (đọc thử / mua / đọc nằm ở đó). `onOpen` để thay hành vi này. */
+export function BookCard({ doc, onOpen }: { doc: Doc; onOpen?: (doc: Doc) => void }) {
   const { colors } = useTheme();
-  const { openDoc } = useDocuments();
   return (
     <View style={styles.cardCol}>
-      <Pressable accessibilityRole="link" accessibilityLabel={a11yDoc(doc)} onPress={() => openDoc(doc)} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
+      <Pressable accessibilityRole="link" accessibilityLabel={a11yDoc(doc)} onPress={() => (onOpen ? onOpen(doc) : router.push({ pathname: '/books/[id]', params: { id: doc.id } }))} style={({ pressed }) => [{ opacity: pressed ? 0.85 : 1 }]}>
         <View style={styles.bookWrap}>
           <BookCover doc={doc} />
+          <PriceBadge doc={doc} />
         </View>
+        {/* Luôn chừa đủ 1 dòng tác giả + 2 dòng tên sách để các thẻ trong lưới thẳng hàng */}
         <Text style={[styles.bookAuthor, { color: colors.ink600 }]} numberOfLines={1}>
-          {doc.author}
+          {doc.author || ' '}
         </Text>
         <Text style={[styles.bookTitle, { color: colors.ink900 }]} numberOfLines={2}>
           {doc.title}
         </Text>
-        <AccessChip doc={doc} small />
       </Pressable>
       <View style={styles.saveCornerBook}>
         <SaveButton doc={doc} variant="overlay" size={34} />
       </View>
+    </View>
+  );
+}
+
+/**
+ * Nhãn giá / quyền xem dạng chữ nhật nằm ở góc dưới bên trái ảnh bìa sách (thay chip dưới tên):
+ * nền trắng, chữ màu theo màu bìa đã chọn (bán riêng) hoặc màu của quyền xem (miễn phí, thành viên…).
+ */
+function PriceBadge({ doc }: { doc: Doc }) {
+  const { colors } = useTheme();
+  const a = primaryAccess(doc);
+  const s = accessStyle(a, !!doc.bought, colors);
+  const fg = a?.kind === 'buy' && !doc.bought ? chapterPalette[doc.cover].edge : s.fg;
+  return (
+    <View style={[styles.priceBadge, { backgroundColor: a?.kind === 'buy' && !doc.bought ? illo.badgeLight : s.bg }]} pointerEvents="none">
+      <Text style={[styles.priceBadgeText, { color: fg }]} numberOfLines={1}>
+        {s.short}
+      </Text>
     </View>
   );
 }
@@ -242,6 +283,7 @@ export function TopicChips({ value, onChange }: { value: string | null; onChange
   const { colors } = useTheme();
   const ref = useRef<ScrollViewInstance>(null);
   useDragScroll(ref);
+  const { topics } = useDocuments();
   const all = [{ id: null as string | null, name: 'Tất cả' }, ...topics];
   return (
     <ScrollView ref={ref} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} accessibilityLabel="Lọc theo chủ đề">
@@ -279,9 +321,17 @@ const styles = StyleSheet.create({
   chipText: { fontFamily: fonts.sans700, fontSize: 11, lineHeight: 16, flexShrink: 1 },
   chipTextSmall: { fontFamily: fonts.sans700, fontSize: 10, lineHeight: 16, flexShrink: 1 },
 
-  scrim: { backgroundColor: illo.scrim, alignItems: 'center', justifyContent: 'center' },
-  lockDot: { backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' },
-  saveOverlay: { backgroundColor: illo.saveBg, alignItems: 'center', justifyContent: 'center' },
+  lockTag: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: illo.saveBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: illo.onCoverLine,
+  },
+  saveOverlay: { alignItems: 'center', justifyContent: 'center' },
   saveRow: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 
   videoCover: { borderRadius: 0, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
@@ -308,8 +358,10 @@ const styles = StyleSheet.create({
   // Tác giả luôn nằm trên tên tài liệu (thống nhất mọi màn Tài liệu)
   author: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16, marginBottom: 4 },
   cardTitle: { fontFamily: fonts.sans600, fontSize: 15, lineHeight: 21 },
-  bookAuthor: { fontFamily: fonts.sans500, fontSize: 11, lineHeight: 15, marginBottom: 3 },
-  bookTitle: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18 },
+  bookAuthor: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16, height: 16, marginBottom: 2 },
+  bookTitle: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18, minHeight: 36 },
+  priceBadge: { position: 'absolute', left: 6, bottom: 6, maxWidth: '86%', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  priceBadgeText: { fontFamily: fonts.sans700, fontSize: 11, lineHeight: 15 },
   saveCorner: { position: 'absolute', right: 4, top: 4 },
   saveCornerBook: { position: 'absolute', right: 2, top: 2 },
 

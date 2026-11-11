@@ -4,9 +4,10 @@
  * Khi có API chỉ cần thay các hàm get… ở cuối file.
  */
 import type { IconName } from '@/components/Icon';
+import { apiRequest } from '@/lib/api';
 import type { ChapterColor } from '@/theme/tokens';
 
-import type { CourseIllustration, CourseTint } from './home';
+import type { ContentBlock, CourseIllustration, CourseTint } from './home';
 
 // ---------------------------------------------------------------- Danh sách
 
@@ -41,9 +42,6 @@ export type ExploreCourse = {
   illustration: ExploreIllustration;
   tint: ExploreTint;
 };
-
-/** Bài test đầu vào (banner đầu tab Khoá học). */
-export const placementTest = { minutes: 15, questions: 20 };
 
 export const categories: Category[] = [
   { id: 'soft-skills', name: 'Kỹ năng mềm' },
@@ -151,7 +149,7 @@ export type PathLesson = {
   icon: IconName;
   /** Bài thường: thời lượng ước tính, ví dụ "12 phút" */
   duration?: string;
-  /** Bài gặp gia sư: ngày hẹn (đã đặt lịch) */
+  /** Bài gặp người hướng dẫn: ngày hẹn (đã đặt lịch) */
   meetingDate?: string;
 };
 
@@ -269,3 +267,146 @@ export function getCoursePath(courseId: string): CoursePath | null {
 
 /** 1290000 → "1.290.000đ" (tự định dạng, không phụ thuộc Intl của máy). */
 export const formatPrice = (vnd: number) => `${String(Math.round(vnd)).replace(/\B(?=(\d{3})+(?!\d))/g, '.')}đ`;
+
+// ---------------------------------------------------------------- Khám phá khoá học (nối ellso-server)
+// GET /courses?category_id=&page=  → 10 khoá / trang, meta.has_more · GET /courses/categories
+
+export type CatalogCourse = {
+  id: number;
+  title: string;
+  shortDescription: string | null;
+  category: { id: number; name: string } | null;
+  instructor: { id: number; name: string; avatar: string | null } | null;
+  coverUrl: string | null;
+  /** VND; 0 = miễn phí */
+  price: number;
+  lessonCount: number;
+  isNew: boolean;
+  enrolled: boolean;
+  inCart: boolean;
+  /** % hoàn thành (null nếu chưa ghi danh / chưa có lộ trình). */
+  progressPercent: number | null;
+  /** Đã học ≥ 1 bài → "Tiếp tục học", chưa → "Bắt đầu học". */
+  started: boolean;
+};
+
+export type CatalogPage = { items: CatalogCourse[]; page: number; hasMore: boolean; total: number };
+
+type ApiCatalogCourse = {
+  id: number;
+  title: string;
+  short_description: string | null;
+  category: { id: number; name: string } | null;
+  instructor: { id: number; name: string; avatar: string | null } | null;
+  cover_url: string | null;
+  price: number;
+  lesson_count: number;
+  is_new: boolean;
+  enrolled: boolean;
+  in_cart: boolean;
+  progress_percent: number | null;
+  started: boolean;
+};
+
+/** `search`: tìm theo tên / mô tả ngắn / người hướng dẫn (màn Tìm kiếm); `perPage`: số khoá mỗi đợt (mặc định server 10). */
+export async function apiCatalog(
+  token: string,
+  page: number,
+  categoryId: number | null,
+  opts: { search?: string; perPage?: number } = {},
+): Promise<CatalogPage> {
+  const q =
+    `?page=${page}${categoryId ? `&category_id=${categoryId}` : ''}` +
+    `${opts.search ? `&q=${encodeURIComponent(opts.search)}` : ''}${opts.perPage ? `&per_page=${opts.perPage}` : ''}`;
+  const res = await apiRequest<{ data: ApiCatalogCourse[]; meta: { page: number; has_more: boolean; total: number } }>('GET', `/courses${q}`, { token });
+  return {
+    page: res.meta.page,
+    hasMore: res.meta.has_more,
+    total: res.meta.total,
+    items: res.data.map((c) => ({
+      id: c.id,
+      title: c.title,
+      shortDescription: c.short_description,
+      category: c.category,
+      instructor: c.instructor,
+      coverUrl: c.cover_url,
+      price: c.price,
+      lessonCount: c.lesson_count,
+      isNew: c.is_new,
+      enrolled: c.enrolled,
+      inCart: c.in_cart,
+      progressPercent: c.progress_percent,
+      started: c.started,
+    })),
+  };
+}
+
+export async function apiCourseCategories(token: string): Promise<Category[]> {
+  const { data } = await apiRequest<{ data: { id: number; name: string }[] }>('GET', '/courses/categories', { token });
+  return data.map((c) => ({ id: String(c.id), name: c.name }));
+}
+
+// ---------------------------------------------------------------- Trang giới thiệu khoá học (GET /courses/{id})
+
+export type CourseOutlineItem =
+  | { type: 'chapter'; title: string; color: string | null; lessons: { title: string; isPreview: boolean; coaching: boolean }[] }
+  | { type: 'exam'; title: string };
+
+export type CourseDetail = CatalogCourse & {
+  blocks: ContentBlock[];
+  /** Khoá nhiều lộ trình: lộ trình riêng theo năng lực → không liệt kê đề cương. */
+  personalized: boolean;
+  pathsCount: number;
+  chapterCount: number;
+  outline: CourseOutlineItem[];
+  instructorBio: string | null;
+  /** Bài đánh giá năng lực bắt buộc trước khi học. */
+  placementTests: { id: number; title: string; completed: boolean }[];
+};
+
+export async function apiCourseDetail(token: string, id: string | number): Promise<CourseDetail> {
+  type Api = ApiCatalogCourse & {
+    description_blocks: ContentBlock[];
+    personalized: boolean;
+    paths_count: number;
+    chapter_count: number;
+    outline: { type: 'chapter' | 'exam'; title: string; color: string | null; lessons: { title: string; is_preview: boolean; coaching: boolean }[] }[];
+    instructor_bio: string | null;
+    placement_tests: { id: number; title: string; completed: boolean }[];
+  };
+  const { data: c } = await apiRequest<{ data: Api }>('GET', `/courses/${id}`, { token });
+  return {
+    id: c.id,
+    title: c.title,
+    shortDescription: c.short_description,
+    category: c.category,
+    instructor: c.instructor,
+    coverUrl: c.cover_url,
+    price: c.price,
+    lessonCount: c.lesson_count,
+    isNew: c.is_new,
+    enrolled: c.enrolled,
+    inCart: c.in_cart,
+    progressPercent: c.progress_percent,
+    started: c.started,
+    blocks: c.description_blocks,
+    personalized: c.personalized,
+    pathsCount: c.paths_count,
+    chapterCount: c.chapter_count,
+    outline: c.outline.map((o) =>
+      o.type === 'exam'
+        ? { type: 'exam', title: o.title }
+        : { type: 'chapter', title: o.title, color: o.color, lessons: o.lessons.map((l) => ({ title: l.title, isPreview: l.is_preview, coaching: l.coaching })) },
+    ),
+    instructorBio: c.instructor_bio,
+    placementTests: c.placement_tests,
+  };
+}
+
+/** Ghi danh khoá MIỄN PHÍ (nút "Bắt đầu học"). Đã ghi danh thì giữ nguyên. */
+export async function apiEnrollFree(token: string, id: number): Promise<void> {
+  await apiRequest('POST', `/courses/${id}/enroll`, { token });
+}
+
+/** Nhãn nút học: đã học ≥ 1 bài → "Tiếp tục học", chưa → "Bắt đầu học". */
+export const studyLabel = (c: { started: boolean }) => (c.started ? 'Tiếp tục học' : 'Bắt đầu học');

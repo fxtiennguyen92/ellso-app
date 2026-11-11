@@ -44,7 +44,14 @@
         }
       ],
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Ellso cần quyền truy cập thư viện ảnh để bạn chọn ảnh đại diện.",
+          "cameraPermission": "Ellso cần quyền dùng camera để bạn chụp ảnh đại diện."
+        }
+      ]
     ],
     "scheme": "ellso",
     "backgroundColor": "#FFFFFF",

@@ -1,6 +1,10 @@
-import { ComingSoon } from '@/components/ComingSoon';
+import { useLocalSearchParams } from 'expo-router';
 
-/** Trang tìm kiếm — mở từ ô tìm kiếm trên Home. Sẽ làm sau. */
-export default function SearchScreen() {
-  return <ComingSoon title="Tìm kiếm" back />;
+import { type SearchScope, SearchScreen } from '@/components/search/SearchScreen';
+
+/** Tìm kiếm: /search (Trang chủ: khoá học + tài liệu) · /search?scope=courses · /search?scope=documents. */
+export default function SearchRoute() {
+  const { scope } = useLocalSearchParams<{ scope?: string }>();
+  const s: SearchScope = scope === 'courses' || scope === 'documents' ? scope : 'all';
+  return <SearchScreen scope={s} />;
 }

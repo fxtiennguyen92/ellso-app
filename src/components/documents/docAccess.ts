@@ -4,13 +4,15 @@ import type { Access, Doc } from '@/data/documents';
 import type { ColorTokens } from '@/theme/tokens';
 
 /** Điều kiện để hiện chip: đã mua riêng → "Đã mua"; còn lại lấy điều kiện đầu tiên. */
-export const primaryAccess = (d: Doc): Access => (d.bought ? d.access.find((a) => a.kind === 'buy') ?? d.access[0] : d.access[0]);
+export const primaryAccess = (d: Doc): Access | undefined => (d.bought ? d.access.find((a) => a.kind === 'buy') ?? d.access[0] : d.access[0]);
 
 /**
  * Màu + chữ + icon của từng kiểu quyền (theo canvas "các trường hợp quyền xem"):
  * xanh = miễn phí / đã mua · vàng = gói thành viên · xám = mua riêng · xanh dương = theo bài học · tím = theo khoá học.
  */
-export function accessStyle(a: Access, bought: boolean, c: ColorTokens) {
+export function accessStyle(a: Access | undefined, bought: boolean, c: ColorTokens) {
+  // Tài liệu chưa đặt điều kiện mở nào trên CMS (chưa phát hành cho học viên)
+  if (!a) return { short: 'Chưa mở', long: 'Chưa mở cho học viên', bg: c.chipNeutral, fg: c.ink600, icon: 'lock' as IconName };
   switch (a.kind) {
     case 'free':
       return { short: 'Miễn phí', long: 'Miễn phí', bg: c.mint50, fg: c.emerald700, icon: null as IconName | null };

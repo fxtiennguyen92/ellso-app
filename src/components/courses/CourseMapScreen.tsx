@@ -14,12 +14,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
-import { ComingSoon } from '@/components/ComingSoon';
 import { Icon } from '@/components/Icon';
 import { SCROLL_TOP_SPACE, ScrollTopButton } from '@/components/ScrollTopButton';
-import { TUTOR_LABEL } from '@/components/home/TutorSchedule';
-import { getCoursePath, type PathChapter, type PathLesson } from '@/data/courses';
+import { useToast } from '@/components/Toast';
+import { TUTOR_LABEL } from '@/components/home/tutorLabel';
+import type { CoursePath, PathChapter, PathLesson } from '@/data/courses';
 import { NATIVE_DRIVER, useLoop } from '@/hooks/useLoop';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
@@ -36,12 +35,11 @@ const BANNER_TOP = 12;
 type ChapterTheme = { base: string; edge: string; ink: string; ring: string };
 type ChapterInfo = { index: number; chapter: PathChapter; done: number; theme: ChapterTheme };
 
-/** Màn Lộ trình học của một khoá (kiểu Duolingo). */
-export function CourseMapScreen({ courseId }: { courseId: string }) {
+/** Màn Lộ trình học của một khoá (kiểu Duolingo). Dữ liệu do CourseLearnScreen tải (GET /my/courses/{id}). */
+export function CourseMapScreen({ path }: { path: CoursePath }) {
   const { colors, scheme } = useTheme();
   const insets = useSafeAreaInsets();
   const topInset = useScreenTopInset(12, 28);
-  const path = getCoursePath(courseId);
 
   const scrollRef = useRef<ScrollViewInstance>(null);
   const [showTop, setShowTop] = useState(false);
@@ -49,7 +47,9 @@ export function CourseMapScreen({ courseId }: { courseId: string }) {
   // Banner ghim: chương nào có banner đã chạm vị trí ghim thì là chương hiện tại.
   const bannerY = useRef<number[]>([]);
   const [current, setCurrent] = useState(0);
+  const lastY = useRef(0);
   const onScroll = (y: number) => {
+    lastY.current = y;
     setShowTop((v) => (v === y > 400 ? v : y > 400));
     const tops = bannerY.current;
     let idx = 0;
@@ -86,8 +86,6 @@ export function CourseMapScreen({ courseId }: { courseId: string }) {
     [tryScrollToNext],
   );
 
-  if (!path) return <ComingSoon title="Không tìm thấy khoá học" back />;
-
   const all = path.chapters.flatMap((c) => c.lessons);
   const done = all.filter((l) => l.status === 'done').length;
   const total = all.length;
@@ -98,6 +96,16 @@ export function CourseMapScreen({ courseId }: { courseId: string }) {
   };
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/courses'));
+
+  // Bấm bài trên bản đồ: bài học → màn nội dung (màu chương đi theo). Bài kiểm tra / gặp giáo viên: chưa có màn riêng.
+  const [toast, showToast] = useToast();
+  const openLesson = (lesson: PathLesson, ch: PathChapter) => {
+    if (lesson.kind === 'lesson') {
+      router.push({ pathname: '/lessons/[id]', params: { id: lesson.id, color: ch.color, course: path.courseId } });
+    } else {
+      showToast(lesson.kind === 'test' ? 'Màn làm bài kiểm tra sắp ra mắt' : `Đặt lịch gặp ${TUTOR_LABEL} sắp ra mắt`);
+    }
+  };
 
   const infos: ChapterInfo[] = path.chapters.map((ch, i) => ({
     index: i + 1,
@@ -137,7 +145,7 @@ export function CourseMapScreen({ courseId }: { courseId: string }) {
           style={[styles.headerTrack, { backgroundColor: colors.line }]}
         >
           <View
-            style={[styles.headerFill, { width: `${(done / total) * 100}%`, backgroundColor: colors.emerald500 }]}
+            style={[styles.headerFill, { width: `${total ? (done / total) * 100 : 0}%`, backgroundColor: colors.emerald500 }]}
           />
         </View>
       </View>
@@ -148,7 +156,7 @@ export function CourseMapScreen({ courseId }: { courseId: string }) {
           scrollEventThrottle={16}
           onScroll={(e) => onScroll(e.nativeEvent.contentOffset.y)}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + SCROLL_TOP_SPACE + 8 }}
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + SCROLL_TOP_SPACE + 8 }}
         >
           {path.chapters.flatMap((ch, ci) => {
             const t = infos[ci].theme;
@@ -157,7 +165,10 @@ export function CourseMapScreen({ courseId }: { courseId: string }) {
               <View
                 key={`${ch.id}-banner`}
                 onLayout={(e) => {
+                  // Web: màn bị ẩn (display:none khi mở bài học) báo kích thước 0 → bỏ qua; hiện lại thì đo lại và tính lại chương ghim
+                  if (!e.nativeEvent.layout.height) return;
                   bannerY.current[ci] = e.nativeEvent.layout.y + BANNER_TOP;
+                  onScroll(lastY.current);
                 }}
                 // Banner đã tới / qua vị trí ghim thì ẩn đi (banner ghim đã thay nó), tránh lộ ra ở dải mờ phía trên
                 style={[styles.bannerWrap, ci <= current && styles.hidden]}
@@ -179,6 +190,7 @@ export function CourseMapScreen({ courseId }: { courseId: string }) {
                     theme={t}
                     offset={SNAKE[li % SNAKE.length] * sign}
                     onLayout={lesson.status === 'next' ? (e) => onNextLayout(ch.id, e.nativeEvent.layout.y) : undefined}
+                    onOpen={() => openLesson(lesson, ch)}
                   />
                 ))}
               </View>,
@@ -203,7 +215,8 @@ export function CourseMapScreen({ courseId }: { courseId: string }) {
         <PinnedChapter infos={infos} current={current} />
       </View>
 
-      <ScrollTopButton visible={showTop} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
+      <ScrollTopButton tabBar={false} visible={showTop} onPress={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
+      {toast}
     </View>
   );
 }
@@ -357,7 +370,7 @@ function PinnedChapter({ infos, current }: { infos: ChapterInfo[]; current: numb
   );
 }
 
-/** Nền gradient cho nút bài gặp gia sư / kiểm tra đã xong. */
+/** Nền gradient cho nút bài gặp người hướng dẫn / kiểm tra đã xong. */
 function GradientFill({ id, from, to }: { id: string; from: string; to: string }) {
   return (
     <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
@@ -372,7 +385,8 @@ function GradientFill({ id, from, to }: { id: string; from: string; to: string }
   );
 }
 
-function PulseRing({ color }: { color: string }) {
+/** Sóng toả ra quanh bài kế tiếp: màu đặc của chương (không dùng màu ring trong suốt) để đủ rõ; cùng hình với nút (tròn / vuông bo góc). */
+function PulseRing({ color, radius }: { color: string; radius: number }) {
   const v = useLoop(1800, { kind: 'forward' });
   return (
     <Animated.View
@@ -380,10 +394,10 @@ function PulseRing({ color }: { color: string }) {
       style={[
         StyleSheet.absoluteFill,
         {
-          borderRadius: 9999,
+          borderRadius: radius,
           backgroundColor: color,
-          opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.7, 0] }),
-          transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.4] }) }],
+          opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0] }),
+          transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.5] }) }],
         },
       ]}
     />
@@ -396,12 +410,14 @@ function LessonNode({
   theme,
   offset,
   onLayout,
+  onOpen,
 }: {
   number: number;
   lesson: PathLesson;
   theme: ChapterTheme;
   offset: number;
   onLayout?: (e: LayoutChangeEvent) => void;
+  onOpen: () => void;
 }) {
   const { colors } = useTheme();
   const isDone = lesson.status === 'done';
@@ -431,6 +447,15 @@ function LessonNode({
       };
       iconColor = colors.meetInk;
     }
+  } else if (lesson.kind === 'test' && !isDone && !isNext) {
+    // Bài kiểm tra chưa mở (chưa học xong các bài trước theo điều kiện CMS) → xám như bài khoá
+    nodeStyle = {
+      backgroundColor: colors.card,
+      borderWidth: 2,
+      borderColor: colors.line,
+      boxShadow: `0px 6px 0px ${colors.line}`,
+    };
+    iconColor = colors.ink400;
   } else if (lesson.kind === 'test') {
     if (isDone) {
       gradient = { from: illo.testHi, to: illo.testLo };
@@ -487,17 +512,20 @@ function LessonNode({
           bg: colors.meetTint,
         }
       : lesson.kind === 'test'
-        ? { text: 'Kiểm tra', fg: colors.testInk, bg: colors.testTint }
+        ? open
+          ? { text: 'Bài kiểm tra', fg: colors.testInk, bg: colors.testTint }
+          : { text: 'Bài kiểm tra', fg: colors.ink600, bg: colors.surfaceAlt }
         : null;
 
   return (
     <View onLayout={onLayout} style={[styles.node, { transform: [{ translateX: offset }] }]}>
       <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-        {isNext && <PulseRing color={lesson.kind === 'lesson' ? theme.ring : colors.meetLine} />}
+        {isNext && <PulseRing color={lesson.kind === 'lesson' ? theme.base : lesson.kind === 'test' ? illo.testLo : illo.meetLo} radius={radius} />}
         <Pressable
           accessibilityRole={open ? 'link' : 'image'}
           accessibilityLabel={a11y}
           disabled={!open}
+          onPress={onOpen}
           style={({ pressed }) => [
             styles.nodeBtn,
             { width: size, height: size, borderRadius: radius },
@@ -590,7 +618,7 @@ const styles = StyleSheet.create({
   bannerBtn: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 
   list: { alignItems: 'center', gap: 22, paddingTop: 16, paddingBottom: 28 },
-  node: { alignItems: 'center', gap: 8 },
+  node: { alignItems: 'center', gap: 16 },
   nodeBtn: { alignItems: 'center', justifyContent: 'center' },
   iconLayer: { position: 'relative', zIndex: 1 },
   labelBox: { alignItems: 'center', gap: 4, maxWidth: 170 },

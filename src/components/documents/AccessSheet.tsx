@@ -1,7 +1,9 @@
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { type GestureResponderEvent, StyleSheet, Text, View } from 'react-native';
 
+import { PrimaryButton, SecondaryButton } from '@/components/auth/AuthUI';
 import { BottomSheet } from '@/components/BottomSheet';
+import { useCart } from '@/components/cart/CartContext';
 import { Icon, type IconName } from '@/components/Icon';
 import { formatPrice } from '@/data/courses';
 import { type Access, type Doc, typeLabel } from '@/data/documents';
@@ -10,7 +12,7 @@ import { fonts, type } from '@/theme/typography';
 
 import { accessStyle } from './docAccess';
 
-type Option = { title: string; desc: string; action: string; icon: IconName; run: () => void };
+type Option = { title: string; desc: string; action: string; icon: IconName; btnIcon?: IconName; run: (e?: GestureResponderEvent) => void };
 
 /**
  * Bảng "Cách mở tài liệu": liệt kê MỌI điều kiện của tài liệu (đủ một là mở);
@@ -18,6 +20,7 @@ type Option = { title: string; desc: string; action: string; icon: IconName; run
  */
 export function AccessSheet({ doc, onClose, onNotice }: { doc: Doc | null; onClose: () => void; onNotice: (msg: string) => void }) {
   const { colors } = useTheme();
+  const { add: addToCart, has } = useCart();
 
   const go = (path: Parameters<typeof router.push>[0]) => {
     onClose();
@@ -27,18 +30,31 @@ export function AccessSheet({ doc, onClose, onNotice }: { doc: Doc | null; onClo
   const option = (a: Access): Option => {
     switch (a.kind) {
       case 'plus':
-        return { title: 'Có gói thành viên', desc: 'Mở mọi tài liệu thuộc gói khi gói còn hạn.', action: 'Nâng cấp gói', icon: 'crown', run: () => go('/profile/quan-ly-goi') };
-      case 'buy':
+        return { title: 'Có gói thành viên', desc: 'Mở mọi tài liệu thuộc gói khi gói còn hạn.', action: 'Nâng cấp gói', icon: 'crown', run: () => go('/profile/membership') };
+      case 'buy': {
+        const inCart = !!doc && /^\d+$/.test(doc.id) && has('document', Number(doc.id));
         return {
           title: 'Mua riêng tài liệu này',
-          desc: 'Mua một lần, xem mãi trong app.',
-          action: `Mua · ${formatPrice(a.price)}`,
+          desc: `${formatPrice(a.price)} · Mua một lần, xem mãi trong app.`,
+          // Giống trang chi tiết: "Thêm vào giỏ hàng" (ở lại màn, chấm xanh bay vào giỏ) → đã có trong giỏ: "Xem giỏ hàng"
+          action: inCart ? 'Xem giỏ hàng' : 'Thêm vào giỏ hàng',
           icon: 'tag',
-          run: () => {
+          btnIcon: 'cart',
+          run: async (e?: GestureResponderEvent) => {
             onClose();
-            onNotice('Thanh toán sẽ làm ở bước sau');
+            if (!doc || !/^\d+$/.test(doc.id)) {
+              onNotice('Tài liệu mẫu, chưa mua được');
+              return;
+            }
+            if (inCart) {
+              setTimeout(() => router.navigate('/cart'), 250);
+              return;
+            }
+            const err = await addToCart('document', Number(doc.id), { from: e ? { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY } : null });
+            onNotice(err ?? 'Đã thêm vào giỏ hàng');
           },
         };
+      }
       case 'lesson':
         return {
           title: `Mở ${a.lesson} của khoá ${a.courseTitle}`,
@@ -92,18 +108,12 @@ export function AccessSheet({ doc, onClose, onNotice }: { doc: Doc | null; onClo
                     <Text style={[type.caption, { color: colors.ink600 }]}>{o.desc}</Text>
                   </View>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={o.run}
-                  style={({ pressed }) => [
-                    styles.btn,
-                    primary
-                      ? { backgroundColor: pressed ? colors.emerald800 : colors.emerald700 }
-                      : { borderWidth: 1.5, borderColor: colors.emerald700, backgroundColor: pressed ? colors.mint50 : 'transparent' },
-                  ]}
-                >
-                  <Text style={[type.label, { color: primary ? colors.onEmerald : colors.emerald700 }]}>{o.action}</Text>
-                </Pressable>
+                {/* Nút 3D dùng chung: điều kiện đầu = nút chính, các điều kiện sau = nút phụ */}
+                {primary ? (
+                  <PrimaryButton label={o.action} icon={o.btnIcon} onPress={o.run} />
+                ) : (
+                  <SecondaryButton label={o.action} icon={o.btnIcon} onPress={o.run} />
+                )}
               </View>
             );
           })}
@@ -123,6 +133,5 @@ const styles = StyleSheet.create({
   optionHead: { flexDirection: 'row', gap: 12 },
   optionIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   optionTitle: { fontFamily: fonts.sans600, fontSize: 15, lineHeight: 22 },
-  btn: { height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   note: { textAlign: 'center' },
 });

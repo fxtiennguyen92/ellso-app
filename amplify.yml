@@ -8,7 +8,8 @@ frontend:
         - npm ci
     build:
       commands:
-        - npx expo export --platform web
+        # Bản web gọi API production (src/config/env.ts); đổi API bằng biến EXPO_PUBLIC_API_URL trong Amplify nếu cần
+        - EXPO_PUBLIC_APP_ENV=production npx expo export --platform web
   artifacts:
     baseDirectory: dist
     files:

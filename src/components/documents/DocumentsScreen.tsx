@@ -1,13 +1,14 @@
-import { router } from 'expo-router';
-import { useMemo, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, TextInput, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Animated, Platform, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { Icon } from '@/components/Icon';
 import { SCROLL_TOP_SPACE, ScrollTopButton } from '@/components/ScrollTopButton';
-import { getWatching, matchQuery, type Doc, typeLabel } from '@/data/documents';
+import { type Doc, typeLabel } from '@/data/documents';
+import { useKeepScroll } from '@/hooks/useKeepScroll';
 import { useLoop } from '@/hooks/useLoop';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -16,20 +17,32 @@ import { fonts, type } from '@/theme/typography';
 
 import { BookCard, EmptyState, Grid, PdfRow, SectionHead, TopicChips, VideoCard } from './DocParts';
 import { useDocuments } from './DocumentsContext';
+import { Bone, Skeleton } from '@/components/Skeleton';
+import { BookGridBones, RowBones } from '@/components/skeletons';
 
-/** Tab Tài liệu: tìm + lọc chủ đề (dính trên cùng) · Tài liệu của tôi · Đang xem · Video · PDF · Sách. */
+/**
+ * Tab Tài liệu (GET /documents): header (tiêu đề + nút tìm kiếm → /search?scope=documents) · lọc chủ đề (dính trên cùng)
+ * · Tài liệu của tôi · Video · PDF · Sách.
+ * Tải lại mỗi lần quay về tab (vừa mua / lưu ở nơi khác).
+ */
 export function DocumentsScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const topInset = useScreenTopInset();
-  const { docs, openDoc } = useDocuments();
+  const { docs, loading, failed, refresh } = useDocuments();
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
+  );
 
   const [topic, setTopic] = useState<string | null>(null);
-  const [query, setQuery] = useState('');
   const [scrollY, setScrollY] = useState(0);
   const scrollRef = useRef<ScrollViewInstance>(null);
+  // Mở sách / video rồi quay lại: giữ vị trí cuộn (web)
+  const trackScroll = useKeepScroll(scrollRef);
 
-  const visible = useMemo(() => docs.filter((d) => (!topic || d.topicId === topic) && matchQuery(d, query)), [docs, topic, query]);
+  const visible = useMemo(() => docs.filter((d) => !topic || d.topicId === topic), [docs, topic]);
   const byType = (t: Doc['type']) => visible.filter((d) => d.type === t);
   const videos = byType('video').slice(0, 4);
   const pdfs = byType('pdf').slice(0, 4);
@@ -37,83 +50,43 @@ export function DocumentsScreen() {
 
   const savedCount = docs.filter((d) => d.saved).length;
   const boughtCount = docs.filter((d) => d.bought).length;
-  const w = getWatching();
-  const watching = docs.find((d) => d.id === w.docId);
-  const searching = query.trim().length > 0;
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.bg }]}>
+      {/* Header cố định giống tab Khoá học: tiêu đề + nút tìm kiếm (mở màn Tìm kiếm, chỉ tìm tài liệu) */}
+      <View style={[styles.header, { paddingTop: topInset, backgroundColor: colors.bg }]}>
+        <Text accessibilityRole="header" style={[type.screenTitle, styles.grow, { color: colors.ink900 }]}>
+          Tài liệu
+        </Text>
+        <Pressable
+          accessibilityRole="search"
+          accessibilityLabel="Tìm video, PDF, sách, tác giả"
+          onPress={() => router.push({ pathname: '/search', params: { scope: 'documents' } })}
+          style={({ pressed }) => [styles.iconBtn, { backgroundColor: pressed ? colors.surfaceAlt : colors.card, borderColor: colors.line }]}
+        >
+          <Icon name="search" color={colors.ink900} />
+        </Pressable>
+      </View>
       <ScrollView
         ref={scrollRef}
-        stickyHeaderIndices={[1]}
+        stickyHeaderIndices={[0]}
         scrollEventThrottle={16}
-        onScroll={(e) => setScrollY(e.nativeEvent.contentOffset.y)}
+        onScroll={(e) => {
+          setScrollY(e.nativeEvent.contentOffset.y);
+          trackScroll(e.nativeEvent.contentOffset.y);
+        }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: BOTTOM_BAR_SPACE + insets.bottom + SCROLL_TOP_SPACE + 8 }}
       >
-        {/* 0 · Tiêu đề (cuộn đi) */}
-        <View style={[styles.titleWrap, { paddingTop: topInset }]}>
-          <Text accessibilityRole="header" style={[type.screenTitle, { color: colors.ink900 }]}>
-            Tài liệu
-          </Text>
-        </View>
-
-        {/* 1 · Tìm + chủ đề (dính trên cùng) */}
-        <View style={[styles.sticky, { backgroundColor: colors.bg, borderBottomColor: scrollY > 60 ? colors.line : 'transparent' }]}>
-          <View style={[styles.search, { backgroundColor: colors.card, borderColor: colors.line, boxShadow: colors.shadowCard }]}>
-            <Icon name="search" size={20} color={colors.ink600} />
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Tìm video, PDF, sách, tác giả…"
-              placeholderTextColor={colors.ink600}
-              accessibilityLabel="Tìm tài liệu"
-              returnKeyType="search"
-              style={[type.input, styles.input, { color: colors.ink900 }]}
-            />
-            {searching && (
-              <Pressable accessibilityRole="button" accessibilityLabel="Xoá tìm kiếm" onPress={() => setQuery('')} hitSlop={8} style={[styles.clear, { backgroundColor: colors.surfaceAlt }]}>
-                <Icon name="close" size={14} color={colors.ink600} />
-              </Pressable>
-            )}
-          </View>
+        {/* 0 · Lọc chủ đề (dính trên cùng khi cuộn) */}
+        <View style={[styles.sticky, { backgroundColor: colors.bg, borderBottomColor: scrollY > 8 ? colors.line : 'transparent' }]}>
           <TopicChips value={topic} onChange={setTopic} />
         </View>
 
         {/* 2 · nội dung */}
         <View>
-          {!searching && <MyDocsBanner saved={savedCount} bought={boughtCount} />}
-
-          {!searching && watching && (
-            <View style={styles.section}>
-              <SectionHead title="Đang xem" />
-              <Pressable
-                accessibilityRole="link"
-                accessibilityLabel={`Tiếp tục ${watching.title}, đã xem ${w.progress}%, ${w.remaining}`}
-                onPress={() => openDoc(watching)}
-                style={({ pressed }) => [styles.watching, { backgroundColor: colors.card, borderColor: colors.line, opacity: pressed ? 0.85 : 1 }]}
-              >
-                <View style={[styles.watchIcon, { backgroundColor: illo.typeVideo }]}>
-                  <Icon name="video" size={26} strokeWidth={1.8} color="#ffffff" />
-                </View>
-                <View style={styles.grow}>
-                  <Text style={[styles.author, { color: colors.ink600 }]} numberOfLines={1}>
-                    {watching.author}
-                  </Text>
-                  <Text style={[styles.watchTitle, { color: colors.ink900 }]} numberOfLines={1}>
-                    {watching.title}
-                  </Text>
-                  <View style={styles.progressRow}>
-                    <View style={[styles.track, { backgroundColor: colors.line }]}>
-                      <View style={[styles.fill, { width: `${w.progress}%`, backgroundColor: colors.emerald500 }]} />
-                    </View>
-                    <Text style={[type.chip, { color: colors.emerald700 }]}>{w.remaining}</Text>
-                  </View>
-                </View>
-              </Pressable>
-            </View>
-          )}
+          {!(loading && docs.length === 0) && <MyDocsBanner saved={savedCount} bought={boughtCount} />}
 
           {videos.length > 0 && (
             <View style={styles.section}>
@@ -146,8 +119,23 @@ export function DocumentsScreen() {
             </View>
           )}
 
-          {videos.length + pdfs.length + books.length === 0 && (
-            <EmptyState text={searching ? `Không tìm thấy tài liệu cho "${query.trim()}".` : 'Chưa có tài liệu trong chủ đề này.'} />
+          {loading && docs.length === 0 ? (
+            // Lần đầu tải: skeleton thẻ Tài liệu của tôi + dòng PDF + lưới sách
+            <Skeleton label="Đang tải tài liệu" style={styles.bones}>
+              <Bone h={96} r={22} />
+              <Bone w="35%" h={20} style={styles.bonesTitle} />
+              <RowBones count={2} />
+              <Bone w="25%" h={20} style={styles.bonesTitle} />
+              <BookGridBones count={3} />
+            </Skeleton>
+          ) : failed && docs.length === 0 ? (
+            <Pressable accessibilityRole="button" onPress={refresh} style={styles.loading}>
+              <Text style={[type.label, { color: colors.emerald700 }]}>Không tải được tài liệu. Bấm để thử lại</Text>
+            </Pressable>
+          ) : (
+            videos.length + pdfs.length + books.length === 0 && (
+              <EmptyState text="Chưa có tài liệu trong chủ đề này." />
+            )
           )}
         </View>
       </ScrollView>
@@ -258,13 +246,17 @@ const styles = StyleSheet.create({
   grow: { flex: 1, minWidth: 0 },
   small: { fontFamily: fonts.sans400, fontSize: 12, lineHeight: 16 },
   author: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16, marginBottom: 2 },
-  titleWrap: { paddingHorizontal: 20 },
-  sticky: { paddingTop: 16, paddingBottom: 12, gap: 12, borderBottomWidth: 1, zIndex: 10 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingBottom: 16, zIndex: 10 },
+  iconBtn: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  sticky: { paddingBottom: 12, borderBottomWidth: 1, zIndex: 10 },
   search: { marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 10, height: 52, paddingLeft: 16, paddingRight: 10, borderRadius: 16, borderWidth: 1 },
   input: { flex: 1, minWidth: 0, height: '100%', paddingVertical: 0, ...(Platform.OS === 'web' ? ({ outlineStyle: 'none' } as object) : null) },
   clear: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 
   section: { paddingTop: 36, paddingHorizontal: 20, gap: 16 },
+  loading: { paddingVertical: 48, alignItems: 'center' },
+  bones: { paddingTop: 16, paddingHorizontal: 20, gap: 14 },
+  bonesTitle: { marginTop: 18 },
 
   banner: { marginTop: 16, marginHorizontal: 20, overflow: 'hidden', flexDirection: 'row', alignItems: 'center', gap: 18, paddingVertical: 18, paddingLeft: 20, paddingRight: 16, borderRadius: 22 },
   bannerRing: { position: 'absolute', width: 140, height: 140, borderRadius: 70, borderWidth: 22, right: -46, top: -60 },
@@ -284,10 +276,4 @@ const styles = StyleSheet.create({
   statLabel: { fontFamily: fonts.sans400, fontSize: 13, lineHeight: 18 },
   statDivider: { width: 1, height: 18 },
 
-  watching: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16, borderRadius: 20, borderWidth: 1 },
-  watchIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  watchTitle: { fontFamily: fonts.sans600, fontSize: 15, lineHeight: 22 },
-  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
-  track: { flex: 1, height: 6, borderRadius: 9999, overflow: 'hidden' },
-  fill: { height: 6, borderRadius: 9999 },
 });

@@ -1,6 +1,6 @@
-import { ComingSoon } from '@/components/ComingSoon';
+import { CampaignScreen } from '@/components/home/CampaignScreen';
 
-/** Trang chi tiết chiến dịch (mở từ thẻ chiến dịch trên Home). Sẽ làm sau. */
-export default function CampaignScreen() {
-  return <ComingSoon title="Chi tiết ưu đãi" back />;
+/** Khuyến mãi › chi tiết (mở từ thẻ trong carousel Khuyến mãi trên Home). */
+export default function CampaignRoute() {
+  return <CampaignScreen />;
 }
