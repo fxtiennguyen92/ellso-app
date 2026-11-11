@@ -149,7 +149,7 @@ export type PathLesson = {
   icon: IconName;
   /** Bài thường: thời lượng ước tính, ví dụ "12 phút" */
   duration?: string;
-  /** Bài gặp gia sư: ngày hẹn (đã đặt lịch) */
+  /** Bài gặp người hướng dẫn: ngày hẹn (đã đặt lịch) */
   meetingDate?: string;
 };
 

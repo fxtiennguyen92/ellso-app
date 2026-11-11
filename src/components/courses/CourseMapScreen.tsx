@@ -370,7 +370,7 @@ function PinnedChapter({ infos, current }: { infos: ChapterInfo[]; current: numb
   );
 }
 
-/** Nền gradient cho nút bài gặp gia sư / kiểm tra đã xong. */
+/** Nền gradient cho nút bài gặp người hướng dẫn / kiểm tra đã xong. */
 function GradientFill({ id, from, to }: { id: string; from: string; to: string }) {
   return (
     <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
@@ -385,8 +385,8 @@ function GradientFill({ id, from, to }: { id: string; from: string; to: string }
   );
 }
 
-/** Vòng sóng toả ra quanh bài kế tiếp: màu đặc của chương (không dùng màu ring trong suốt) để đủ rõ. */
-function PulseRing({ color }: { color: string }) {
+/** Sóng toả ra quanh bài kế tiếp: màu đặc của chương (không dùng màu ring trong suốt) để đủ rõ; cùng hình với nút (tròn / vuông bo góc). */
+function PulseRing({ color, radius }: { color: string; radius: number }) {
   const v = useLoop(1800, { kind: 'forward' });
   return (
     <Animated.View
@@ -394,7 +394,7 @@ function PulseRing({ color }: { color: string }) {
       style={[
         StyleSheet.absoluteFill,
         {
-          borderRadius: 9999,
+          borderRadius: radius,
           backgroundColor: color,
           opacity: v.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0] }),
           transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.5] }) }],
@@ -513,14 +513,14 @@ function LessonNode({
         }
       : lesson.kind === 'test'
         ? open
-          ? { text: 'Kiểm tra', fg: colors.testInk, bg: colors.testTint }
-          : { text: 'Kiểm tra', fg: colors.ink600, bg: colors.surfaceAlt }
+          ? { text: 'Bài kiểm tra', fg: colors.testInk, bg: colors.testTint }
+          : { text: 'Bài kiểm tra', fg: colors.ink600, bg: colors.surfaceAlt }
         : null;
 
   return (
     <View onLayout={onLayout} style={[styles.node, { transform: [{ translateX: offset }] }]}>
       <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-        {isNext && <PulseRing color={lesson.kind === 'lesson' ? theme.base : lesson.kind === 'test' ? illo.testLo : illo.meetLo} />}
+        {isNext && <PulseRing color={lesson.kind === 'lesson' ? theme.base : lesson.kind === 'test' ? illo.testLo : illo.meetLo} radius={radius} />}
         <Pressable
           accessibilityRole={open ? 'link' : 'image'}
           accessibilityLabel={a11y}

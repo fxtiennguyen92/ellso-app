@@ -29,6 +29,8 @@ Run lint and typecheck before declaring any task done.
 - Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
 - **Đường dẫn (route) luôn bằng tiếng Anh** (vd `/profile/wallet`, `/books/12/read`), không dùng tiếng Việt không dấu. Màn con cần ẩn thanh tab thì đặt trong nhóm ngoài `(tabs)` (vd `(account)`) nhưng giữ đường dẫn theo tab (`/profile/...`).
 - Người hướng dẫn / giáo viên hiển thị bằng `<InstructorTag>` (avatar + "Người hướng dẫn" / tên); không ghi "HLV", "Huấn luyện viên" trước tên.
+- **Tuyệt đối không dùng chữ "gia sư"** ở bất kỳ đâu (giao diện, toast, thông báo, nội dung mẫu, comment). Luôn gọi là **"người hướng dẫn"** (vd bài trên lộ trình: "Gặp người hướng dẫn"; hằng số `TUTOR_LABEL` trong `src/components/home/tutorLabel.ts`).
+- Nhãn loại bài trên lộ trình: **"Gặp người hướng dẫn"**, **"Bài kiểm tra"** (không ghi gọn "Kiểm tra").
 - Docs: https://docs.expo.dev/router/introduction.md
 
 ## Building with EAS

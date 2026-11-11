@@ -46,7 +46,7 @@ export const lightColors = {
   amberChip: '#fef3c7',
   amberChipText: '#92400e',
   amberChipLine: '#fcd34d',
-  /** Bài gặp gia sư / bài kiểm tra trên lộ trình (trạng thái chưa xong). */
+  /** Bài gặp người hướng dẫn / bài kiểm tra trên lộ trình (trạng thái chưa xong). */
   meetInk: '#c2410c',
   meetTint: '#fff7ed',
   meetLine: '#fed7aa',
