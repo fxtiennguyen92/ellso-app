@@ -59,12 +59,13 @@ export function AccessSheet({ doc, onClose, onNotice }: { doc: Doc | null; onClo
         return {
           title: `Mở ${a.lesson} của khoá ${a.courseTitle}`,
           desc: `Tài liệu đi kèm ${a.lesson}. Bài đã mở là xem được, không cần học xong.`,
-          action: 'Đi tới bài học',
+          action: 'Xem khoá học',
           icon: 'link',
-          run: () => go(`/courses/${a.courseId}`),
+          // Mở trang giới thiệu khoá chứa bài (tab Bài học); quay lại → đúng chỗ ở màn Tài liệu
+          run: () => a.courseId && go({ pathname: '/catalog/[id]', params: { id: a.courseId } }),
         };
       case 'course':
-        return { title: `Sở hữu khoá ${a.courseTitle}`, desc: 'Mua khoá, nhập mã kích hoạt hoặc được gán khoá học.', action: 'Xem khoá học', icon: 'courses', run: () => go('/courses') };
+        return { title: `Sở hữu khoá ${a.courseTitle}`, desc: 'Mua khoá, nhập mã kích hoạt hoặc được gán khoá học.', action: 'Xem khoá học', icon: 'courses', run: () => a.courseId && go({ pathname: '/catalog/[id]', params: { id: a.courseId } }) };
       case 'free':
       default:
         return { title: 'Miễn phí', desc: 'Ai cũng xem được.', action: 'Xem ngay', icon: 'check', run: onClose };

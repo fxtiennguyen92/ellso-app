@@ -313,7 +313,7 @@ const initials = (name: string) =>
 function SizeTile({ value, label }: { value: number; label: string }) {
   const { colors } = useTheme();
   return (
-    <View style={[styles.sizeTile, { backgroundColor: colors.mint50 }]}>
+    <View style={[styles.sizeTile, { backgroundColor: colors.mint50, borderColor: colors.mint100 }]}>
       <Text style={[styles.sizeValue, { color: colors.emerald700 }]}>{value}</Text>
       <Text style={[type.caption, { color: colors.emerald800 }]}>{label}</Text>
     </View>
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   tabLine: { height: 3, borderRadius: 2, alignSelf: 'stretch' },
   tabBody: { paddingHorizontal: 20, paddingTop: 20 },
   sizeRow: { flexDirection: 'row', gap: 10 },
-  sizeTile: { flex: 1, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 12, alignItems: 'center' },
+  sizeTile: { flex: 1, borderRadius: 16, borderWidth: 1, paddingVertical: 14, paddingHorizontal: 12, alignItems: 'center' },
   sizeValue: { fontFamily: fonts.display600, fontSize: 28, lineHeight: 34 },
   card: { borderRadius: 20, borderWidth: 1, paddingHorizontal: 16 },
   cardNote: { paddingVertical: 12 },

@@ -9,12 +9,13 @@ import { fonts, type } from '@/theme/typography';
 /**
  * Thẻ chương trình huấn luyện (Home), màu chính emerald. Chương trình thường 6–8 buổi nên không vẽ từng buổi:
  * ô "Ngày bắt đầu" (thứ, ngày, giờ) cạnh ô "Số buổi" (n buổi, đến ngày nào); dưới cùng địa điểm (trái)
- * và học phí chữ to (phải). Góc trên: badge "Đã đăng ký" hoặc "Hết chỗ" (chỉ khi có). Bấm → bottom sheet chi tiết.
+ * và học phí chữ to (phải). Góc trên phải: badge "Đang diễn ra" (đã qua buổi đầu, chưa hết buổi cuối) và "Đã đăng ký" /
+ * "Hết chỗ" (chỉ khi có). Đang diễn ra → ô trái thành "Buổi tiếp theo". Bấm → bottom sheet chi tiết.
  */
 export function TrainingCard({ training, onPress }: { training: HomeTraining; onPress: () => void }) {
   const { colors } = useTheme();
   const t = training;
-  const first = t.schedule[0] ?? { start: t.next.start, end: t.next.end, state: 'upcoming' as const };
+  const first = t.ongoing ? t.next : (t.schedule[0] ?? { start: t.next.start, end: t.next.end, state: 'upcoming' as const });
   const last = t.schedule[t.schedule.length - 1];
   const total = t.sessionsCount || t.schedule.length;
   const f = formatSession(first);
@@ -25,7 +26,7 @@ export function TrainingCard({ training, onPress }: { training: HomeTraining; on
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${t.title}. Người hướng dẫn ${trainer}. Bắt đầu ${f.weekday} ${dayMonth(first.start)}, ${f.startTime}. ${total} buổi${last ? `, đến ${dayMonth(last.start)}` : ''}. ${fee.main}${fee.sub ? ` ${fee.sub}` : ''}.${t.registered ? ' Đã đăng ký.' : full ? ' Hết chỗ.' : ''} Xem chi tiết`}
+      accessibilityLabel={`${t.title}. Người hướng dẫn ${trainer}. ${t.ongoing ? `Đang diễn ra. Buổi ${t.next.number}` : 'Bắt đầu'} ${f.weekday} ${dayMonth(first.start)}, ${f.startTime}. ${total} buổi${last ? `, đến ${dayMonth(last.start)}` : ''}. ${fee.main}${fee.sub ? ` ${fee.sub}` : ''}.${t.registered ? ' Đã đăng ký.' : full ? ' Hết chỗ.' : ''} Xem chi tiết`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
@@ -42,7 +43,9 @@ export function TrainingCard({ training, onPress }: { training: HomeTraining; on
 
       <View style={[styles.panel, { backgroundColor: colors.mint50 }]}>
         <View style={styles.cell}>
-          <Text style={[type.eyebrow, styles.eyebrow, { color: colors.emerald700 }]}>Ngày bắt đầu</Text>
+          <Text style={[type.eyebrow, styles.eyebrow, { color: colors.emerald700 }]}>
+            {t.ongoing ? `Buổi tiếp theo · ${t.next.number}` : 'Ngày bắt đầu'}
+          </Text>
           <Text style={[styles.big, { color: colors.ink900 }]}>
             {f.weekday}, {dayMonth(first.start)}
           </Text>
@@ -71,17 +74,27 @@ export function TrainingCard({ training, onPress }: { training: HomeTraining; on
         </View>
       </View>
 
-      {/* Badge góc trên: chỉ hiện khi đã đăng ký hoặc hết chỗ */}
-      {t.registered ? (
-        <View style={[styles.badge, { backgroundColor: colors.emerald700, borderColor: colors.card }]}>
-          <Icon name="check" size={12} strokeWidth={3} color={colors.onEmerald} />
-          <Text style={[type.chip, { color: colors.onEmerald }]}>Đã đăng ký</Text>
+      {/* Badge góc trên phải: Đang diễn ra + Đã đăng ký / Hết chỗ (chỉ khi có) */}
+      {(t.ongoing || t.registered || full) && (
+        <View style={styles.badges} pointerEvents="none">
+          {t.ongoing && (
+            <View style={[styles.badge, { backgroundColor: colors.amberChip, borderColor: colors.card }]}>
+              <View style={[styles.liveDot, { backgroundColor: colors.amberChipText }]} />
+              <Text style={[type.chip, { color: colors.amberChipText }]}>Đang diễn ra</Text>
+            </View>
+          )}
+          {t.registered ? (
+            <View style={[styles.badge, { backgroundColor: colors.emerald700, borderColor: colors.card }]}>
+              <Icon name="check" size={12} strokeWidth={3} color={colors.onEmerald} />
+              <Text style={[type.chip, { color: colors.onEmerald }]}>Đã đăng ký</Text>
+            </View>
+          ) : full ? (
+            <View style={[styles.badge, { backgroundColor: colors.dangerTint, borderColor: colors.card }]}>
+              <Text style={[type.chip, { color: colors.danger }]}>Hết chỗ</Text>
+            </View>
+          ) : null}
         </View>
-      ) : full ? (
-        <View style={[styles.badge, { backgroundColor: colors.dangerTint, borderColor: colors.dangerLine }]}>
-          <Text style={[type.chip, { color: colors.danger }]}>Hết chỗ</Text>
-        </View>
-      ) : null}
+      )}
     </Pressable>
   );
 }
@@ -102,10 +115,9 @@ const styles = StyleSheet.create({
   fee: { alignItems: 'flex-end' },
   feeMain: { fontFamily: fonts.display700, fontSize: 20, lineHeight: 26 },
   feeSub: { fontFamily: fonts.sans500, fontSize: 12, lineHeight: 16 },
+  badges: { position: 'absolute', top: -11, right: 16, flexDirection: 'row', gap: 6 },
+  liveDot: { width: 7, height: 7, borderRadius: 4 },
   badge: {
-    position: 'absolute',
-    top: -11,
-    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,

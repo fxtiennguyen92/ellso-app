@@ -201,6 +201,18 @@ export function QuestionBones() {
   );
 }
 
+/** Thông tin vé (chương trình huấn luyện): dải đầu vé, ô QR vuông giữa, vài dòng điểm danh. */
+export function TicketBones() {
+  return (
+    <Skeleton label="Đang tải vé" style={styles.list}>
+      <Bone h={96} r={20} />
+      <Bone w={200} h={200} r={16} style={{ alignSelf: 'center', marginTop: 8 }} />
+      <Bone w="40%" h={12} style={{ alignSelf: 'center' }} />
+      <BoneLines lines={3} />
+    </Skeleton>
+  );
+}
+
 const styles = StyleSheet.create({
   home: { gap: 8 },
   pad: { paddingHorizontal: 16 },

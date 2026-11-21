@@ -51,6 +51,15 @@
           "photosPermission": "Ellso cần quyền truy cập thư viện ảnh để bạn chọn ảnh đại diện.",
           "cameraPermission": "Ellso cần quyền dùng camera để bạn chụp ảnh đại diện."
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Ellso cần quyền dùng camera để quét mã QR điểm danh.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": true
+        }
       ]
     ],
     "scheme": "ellso",

@@ -124,3 +124,10 @@ Nếu thấy chỗ nào trong code đang lệch so với branding, báo lại th
 ## Tìm kiếm
 - Một màn `/search` (`components/search/SearchScreen.tsx`) dùng chung: Trang chủ (ô tìm kiếm) → `scope=all` (Khoá học + Tài liệu); tab Khoá học → `scope=courses`; tab Tài liệu → `scope=documents`. Header các tab chỉ có **nút** tìm kiếm (không ô nhập trong tab).
 - Mỗi phần hiện tối đa **7 kết quả**, nút "Xem thêm kết quả" tải tiếp 7 (server: `/courses?q=&page=&per_page=7`, `/documents?q=&page=&per_page=7`). Gõ xong 0,35 giây mới tìm, từ 2 ký tự.
+
+## Chương trình huấn luyện & Workshop (Home)
+- Chương trình hiện tới khi **qua buổi cuối**; `ongoing` (đã qua buổi đầu) → badge "Đang diễn ra" góc trên phải thẻ, cạnh "Đã đăng ký" / "Hết chỗ"; ô trái thẻ thành "Buổi tiếp theo".
+- `TrainingSheet`: đã đăng ký → tab **Thông tin vé** đứng trước Tổng quan, mở mặc định (mã vé + QR `ELLSO-TICKET:` cho app người hướng dẫn / kiểm soát viên quét sau này, điểm danh từng buổi); nút nổi "Quét mã điểm danh" mở `CheckinScanner` (expo-camera, quét QR `ELLSO-CHECKIN:` của chương trình → `POST /v1/trainings/checkin`; có "Nhập mã" khi không có camera). Mã QR chương trình chỉ có hiệu lực trong ngày có buổi (giờ VN).
+- expo-camera cần **development build** (không chạy trong Expo Go); web dùng camera của trình duyệt.
+- `WorkshopSheet`: chọn ngày (bấm thẻ hoặc bấm thẳng ô ngày trên thẻ) → "Đăng ký buổi này" → popup `CenterDialog` gõ **DANG KY** để xác nhận → `POST /v1/workshop-sessions/{id}/register`. Ngày đã đăng ký có badge "Đã đăng ký" ở mép dưới ô (cả thẻ Home lẫn bảng).
+- Không lồng `Pressable` trong `Pressable` (web báo lỗi `<button>` trong `<button>`): thẻ có nút con thì lớp bấm cả thẻ đặt `absoluteFill` phía dưới (xem `WorkshopCard`).
