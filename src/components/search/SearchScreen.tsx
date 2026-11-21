@@ -10,7 +10,7 @@ import { useDocuments } from '@/components/documents/DocumentsContext';
 import { MyDocRow } from '@/components/documents/MyDocumentsScreen';
 import { Icon } from '@/components/Icon';
 import { RowBones } from '@/components/skeletons';
-import { apiCatalog, type CatalogCourse, formatPrice } from '@/data/courses';
+import { apiCatalog, type CatalogCourse, categoryLabel, formatPrice } from '@/data/courses';
 import { apiSearchDocuments, type Doc } from '@/data/documents';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -262,7 +262,7 @@ function CourseRow({ course: c }: { course: CatalogCourse }) {
       </View>
       <View style={styles.rowText}>
         <Text style={[type.chip, styles.meta, { color: colors.ink600 }]} numberOfLines={1}>
-          {[c.category?.name, c.instructor?.name].filter(Boolean).join(' · ')}
+          {[categoryLabel(c.categories), c.instructor?.name].filter(Boolean).join(' · ')}
         </Text>
         <Text style={[styles.rowTitle, { color: colors.ink900 }]} numberOfLines={2}>
           {c.title}

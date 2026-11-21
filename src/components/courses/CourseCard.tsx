@@ -3,7 +3,7 @@ import { type GestureResponderEvent, Pressable, StyleSheet, Text, View } from 'r
 
 import { Icon } from '@/components/Icon';
 import { InstructorTag } from '@/components/InstructorTag';
-import { type CatalogCourse, formatPrice, studyLabel } from '@/data/courses';
+import { type CatalogCourse, categoryLabel, formatPrice, studyLabel } from '@/data/courses';
 import { useTheme } from '@/theme/ThemeProvider';
 import { illo } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
@@ -16,6 +16,9 @@ import { CourseCover, coursePalette } from './CourseCover';
  * người hướng dẫn + nút "Thêm vào" (thêm vào giỏ) → đã trong giỏ thì "Xem giỏ hàng" (mở trang giỏ).
  * Đã sở hữu / miễn phí: chỉ nút "Bắt đầu học" / "Tiếp tục học" (bấm ảnh / tên khoá để xem trang giới thiệu).
  */
+const sortFirst = <T extends { id: number }>(list: T[], id?: number | null) =>
+  id ? [...list.filter((c) => c.id === id), ...list.filter((c) => c.id !== id)] : list;
+
 export function CourseCard({
   course,
   inCart,
@@ -23,8 +26,11 @@ export function CourseCard({
   onAddToCart,
   onOpen,
   onStart,
+  focusCategoryId,
 }: {
   course: CatalogCourse;
+  /** Đang lọc theo danh mục nào → danh mục đó đứng đầu nhãn ("Lãnh đạo +1"). */
+  focusCategoryId?: number | null;
   inCart: boolean;
   busy: boolean;
   onAddToCart: (e: GestureResponderEvent) => void;
@@ -61,7 +67,7 @@ export function CourseCard({
 
         <View style={styles.info}>
           <Text style={[type.chip, styles.meta, { color: colors.ink600 }]} numberOfLines={1}>
-            {[course.category?.name, course.lessonCount > 0 ? `${course.lessonCount} bài học` : null].filter(Boolean).join(' · ').toUpperCase()}
+            {[categoryLabel(sortFirst(course.categories, focusCategoryId)), course.lessonCount > 0 ? `${course.lessonCount} bài học` : null].filter(Boolean).join(' · ').toUpperCase()}
           </Text>
           <Text style={[styles.title, { color: colors.ink900 }]} numberOfLines={2}>
             {course.title}

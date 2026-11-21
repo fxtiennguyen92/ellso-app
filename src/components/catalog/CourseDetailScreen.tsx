@@ -128,12 +128,17 @@ export function CourseDetailScreen() {
                 <Rect width="100%" height="100%" fill="url(#courseShade)" />
               </Svg>
               <View style={styles.heroInfo}>
-                {course.category ? (
-                  <View style={styles.heroTag}>
-                    <Icon name="courses" size={12} strokeWidth={2.2} color="#ffffff" />
-                    <Text style={styles.heroTagText} numberOfLines={1}>
-                      {course.category.name}
-                    </Text>
+                {/* Khoá thuộc được nhiều danh mục → mỗi danh mục một nhãn */}
+                {course.categories.length > 0 ? (
+                  <View style={styles.heroTags}>
+                    {course.categories.map((cat) => (
+                      <View key={cat.id} style={styles.heroTag}>
+                        <Icon name="courses" size={12} strokeWidth={2.2} color="#ffffff" />
+                        <Text style={styles.heroTagText} numberOfLines={1}>
+                          {cat.name}
+                        </Text>
+                      </View>
+                    ))}
                   </View>
                 ) : null}
                 <Text accessibilityRole="header" style={styles.heroTitle} numberOfLines={3}>
@@ -368,6 +373,7 @@ const styles = StyleSheet.create({
 
   hero: { overflow: 'hidden', borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
   heroInfo: { position: 'absolute', left: 20, right: 20, bottom: 22, gap: 8 },
+  heroTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   heroTag: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
