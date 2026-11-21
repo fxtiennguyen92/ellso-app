@@ -8,17 +8,22 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "vn.edu.ellso.app"
+      "bundleIdentifier": "vn.edu.ellso.app",
+      "icon": {
+        "light": "./assets/icon.png",
+        "dark": "./assets/icon-ios-dark.png",
+        "tinted": "./assets/icon-ios-tinted.png"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#10B981",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "vn.edu.ellso.app"
+      "package": "vn.edu.ellso.app",
+      "icon": "./assets/icon.png"
     },
     "web": {
       "favicon": "./assets/favicon.png",

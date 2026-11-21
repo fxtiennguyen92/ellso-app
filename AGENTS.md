@@ -132,3 +132,9 @@ Nếu thấy chỗ nào trong code đang lệch so với branding, báo lại th
 - `WorkshopSheet`: chọn ngày (bấm thẻ hoặc bấm thẳng ô ngày trên thẻ). Chưa đăng ký: khối ngày (giờ trái, "Còn n chỗ" phải) + nút nổi "Đăng ký buổi này" → **form ngay dưới hàng ngày** (không popup, không tự mở bàn phím): gõ **DANG KY** + "Xác nhận đăng ký" → `POST /v1/workshop-sessions/{id}/register`. Đã đăng ký: badge "Đã đăng ký" ở ô ngày (cả thẻ Home lẫn bảng) + card thông tin đăng ký; buổi chưa bắt đầu → nút nổi "Huỷ đăng ký" → xác nhận ngay trong card → `DELETE …/register`.
 - Không mở popup có ô nhập `autoFocus` (popup và bàn phím bung cùng lúc → vỡ bố cục). Ô nhập trong bottom sheet: bảng thấp lại theo chiều cao bàn phím + `useKeyboardForm` cuộn ô lên.
 - Không lồng `Pressable` trong `Pressable` (web báo lỗi `<button>` trong `<button>`): thẻ có nút con thì lớp bấm cả thẻ đặt `absoluteFill` phía dưới (xem `WorkshopCard`).
+
+## Icon ứng dụng
+- Theo brand guidelines mục 1.5: chữ e (từ `ellso-favicon.svg`) màu trắng trên nền vuông emerald `#10B981`, e rộng ~58% cạnh, căn giữa; không tự bo góc / bóng (hệ điều hành tự bo). Nguồn SVG: `assets/app-icon/icon.svg`.
+- iOS: `ios.icon` light (`assets/icon.png`, 1024, không trong suốt), dark (`icon-ios-dark.png`: e emerald, nền trong suốt — iOS tự phủ nền tối), tinted (`icon-ios-tinted.png`: e trắng, nền trong suốt).
+- Android: adaptive icon nền màu `#10B981` + `android-icon-foreground.png` (e trắng trong vùng an toàn 72/108dp) + `android-icon-monochrome.png` (Android 13+ themed icon); `android.icon` = `assets/icon.png` cho máy cũ. Web: `favicon.png` = e emerald.
+- Đổi icon cần build lại bản cài (EAS / `npx expo run:*`), Expo Go không đổi icon.
