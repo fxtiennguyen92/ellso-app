@@ -388,6 +388,12 @@ export async function registerWorkshopSession(sessionId: string, token: string):
   return toWorkshopSession(data);
 }
 
+/** Huỷ đăng ký buổi (trước giờ bắt đầu; đăng ký do Ellso thêm → cancel_not_allowed; đã bắt đầu → cancel_closed). */
+export async function cancelWorkshopSession(sessionId: string, token: string): Promise<WorkshopSessionItem> {
+  const { data } = await apiRequest<{ data: ApiWorkshopSession }>('DELETE', `/workshop-sessions/${sessionId}/register`, { token });
+  return toWorkshopSession(data);
+}
+
 // ---------- Định dạng ngày giờ / tiền tiếng Việt ----------
 
 const WEEKDAYS = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
