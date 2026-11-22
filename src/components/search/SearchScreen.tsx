@@ -9,6 +9,7 @@ import { CourseCover } from '@/components/courses/CourseCover';
 import { useDocuments } from '@/components/documents/DocumentsContext';
 import { MyDocRow } from '@/components/documents/MyDocumentsScreen';
 import { Icon } from '@/components/Icon';
+import { Mascot } from '@/components/mascots/Mascot';
 import { RowBones } from '@/components/skeletons';
 import { apiCatalog, type CatalogCourse, categoryLabel, formatPrice } from '@/data/courses';
 import { apiSearchDocuments, type Doc } from '@/data/documents';
@@ -140,9 +141,8 @@ export function SearchScreen({ scope }: { scope: SearchScope }) {
       <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]}>
         {!searching && !pending ? (
           <View style={styles.hint}>
-            <View style={[styles.hintIcon, { backgroundColor: colors.mint50 }]}>
-              <Icon name="search" size={28} color={colors.emerald700} />
-            </View>
+            {/* Thỏ cầm kính lúp: đung đưa kính như đang soi tìm, thỉnh thoảng quét qua lại */}
+            <Mascot name="tho" size={150} holding="magnifier" actionEvery={5500} accessibilityLabel="Thỏ cầm kính lúp" />
             <Text style={[type.body, styles.center, { color: colors.ink600 }]}>
               {scope === 'courses'
                 ? 'Nhập tên khoá học, chủ đề hoặc người hướng dẫn.'
@@ -284,7 +284,6 @@ const styles = StyleSheet.create({
   clear: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   content: { paddingHorizontal: 16 },
   hint: { alignItems: 'center', gap: 14, paddingTop: 64, paddingHorizontal: 24 },
-  hintIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
   center: { textAlign: 'center' },
   section: { paddingTop: 20, gap: 12 },
   count: { fontFamily: fonts.sans500, fontSize: 14 },

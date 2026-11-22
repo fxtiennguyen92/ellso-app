@@ -7,7 +7,6 @@ import { UserAvatar } from '@/components/UserAvatar';
 import type { MascotName } from '@/components/mascots/Mascot';
 import { useRevealStyle } from '@/components/splash/RevealContext';
 import { DEFAULT_TAGLINE } from '@/data/home';
-import { useLoop } from '@/hooks/useLoop';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
@@ -64,14 +63,7 @@ export function HomeHeader({ student, tagline, scrolled, topInset, onHeroHeight 
             </Text>
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={student.unreadNotifications > 0 ? `Thông báo, có ${student.unreadNotifications} thông báo mới` : 'Thông báo'}
-            style={({ pressed }) => [styles.bell, { backgroundColor: colors.heroGlass, borderColor: colors.heroGlassLine, opacity: pressed ? 0.75 : 1 }]}
-          >
-            <Icon name="bell" color={colors.heroOn} />
-            {student.unreadNotifications > 0 && <NotificationDot ring={colors.heroMid} />}
-          </Pressable>
+          {/* Nút Thông báo: tạm ẩn cho đến khi có thông báo */}
         </View>
 
         <View style={styles.tagline}>
@@ -110,26 +102,6 @@ export function HomeHeader({ student, tagline, scrolled, topInset, onHeroHeight 
   );
 }
 
-function NotificationDot({ ring }: { ring: string }) {
-  const { colors } = useTheme();
-  const ping = useLoop(1800, { kind: 'forward' });
-  return (
-    <View pointerEvents="none" style={styles.dotWrap}>
-      <Animated.View
-        style={[
-          styles.dotFill,
-          {
-            backgroundColor: colors.spark500,
-            opacity: ping.interpolate({ inputRange: [0, 1], outputRange: [0.6, 0] }),
-            transform: [{ scale: ping.interpolate({ inputRange: [0, 1], outputRange: [1, 2.4] }) }],
-          },
-        ]}
-      />
-      <View style={[styles.dotFill, { backgroundColor: colors.spark500, borderWidth: 2, borderColor: ring }]} />
-    </View>
-  );
-}
-
 const SEARCH_H = SEARCH_HEIGHT;
 
 const styles = StyleSheet.create({
@@ -144,7 +116,6 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   greeting: { flex: 1, minWidth: 0 },
-  bell: { width: 44, height: 44, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   dotWrap: { position: 'absolute', top: 9, right: 10, width: 9, height: 9 },
   dotFill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 9999 },
   tagline: { flexDirection: 'row', alignItems: 'center', gap: 10 },

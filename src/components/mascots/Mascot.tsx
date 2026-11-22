@@ -1,6 +1,6 @@
 import { useContext, useEffect, useId, useMemo, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import Svg from 'react-native-svg';
+import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
 
 import { LoopActiveContext } from '@/hooks/LoopScope';
 import { NATIVE_DRIVER } from '@/hooks/useLoop';
@@ -62,6 +62,8 @@ type Props = {
   actionKey?: number;
   /** Bấm vào mascot cũng chạy hành động. */
   pressable?: boolean;
+  /** Đồ vật cầm trên tay (hiện có: kính lúp — chỉ cho Thỏ, màn Tìm kiếm). */
+  holding?: 'magnifier';
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
 };
@@ -86,6 +88,7 @@ export function Mascot({
   actionEvery = 6000,
   actionKey,
   pressable = false,
+  holding,
   style,
   accessibilityLabel,
 }: Props) {
@@ -278,6 +281,33 @@ export function Mascot({
     return null;
   };
 
+  // Kính lúp: lớp trên cùng, xoay quanh bàn tay phải (250, 362) — đung đưa như đang soi tìm; hành động: quét qua lại
+  const magnifier =
+    holding === 'magnifier' && name === 'tho' ? (
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            transformOrigin: origin([250, 362]),
+            transform: [{ rotate: deg(sinA, 7) }, { rotate: rotSteps([0, 0.2, 0.45, 0.7, 0.9, 1], [0, -16, 12, -14, 4, 0]) }],
+          },
+        ]}
+      >
+        <Svg width={width} height={height} viewBox={box.join(' ')} style={StyleSheet.absoluteFill}>
+          <Rect x="252" y="286" width="16" height="74" rx="8" fill="#065F46" transform="rotate(-18 260 323)" />
+          <Rect x="256" y="292" width="5" height="56" rx="2.5" fill="#FFFFFF" opacity="0.25" transform="rotate(-18 260 323)" />
+          <Circle cx="240" cy="246" r="46" fill="#ECFDF5" opacity="0.35" />
+          <Circle cx="240" cy="246" r="46" fill="none" stroke="#047857" strokeWidth="11" />
+          <Circle cx="240" cy="246" r="46" fill="none" stroke="#FFFFFF" strokeOpacity="0.25" strokeWidth="3" />
+          <Path d="M214 228 Q222 212 240 208" stroke="#FFFFFF" strokeWidth="7" strokeLinecap="round" fill="none" opacity="0.85" />
+          <Ellipse cx="214" cy="238" rx="4" ry="4" fill="#FFFFFF" opacity="0.8" />
+          <G>
+            <Circle cx="250" cy="362" r="20" fill="#FFFFFF" stroke="#10B981" strokeOpacity="0.35" strokeWidth="3" />
+          </G>
+        </Svg>
+      </Animated.View>
+    ) : null;
+
   const layers = MASCOT_ART[name];
   const viewBox = box.join(' ');
   const draw = (layer: (typeof layers)[number]) => (
@@ -309,6 +339,7 @@ export function Mascot({
               </View>
             );
           })}
+        {magnifier}
       </Animated.View>
     </View>
   );

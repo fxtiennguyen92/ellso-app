@@ -1,7 +1,6 @@
-import * as Clipboard from 'expo-clipboard';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
@@ -10,17 +9,17 @@ import { BOTTOM_BAR_SPACE } from '@/components/BottomBar';
 import { BottomSheet } from '@/components/BottomSheet';
 import { HeroBackground } from '@/components/HeroBackground';
 import { Icon } from '@/components/Icon';
-import { QrCode } from '@/components/QrCode';
 import { useToast } from '@/components/Toast';
 import { UserAvatar } from '@/components/UserAvatar';
 import type { MascotName } from '@/components/mascots/Mascot';
-import { daysUntil, displayLink, dmy, getProfile, groupThousands, type ProfileSection } from '@/data/profile';
+import { daysUntil, dmy, getProfile, groupThousands, type ProfileSection } from '@/data/profile';
 import { NATIVE_DRIVER } from '@/hooks/useLoop';
 import { appVersionLabel } from '@/lib/appVersion';
 import { useTheme } from '@/theme/ThemeProvider';
 import { illo } from '@/theme/tokens';
 import { fonts, type } from '@/theme/typography';
 
+import { ReferralQrSheet } from './ReferralQrSheet';
 import { RowIcon, SettingsGroup, SettingsRow, settingsStyles, ThemeSegment, Toggle } from './SettingsParts';
 
 // Trang con của Hồ sơ: /profile/<key> (tên tiếng Anh). Màn đã làm nằm ngoài thanh tab (nhóm (account)),
@@ -50,7 +49,6 @@ export function ProfileScreen() {
   // Mã / link giới thiệu: mã thật từ tài khoản, link theo mẫu tạm
   const mock = getProfile();
   const code = user?.referralCode ?? mock.referral.code;
-  const referralLink = `https://ellso.app/r/${code}`;
   const name = user?.name ?? '';
   const initials = user?.initials ?? '?';
   const membership =
@@ -114,28 +112,6 @@ export function ProfileScreen() {
       setCompact((c) => (c === on ? c : on));
     },
   });
-
-  const copy = async (text: string, message: string) => {
-    try {
-      await Clipboard.setStringAsync(text);
-      showToast(message);
-    } catch {
-      showToast('Không sao chép được');
-    }
-  };
-
-  const share = async () => {
-    const message = `Học cùng mình trên Ellso! Dùng mã ${code} khi đăng ký: ${referralLink}`;
-    // Web: trình duyệt không hỗ trợ share sheet → sao chép link thay thế
-    if (Platform.OS === 'web' && !(typeof navigator !== 'undefined' && 'share' in navigator)) {
-      return copy(referralLink, 'Đã sao chép link giới thiệu');
-    }
-    try {
-      await Share.share({ message, url: referralLink, title: 'Mời bạn học Ellso' });
-    } catch {
-      copy(referralLink, 'Đã sao chép link giới thiệu');
-    }
-  };
 
   const refreshButton = (
     <Pressable
@@ -327,33 +303,7 @@ export function ProfileScreen() {
       </View>
 
       {/* QR giới thiệu */}
-      <BottomSheet visible={qrOpen} onClose={() => setQrOpen(false)} title="Mã QR giới thiệu">
-        <View style={styles.qrWrap}>
-          <View style={[styles.qrBox, { borderColor: colors.line }]}>
-            {/* QR luôn đen trên trắng để máy quét đọc tốt ở cả chế độ tối */}
-            <QrCode value={referralLink} size={220} color="#0f172a" background="#ffffff" />
-          </View>
-          <Text style={[type.caption, styles.center, { color: colors.ink600 }]}>Bạn bè quét mã này để đăng ký với mã giới thiệu của bạn</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Sao chép mã ${code}`}
-            onPress={() => copy(code, `Đã sao chép mã ${code}`)}
-            style={({ pressed }) => [styles.qrCode, { backgroundColor: colors.mint50, borderColor: colors.emerald500, opacity: pressed ? 0.8 : 1 }]}
-          >
-            <Text style={[styles.qrCodeText, { color: colors.ink900 }]}>{code}</Text>
-            <Icon name="copy" size={16} color={colors.emerald700} />
-          </Pressable>
-          <Text style={[type.caption, { color: colors.ink600 }]}>{displayLink(referralLink)}</Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={share}
-            style={({ pressed }) => [styles.primary, { backgroundColor: pressed ? colors.emerald800 : colors.emerald700 }]}
-          >
-            <Icon name="share" size={18} color={colors.onEmerald} />
-            <Text style={[type.label, { color: colors.onEmerald }]}>Chia sẻ link</Text>
-          </Pressable>
-        </View>
-      </BottomSheet>
+      <ReferralQrSheet visible={qrOpen} code={code} onClose={() => setQrOpen(false)} onMessage={showToast} />
 
       {/* Gói thành viên: thời hạn + Gia hạn */}
       <BottomSheet visible={memberOpen} onClose={() => setMemberOpen(false)} title="Tài khoản thành viên">
@@ -437,9 +387,10 @@ function BigAvatar({ initials, uri, mascot }: { initials: string; uri?: string |
             <Stop offset="1" stopColor={colors.heroGlow} />
           </LinearGradient>
         </Defs>
-        <Circle cx="52" cy="52" r="50" fill="none" stroke={`url(#${id})`} strokeWidth={2.5} />
+        <Circle cx="52" cy="52" r="51" fill="none" stroke={`url(#${id})`} strokeWidth={2} />
       </Svg>
-      <UserAvatar uri={uri} mascot={mascot} initials={initials} size={90} bg={colors.mint100} fg={colors.emerald800} borderColor={colors.heroGlassLine} borderWidth={3} />
+      {/* Vòng ngoài 50–52, avatar bán kính 46 (viền 2) → khe đều 4px quanh avatar */}
+      <UserAvatar uri={uri} mascot={mascot} initials={initials} size={92} bg={colors.mint100} fg={colors.emerald800} borderColor={colors.heroGlassLine} borderWidth={2} />
     </View>
   );
 }
@@ -493,6 +444,7 @@ const styles = StyleSheet.create({
   pillInner: { position: 'relative', zIndex: 1, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14 },
   pillText: { fontFamily: fonts.sans700, fontSize: 13, lineHeight: 18 },
 
+  primary: { alignSelf: 'stretch', height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 },
   memberSheet: { gap: 14 },
   memberCard: { borderRadius: 18, overflow: 'hidden' },
   memberCardInner: { position: 'relative', zIndex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
@@ -522,11 +474,6 @@ const styles = StyleSheet.create({
   compactIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
   compactName: { fontFamily: fonts.display600, fontSize: 16, lineHeight: 22 },
 
-  qrWrap: { alignItems: 'center', gap: 12 },
-  qrBox: { padding: 12, borderRadius: 20, borderWidth: 1, backgroundColor: '#ffffff' },
-  qrCode: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 44, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed' },
-  qrCodeText: { fontFamily: fonts.display600, fontSize: 18, lineHeight: 24, letterSpacing: 2.2 },
-  primary: { alignSelf: 'stretch', height: 48, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 4 },
   confirmRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
   secondary: { flex: 1, height: 48, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   danger: { flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

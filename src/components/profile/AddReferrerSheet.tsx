@@ -98,7 +98,7 @@ export function AddReferrerSheet({ visible, onClose, onAdded }: Props) {
               autoCapitalize="characters"
               autoCorrect={false}
               autoComplete="off"
-              placeholder="VD: TIEN2026"
+              placeholder="VD: ELLSO"
               placeholderTextColor={colors.ink400}
               accessibilityLabel="Mã giới thiệu"
               maxLength={16}

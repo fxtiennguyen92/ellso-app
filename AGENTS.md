@@ -143,6 +143,8 @@ Nếu thấy chỗ nào trong code đang lệch so với branding, báo lại th
 - 5 nhân vật theo tài liệu `claude/ellso-mascots.md`: Thỏ (chính), Mầm, Tia, Cú Minh, Sổ. SVG gốc ở `assets/mascots/*.svg`, nhóm `<g id="L-…">` = lớp động (tai, lá, tay, mắt mở/nhắm, miệng…). Sửa SVG xong chạy `python3 scripts/gen-mascots.py` để sinh lại `mascotArt.generated.tsx` (đừng sửa tay file sinh).
 - `<Mascot name size crop="full|face" motion="lively|subtle|none" actionEvery actionKey pressable>`: mỗi lớp là một `<Svg>` chồng nhau, cử động bằng Animated (native driver). lively = nhún / đung đưa liên tục + chớp mắt + hành động riêng định kỳ; subtle = chỉ chớp mắt và thỉnh thoảng cử động một nhịp (ảnh đại diện). Tự đứng yên khi bật Giảm chuyển động hoặc màn không focus.
 - Màn tài khoản: Đăng nhập = Thỏ (nhảy 2 nhịp), Đăng ký = Mầm (bật lên, lá xoay), Quên mật khẩu = Cú Minh (gật đầu + nháy mắt).
+- Màn Tìm kiếm (chưa gõ): Thỏ cầm kính lúp (`holding="magnifier"`, kính đung đưa / quét qua lại quanh tay phải).
+- Trang chủ tạm ẩn nút Thông báo (chưa có thông báo). Mã QR giới thiệu dùng chung `profile/ReferralQrSheet` (Hồ sơ + Bạn bè khi chưa giới thiệu ai).
 - Ảnh đại diện mascot: `user.avatarMascot` (server lưu `avatar = "mascot:<tên>"`, API `PUT /v1/me/avatar/mascot`); `<UserAvatar mascot>` vẽ mặt mascot trên nền mint, ưu tiên hơn ảnh. Chọn ở Sửa thông tin cá nhân › Đổi ảnh đại diện.
 
 ## Điều khoản & Chính sách bảo mật
