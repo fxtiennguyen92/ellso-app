@@ -9,7 +9,7 @@ import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
-import { IdCardArt } from './AuthArt';
+import { SproutArt } from './AuthArt';
 import { AuthField, AuthScreen, AuthTitle, BackButton, Checkbox, ErrorText, FooterPrompt, goBackToLogin, Note, PrimaryButton } from './AuthUI';
 import { ReferralSheet } from './ReferralSheet';
 
@@ -73,9 +73,9 @@ export function RegisterScreen() {
 
         <View style={styles.titleRow}>
           <View style={styles.grow}>
-            <AuthTitle title="Tạo tài khoản" subtitle="Chỉ cần họ tên và email. Mật khẩu tạm sẽ được gửi qua email." />
+            <AuthTitle title="Tạo tài khoản" subtitle="Để bắt đầu lộ trình học tập của bạn." />
           </View>
-          <IdCardArt />
+          <SproutArt />
         </View>
 
         <View style={styles.form}>
@@ -88,7 +88,7 @@ export function RegisterScreen() {
               if (errors.name) setErrors((e) => ({ ...e, name: undefined }));
             }}
             error={errors.name}
-            placeholder="Nguyễn Văn A"
+            placeholder="Họ và tên"
             autoCapitalize="words"
             autoComplete="name"
             textContentType="name"
@@ -158,8 +158,8 @@ export function RegisterScreen() {
           </View>
 
           <Note>
-            Chúng tôi sẽ gửi <Text style={{ fontFamily: fonts.sans700 }}>mật khẩu tạm</Text> tới email này. Lần đầu đăng nhập, bạn sẽ đặt mật khẩu của
-            riêng mình.
+            Ellso sẽ gửi <Text style={{ fontFamily: fonts.sans700 }}>mật khẩu</Text> đến email của bạn. Nếu không thấy trong hộp thư đến, vui lòng kiểm tra
+            thư mục Spam.
           </Note>
 
           <View style={styles.agreeWrap}>
@@ -172,11 +172,11 @@ export function RegisterScreen() {
             >
               <Text style={[styles.agree, { color: colors.ink600 }]}>
                 Tôi đồng ý với{' '}
-                <Text style={[styles.agreeLink, { color: colors.emerald700 }]} onPress={() => showToast('Điều khoản sẽ có ở bước sau')}>
+                <Text style={[styles.agreeLink, { color: colors.emerald700 }]} onPress={() => router.push('/legal/terms')}>
                   Điều khoản
                 </Text>{' '}
                 và{' '}
-                <Text style={[styles.agreeLink, { color: colors.emerald700 }]} onPress={() => showToast('Chính sách bảo mật sẽ có ở bước sau')}>
+                <Text style={[styles.agreeLink, { color: colors.emerald700 }]} onPress={() => router.push('/legal/privacy')}>
                   Chính sách bảo mật
                 </Text>{' '}
                 của Ellso.

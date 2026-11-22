@@ -62,7 +62,7 @@ export function AccountInfoScreen() {
         >
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.line }]}>
             <View style={styles.identity}>
-              <UserAvatar uri={user.avatar} initials={user.initials} size={56} bg={colors.mint100} fg={colors.emerald800} />
+              <UserAvatar uri={user.avatar} mascot={user.avatarMascot} initials={user.initials} size={56} bg={colors.mint100} fg={colors.emerald800} />
               <View style={styles.grow}>
                 <Text style={[styles.name, { color: colors.ink900 }]} numberOfLines={1}>
                   {user.name}

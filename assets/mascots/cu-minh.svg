@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 440" width="400" height="440" role="img" aria-label="Cú Minh, mascot người dẫn dắt của Ellso">
+  <defs>
+    <radialGradient id="c-hi" cx="0.3" cy="0.24" r="0.55"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"></stop><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"></stop></radialGradient>
+    <radialGradient id="c-sh" cx="0.75" cy="0.95" r="0.8"><stop offset="0.2" stop-color="#0F172A" stop-opacity="0.3"></stop><stop offset="1" stop-color="#0F172A" stop-opacity="0"></stop></radialGradient>
+    <clipPath id="c-clip"><path d="M200 96 C292 96 334 152 334 238 C334 334 282 392 200 392 C118 392 66 334 66 238 C66 152 108 96 200 96 Z"></path></clipPath>
+  </defs>
+  <g id="L-shadow"><ellipse cx="200" cy="412" rx="124" ry="16" fill="#0F172A" opacity="0.12"></ellipse></g>
+  <ellipse cx="78" cy="286" rx="30" ry="62" fill="#065F46" transform="rotate(18 78 286)"></ellipse>
+  <g id="L-wing-r"><ellipse cx="322" cy="286" rx="30" ry="62" fill="#065F46" transform="rotate(-18 322 286)"></ellipse></g>
+  <path d="M200 96 C292 96 334 152 334 238 C334 334 282 392 200 392 C118 392 66 334 66 238 C66 152 108 96 200 96 Z" fill="#047857"></path>
+  <g clip-path="url(#c-clip)">
+    <rect x="60" y="90" width="280" height="310" fill="url(#c-sh)"></rect>
+    <rect x="60" y="90" width="280" height="310" fill="url(#c-hi)"></rect>
+    <ellipse cx="200" cy="334" rx="80" ry="58" fill="#34D399" opacity="0.55"></ellipse>
+  </g>
+  <path d="M168 318 Q180 328 192 318" stroke="#047857" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.7"></path>
+  <path d="M208 318 Q220 328 232 318" stroke="#047857" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.7"></path>
+  <path d="M188 342 Q200 352 212 342" stroke="#047857" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.7"></path>
+  <ellipse cx="170" cy="394" rx="22" ry="11" fill="#F59E0B"></ellipse>
+  <ellipse cx="230" cy="394" rx="22" ry="11" fill="#F59E0B"></ellipse>
+  <circle cx="156" cy="222" r="60" fill="#ECFDF5"></circle>
+  <circle cx="244" cy="222" r="60" fill="#ECFDF5"></circle>
+  <ellipse cx="118" cy="262" rx="14" ry="8" fill="#F59E0B" opacity="0.4"></ellipse>
+  <ellipse cx="282" cy="262" rx="14" ry="8" fill="#F59E0B" opacity="0.4"></ellipse>
+  <g id="L-eye-open-l"><circle cx="156" cy="222" r="22" fill="#0F172A"></circle><circle cx="148" cy="213" r="7" fill="#FFFFFF"></circle><circle cx="164" cy="230" r="3" fill="#FFFFFF" opacity="0.8"></circle></g>
+  <g id="L-eye-closed-l"><path d="M136 228 Q156 206 176 228" stroke="#0F172A" stroke-width="6.5" stroke-linecap="round" fill="none"></path></g>
+  <g id="L-eye-open-r"><circle cx="244" cy="222" r="22" fill="#0F172A"></circle><circle cx="236" cy="213" r="7" fill="#FFFFFF"></circle><circle cx="252" cy="230" r="3" fill="#FFFFFF" opacity="0.8"></circle></g>
+  <g id="L-eye-closed-r"><path d="M224 228 Q244 206 264 228" stroke="#0F172A" stroke-width="6.5" stroke-linecap="round" fill="none"></path></g>
+  <circle cx="156" cy="222" r="38" stroke="#0F172A" stroke-width="6" fill="none"></circle>
+  <circle cx="244" cy="222" r="38" stroke="#0F172A" stroke-width="6" fill="none"></circle>
+  <path d="M194 216 Q200 208 206 216" stroke="#0F172A" stroke-width="6" stroke-linecap="round" fill="none"></path>
+  <path d="M138 200 Q146 194 154 196" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.7"></path>
+  <path d="M226 200 Q234 194 242 196" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.7"></path>
+  <path d="M188 258 L212 258 L200 280 Z" fill="#F59E0B" stroke="#F59E0B" stroke-width="4" stroke-linejoin="round"></path>
+  <path d="M148 110 L148 134 Q200 154 252 134 L252 110 Z" fill="#1E293B"></path>
+  <path d="M112 108 L200 72 L288 108 L200 144 Z" fill="#0F172A"></path>
+  <path d="M150 98 L200 78 L232 91" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.25"></path>
+  <circle cx="200" cy="108" r="6" fill="#F59E0B"></circle>
+  <g id="L-tassel">
+  <path d="M200 108 L272 120 L272 150" stroke="#F59E0B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+  <ellipse cx="272" cy="158" rx="7" ry="10" fill="#F59E0B"></ellipse>
+  </g>
+</svg>

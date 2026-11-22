@@ -56,6 +56,8 @@ export type HomeTraining = {
   sessionsCount: number;
   registered: boolean;
   registrationOpen: boolean;
+  /** Đã qua buổi đầu, chưa hết buổi cuối (vẫn hiện tới khi qua buổi cuối). */
+  ongoing: boolean;
   /** Buổi sắp tới gần nhất (số thứ tự trong chương trình). */
   next: { number: number; start: string; end: string; place: string | null };
   /** Mọi buổi của chương trình (buổi 1 … n). */
@@ -70,9 +72,19 @@ export type ContentBlock =
   | { type: 'callout'; tone: 'info' | 'warning'; title: string | null; text: string }
   | { type: 'promo_code'; code: string; description?: string | null; discount?: string | null; ends_at?: string | null; note?: string | null };
 
+/** Vé của học viên đã đăng ký: mã + nội dung QR (app giáo viên / kiểm soát viên quét) + điểm danh từng buổi. */
+export type TrainingTicket = {
+  code: string;
+  qr: string;
+  holder: string;
+  registeredAt: string;
+  attendance: { number: number; checkedInAt: string | null; method: 'self_scan' | 'staff_scan' | 'manual' | null }[];
+};
+
 /** Chi tiết chương trình (bottom sheet): nội dung + địa điểm, ghi chú từng buổi. */
 export type TrainingDetail = HomeTraining & {
   capacity: number | null;
+  ticket: TrainingTicket | null;
   blocks: ContentBlock[];
   sessions: (TrainingSlot & {
     note: string | null;
@@ -132,7 +144,16 @@ type ApiTraining = {
   seats_left: number | null;
   sessions_count: number;
   registered: boolean | null;
+  ongoing?: boolean;
   next_session: ApiSession | null;
+  ticket?: ApiTicket | null;
+};
+type ApiTicket = {
+  code: string;
+  qr: string;
+  holder: string;
+  registered_at: string;
+  attendance: { session_id: Id; number: number; checked_in_at: string | null; method: string | null }[];
 };
 type ApiWorkshop = {
   id: Id;
@@ -172,6 +193,7 @@ const toTraining = (t: ApiTraining): HomeTraining | null =>
         seatsLeft: t.seats_left,
         sessionsCount: t.sessions_count,
         registered: !!t.registered,
+        ongoing: !!t.ongoing,
         next: {
           number: t.next_session.number,
           start: t.next_session.starts_at,
@@ -245,6 +267,19 @@ export async function loadTraining(id: string, token: string | null): Promise<Tr
   return {
     ...base,
     capacity: data.capacity,
+    ticket: data.ticket
+      ? {
+          code: data.ticket.code,
+          qr: data.ticket.qr,
+          holder: data.ticket.holder,
+          registeredAt: data.ticket.registered_at,
+          attendance: data.ticket.attendance.map((a) => ({
+            number: a.number,
+            checkedInAt: a.checked_in_at,
+            method: a.method as TrainingTicket['attendance'][number]['method'],
+          })),
+        }
+      : null,
     blocks: data.blocks ?? [],
     sessions: (data.sessions ?? []).map((x) => ({
       ...toSlot(x),
@@ -257,6 +292,106 @@ export async function loadTraining(id: string, token: string | null): Promise<Tr
 /** Đăng ký cả chương trình (cần gói thành viên còn hạn; có phí → lỗi payment_required). */
 export async function registerTraining(id: string, token: string): Promise<void> {
   await apiRequest('POST', `/trainings/${id}/register`, { token });
+}
+
+export type CheckinResult = { courseId: string; courseTitle: string; number: number; checkedInAt: string; already: boolean };
+
+/**
+ * Tự điểm danh: gửi nội dung mã QR của chương trình (quét ở lớp) hoặc mã gõ tay.
+ * Lỗi (ApiError.code): invalid_code · not_registered · no_session_today.
+ */
+export async function checkinTraining(code: string, token: string): Promise<CheckinResult> {
+  const { data } = await apiRequest<{
+    data: { course_id: Id; course_title: string; number: number; checked_in_at: string; already: boolean };
+  }>('POST', '/trainings/checkin', { token, body: { code } });
+  return { courseId: String(data.course_id), courseTitle: data.course_title, number: data.number, checkedInAt: data.checked_in_at, already: data.already };
+}
+
+// ---------- Workshop: chi tiết + đăng ký từng buổi ----------
+
+export type WorkshopSessionItem = {
+  id: string;
+  start: string;
+  end: string;
+  state: SessionState;
+  note: string | null;
+  seatsLeft: number | null;
+  full: boolean;
+  registrationOpen: boolean;
+  registered: boolean;
+  meetingUrl: string | null;
+  linkAvailableAt: string | null;
+};
+export type WorkshopDetail = {
+  id: string;
+  title: string;
+  summary: string | null;
+  bannerUrl: string | null;
+  trainer: string | null;
+  trainerAvatar: string | null;
+  isFree: boolean;
+  price: number;
+  capacity: number | null;
+  blocks: ContentBlock[];
+  sessions: WorkshopSessionItem[];
+};
+type ApiWorkshopSession = {
+  id: Id;
+  starts_at: string;
+  ends_at: string;
+  state: SessionState;
+  note: string | null;
+  seats_left: number | null;
+  full: boolean;
+  registration_open: boolean;
+  registered: boolean | null;
+  meeting_url: string | null;
+  link_available_at: string | null;
+};
+const toWorkshopSession = (s: ApiWorkshopSession): WorkshopSessionItem => ({
+  id: String(s.id),
+  start: s.starts_at,
+  end: s.ends_at,
+  state: s.state,
+  note: s.note,
+  seatsLeft: s.seats_left,
+  full: s.full,
+  registrationOpen: s.registration_open,
+  registered: !!s.registered,
+  meetingUrl: s.meeting_url,
+  linkAvailableAt: s.link_available_at,
+});
+
+/** GET /workshops/{id} — các buổi chưa kết thúc, kèm trạng thái đăng ký của mình. */
+export async function loadWorkshop(id: string, token: string | null): Promise<WorkshopDetail> {
+  const { data } = await apiRequest<{
+    data: Omit<ApiWorkshop, 'next_session'> & { summary: string | null; banner: { url: string | null } | null; blocks?: ContentBlock[]; sessions: ApiWorkshopSession[] };
+  }>('GET', `/workshops/${id}`, { token });
+  return {
+    id: String(data.id),
+    title: data.title,
+    summary: data.summary,
+    bannerUrl: data.banner?.url ?? null,
+    trainer: data.trainer?.name ?? null,
+    trainerAvatar: data.trainer?.avatar ?? null,
+    isFree: data.is_free,
+    price: data.price,
+    capacity: data.capacity,
+    blocks: data.blocks ?? [],
+    sessions: data.sessions.map(toWorkshopSession),
+  };
+}
+
+/** Đăng ký một buổi (cần gói thành viên còn hạn; có phí → payment_required; đủ chỗ → full). */
+export async function registerWorkshopSession(sessionId: string, token: string): Promise<WorkshopSessionItem> {
+  const { data } = await apiRequest<{ data: ApiWorkshopSession }>('POST', `/workshop-sessions/${sessionId}/register`, { token });
+  return toWorkshopSession(data);
+}
+
+/** Huỷ đăng ký buổi (trước giờ bắt đầu; đăng ký do Ellso thêm → cancel_not_allowed; đã bắt đầu → cancel_closed). */
+export async function cancelWorkshopSession(sessionId: string, token: string): Promise<WorkshopSessionItem> {
+  const { data } = await apiRequest<{ data: ApiWorkshopSession }>('DELETE', `/workshop-sessions/${sessionId}/register`, { token });
+  return toWorkshopSession(data);
 }
 
 // ---------- Định dạng ngày giờ / tiền tiếng Việt ----------

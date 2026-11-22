@@ -18,6 +18,7 @@ import { fonts, type } from '@/theme/typography';
 import { AddReferrerSheet } from './AddReferrerSheet';
 import { InfoSection } from './InfoSection';
 import { ListFooter } from './ListParts';
+import { ReferralQrSheet } from './ReferralQrSheet';
 
 /**
  * Hồ sơ › Bạn bè. Hai khối:
@@ -31,6 +32,7 @@ export function FriendsScreen() {
   const [scrolled, setScrolled] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [toast, showToast] = useToast();
+  const [qrOpen, setQrOpen] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -105,9 +107,17 @@ export function FriendsScreen() {
               {!list.loading && !list.error && n === 0 ? (
                 <View style={[styles.card, styles.empty, { backgroundColor: colors.card, borderColor: colors.line }]}>
                   <Icon name="people" size={28} color={colors.ink400} />
-                  <Text style={[type.body, styles.center, { color: colors.ink600 }]}>
-                    Bạn chưa giới thiệu ai. Chia sẻ mã giới thiệu{user?.referralCode ? ` ${user.referralCode}` : ''} (nút QR ở trang Hồ sơ) để bạn bè đăng ký.
-                  </Text>
+                  <Text style={[type.body, styles.center, { color: colors.ink600 }]}>Bạn chưa giới thiệu ai.</Text>
+                  {user?.referralCode ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => setQrOpen(true)}
+                      style={({ pressed }) => [styles.qrButton, { backgroundColor: pressed ? colors.emerald800 : colors.emerald700 }]}
+                    >
+                      <Icon name="qr" size={18} color={colors.onEmerald} />
+                      <Text style={[type.label, { color: colors.onEmerald }]}>Mã QR giới thiệu</Text>
+                    </Pressable>
+                  ) : null}
                 </View>
               ) : null}
             </InfoSection>
@@ -117,6 +127,9 @@ export function FriendsScreen() {
         ListFooterComponent={<ListFooter loading={list.loading || list.loadingMore} error={list.error} done={!list.hasMore} empty={n === 0} onRetry={list.reload} />}
       />
 
+      {user?.referralCode ? (
+        <ReferralQrSheet visible={qrOpen} code={user.referralCode} onClose={() => setQrOpen(false)} onMessage={showToast} />
+      ) : null}
       <AddReferrerSheet
         visible={addOpen}
         onClose={() => setAddOpen(false)}
@@ -155,6 +168,7 @@ function FriendRow({ friend, first, last }: { friend: Friend; first: boolean; la
 }
 
 const styles = StyleSheet.create({
+  qrButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, paddingHorizontal: 18, borderRadius: 14, marginTop: 4 },
   screen: { flex: 1 },
   grow: { flex: 1, minWidth: 0 },
   center: { textAlign: 'center' },

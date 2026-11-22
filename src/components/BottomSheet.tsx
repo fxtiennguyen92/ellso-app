@@ -14,13 +14,18 @@ type Props = {
   onClose: () => void;
   title: string;
   children: ReactNode;
+  /**
+   * Đẩy bảng lên khi bàn phím mở (mặc định bật). Tắt khi bàn phím là của popup khác mở chồng lên bảng
+   * (vd popup xác nhận của WorkshopSheet) — nếu không, bảng 78% màn hình bị đẩy / ép cùng lúc với popup → giật, vỡ bố cục.
+   */
+  avoidKeyboard?: boolean;
 };
 
 /**
  * Bảng trượt từ dưới lên (dùng chung). Chạy cả native và web (web: rộng tối đa WEB_MAX_WIDTH, căn giữa).
  * Dùng thay Alert.alert — Alert không hoạt động trên web.
  */
-export function BottomSheet({ visible, onClose, title, children }: Props) {
+export function BottomSheet({ visible, onClose, title, children, avoidKeyboard = true }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
@@ -44,7 +49,7 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose} statusBarTranslucent>
       {/* iOS: đẩy bảng lên khi bàn phím mở (bảng có ô nhập, vd mã giới thiệu) */}
-      <KeyboardAvoidingView style={styles.root} behavior="padding">
+      <KeyboardAvoidingView style={styles.root} behavior="padding" enabled={avoidKeyboard}>
         <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: v }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Đóng" />
         </Animated.View>

@@ -11,7 +11,7 @@ import { WorkshopCard } from './WorkshopCard';
  * Workshop (online, lặp hằng tuần — GET /v1/workshops): dải nền đậm hơn nền trang để tách khỏi Chương trình huấn luyện.
  * Tối đa 3 thẻ; mỗi thẻ hiện 3 ngày sắp diễn ra.
  */
-export function WorkshopSchedule({ workshops }: { workshops: HomeWorkshop[] }) {
+export function WorkshopSchedule({ workshops, onOpen }: { workshops: HomeWorkshop[]; onOpen: (w: HomeWorkshop, sessionId?: string) => void }) {
   const { colors } = useTheme();
   const reveal = useRevealStyle(3);
   const list = workshops.slice(0, 3);
@@ -21,7 +21,7 @@ export function WorkshopSchedule({ workshops }: { workshops: HomeWorkshop[] }) {
     <Animated.View style={[styles.band, { backgroundColor: colors.workshopBand }, reveal]}>
       <SectionTitle title="Workshop" subtitle="Trao đổi hàng tuần" />
       {list.map((w) => (
-        <WorkshopCard key={w.id} workshop={w} />
+        <WorkshopCard key={w.id} workshop={w} onPress={() => onOpen(w)} onPressSession={(id) => onOpen(w, id)} />
       ))}
     </Animated.View>
   );

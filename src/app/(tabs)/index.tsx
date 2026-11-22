@@ -11,8 +11,9 @@ import { TrainingSchedule } from '@/components/home/TrainingSchedule';
 import { TrainingSheet } from '@/components/home/TrainingSheet';
 import { HomeSkeleton } from '@/components/skeletons';
 import { WorkshopSchedule } from '@/components/home/WorkshopSchedule';
+import { WorkshopSheet } from '@/components/home/WorkshopSheet';
 import { useAuth } from '@/auth/AuthProvider';
-import { cachedHomeFeed, emptyFeed, type HomeFeed, type HomeTraining, loadHomeFeed } from '@/data/home';
+import { cachedHomeFeed, emptyFeed, type HomeFeed, type HomeTraining, type HomeWorkshop, loadHomeFeed } from '@/data/home';
 import { LoopScope } from '@/hooks/LoopScope';
 import { useKeepScroll } from '@/hooks/useKeepScroll';
 import { PULL_TRIGGER, usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -27,12 +28,13 @@ export default function HomeScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const { user, token } = useAuth();
-  const student = { name: user?.name ?? 'bạn', initials: user?.initials ?? 'E', avatar: user?.avatar, unreadNotifications: 0 };
+  const student = { name: user?.name ?? 'bạn', initials: user?.initials ?? 'E', avatar: user?.avatar, avatarMascot: user?.avatarMascot, unreadNotifications: 0 };
 
   const [feed, setFeed] = useState<HomeFeed>(() => cachedHomeFeed(token) ?? emptyFeed);
   const [loaded, setLoaded] = useState(() => cachedHomeFeed(token) !== null);
   const [refreshing, setRefreshing] = useState(false);
   const [openTraining, setOpenTraining] = useState<HomeTraining | null>(null);
+  const [openWorkshop, setOpenWorkshop] = useState<{ workshop: HomeWorkshop; sessionId: string | null } | null>(null);
 
   const refresh = useCallback(async () => {
     if (!token) return;
@@ -126,7 +128,7 @@ export default function HomeScreen() {
                 <>
                   <CampaignCarousel campaigns={feed.campaigns} />
                   <TrainingSchedule trainings={feed.trainings} onOpen={setOpenTraining} />
-                  <WorkshopSchedule workshops={feed.workshops} />
+                  <WorkshopSchedule workshops={feed.workshops} onOpen={(workshop, sessionId) => setOpenWorkshop({ workshop, sessionId: sessionId ?? null })} />
                   <HomeBooks books={feed.books} />
                 </>
               )}
@@ -143,6 +145,12 @@ export default function HomeScreen() {
         <ScrollTopButton visible={showTop} onPress={() => scrollRef.current?.scrollTo({ y: ios ? -contentTop : 0, animated: true })} />
 
         <TrainingSheet training={openTraining} onClose={() => setOpenTraining(null)} onChanged={refresh} />
+        <WorkshopSheet
+          workshop={openWorkshop?.workshop ?? null}
+          initialSessionId={openWorkshop?.sessionId}
+          onClose={() => setOpenWorkshop(null)}
+          onChanged={refresh}
+        />
       </View>
     </LoopScope>
   );

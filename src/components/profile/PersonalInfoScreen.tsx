@@ -5,12 +5,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/auth/AuthProvider';
 import { AuthField, ErrorText, PrimaryButton } from '@/components/auth/AuthUI';
 import { BottomSheet } from '@/components/BottomSheet';
+import { Mascot, MASCOTS, type MascotName } from '@/components/mascots/Mascot';
 import { FloatingAction, floatingActionSpace } from '@/components/FloatingAction';
 import { Icon, type IconName } from '@/components/Icon';
 import { SubpageHeader } from '@/components/SubpageHeader';
 import { useToast } from '@/components/Toast';
 import { UserAvatar } from '@/components/UserAvatar';
-import { apiDeleteAvatar, apiUpdateProfile, apiUploadAvatar, isValidPhone, normalizePhone } from '@/data/account';
+import { apiChooseMascot, apiDeleteAvatar, apiUpdateProfile, apiUploadAvatar, isValidPhone, normalizePhone } from '@/data/account';
 import { ApiError } from '@/lib/api';
 import { type AvatarSource, pickAvatar } from '@/lib/pickAvatar';
 import { useKeyboardForm } from '@/hooks/useKeyboardForm';
@@ -86,6 +87,20 @@ export function PersonalInfoScreen() {
     }
   };
 
+  const chooseMascot = async (m: MascotName) => {
+    setSheet(false);
+    if (!token || m === user?.avatarMascot) return;
+    setUploading(true);
+    try {
+      updateUser(await apiChooseMascot(token, m));
+      showToast(`Đã chọn ${MASCOTS.find((x) => x.name === m)?.label ?? 'mascot'} làm ảnh đại diện`);
+    } catch (e) {
+      showToast(e instanceof ApiError ? (e.field('mascot') ?? e.message) : 'Không đổi được ảnh đại diện, thử lại sau.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const removeAvatar = async () => {
     setSheet(false);
     if (!token) return;
@@ -104,7 +119,7 @@ export function PersonalInfoScreen() {
     // Web không chụp trực tiếp được ổn định → chỉ chọn ảnh
     ...(Platform.OS === 'web' ? [] : [{ key: 'camera', icon: 'camera' as const, label: 'Chụp ảnh', onPress: () => choose('camera') }]),
     { key: 'library', icon: 'image', label: Platform.OS === 'web' ? 'Chọn ảnh từ máy' : 'Chọn từ thư viện ảnh', onPress: () => choose('library') },
-    ...(user?.avatar ? [{ key: 'remove', icon: 'trash' as const, label: 'Xoá ảnh đại diện', onPress: removeAvatar, danger: true }] : []),
+    ...(user?.avatar || user?.avatarMascot ? [{ key: 'remove', icon: 'trash' as const, label: 'Xoá ảnh đại diện', onPress: removeAvatar, danger: true }] : []),
   ];
 
   return (
@@ -129,7 +144,7 @@ export function PersonalInfoScreen() {
             onPress={() => setSheet(true)}
             style={({ pressed }) => [styles.avatarPress, { opacity: pressed ? 0.85 : 1 }]}
           >
-            <UserAvatar uri={user?.avatar} initials={user?.initials ?? '?'} size={112} bg={colors.mint100} fg={colors.emerald800} borderColor={colors.card} borderWidth={4} />
+            <UserAvatar uri={user?.avatar} mascot={user?.avatarMascot} initials={user?.initials ?? '?'} size={112} bg={colors.mint100} fg={colors.emerald800} borderColor={colors.card} borderWidth={4} />
             {uploading && (
               <View style={[styles.uploading, { backgroundColor: illo.scrim }]}>
                 <ActivityIndicator color={colors.onEmerald} />
@@ -212,6 +227,36 @@ export function PersonalInfoScreen() {
       </View>
 
       <BottomSheet visible={sheet} onClose={() => setSheet(false)} title="Ảnh đại diện">
+        {/* Chọn mascot: vẽ tại chỗ, chớp mắt và thỉnh thoảng cử động nhẹ khi làm ảnh đại diện */}
+        <Text style={[styles.sheetSection, { color: colors.ink600 }]}>Chọn một mascot của Ellso</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mascotRow} style={styles.mascotScroll}>
+          {MASCOTS.map((m) => {
+            const on = user?.avatarMascot === m.name;
+            return (
+              <Pressable
+                key={m.name}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={`${m.label}, ${m.role}`}
+                onPress={() => chooseMascot(m.name)}
+                style={({ pressed }) => [styles.mascotItem, pressed && { transform: [{ scale: 0.96 }] }]}
+              >
+                <View style={[styles.mascotRing, { borderColor: on ? colors.emerald700 : 'transparent' }]}>
+                  <View style={[styles.mascotFace, { backgroundColor: colors.mint50 }]}>
+                    <Mascot name={m.name} size={64} crop="face" motion="subtle" />
+                  </View>
+                  {on && (
+                    <View style={[styles.mascotCheck, { backgroundColor: colors.emerald700, borderColor: colors.card }]}>
+                      <Icon name="check" size={11} strokeWidth={3.2} color={colors.onEmerald} />
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.mascotLabel, { color: on ? colors.emerald700 : colors.ink900 }]}>{m.label}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+        <Text style={[styles.sheetSection, { color: colors.ink600 }]}>Hoặc dùng ảnh của bạn</Text>
         <View style={[styles.sheetList, { borderColor: colors.line, backgroundColor: colors.card }]}>
           {options.map((o, i) => (
             <Pressable
@@ -249,6 +294,14 @@ const styles = StyleSheet.create({
   readonly: { gap: 8 },
   readonlyBox: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 52, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1 },
   readonlyText: { flex: 1, minWidth: 0, fontFamily: fonts.sans500, fontSize: 15 },
+  sheetSection: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18, marginBottom: 8 },
+  mascotScroll: { flexGrow: 0, marginHorizontal: -4, marginBottom: 16 },
+  mascotRow: { gap: 10, paddingHorizontal: 4 },
+  mascotItem: { alignItems: 'center', gap: 6, width: 76 },
+  mascotRing: { width: 74, height: 74, borderRadius: 37, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center' },
+  mascotFace: { width: 64, height: 64, borderRadius: 32, overflow: 'hidden' },
+  mascotCheck: { position: 'absolute', right: -1, bottom: -1, width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  mascotLabel: { fontFamily: fonts.sans600, fontSize: 13, lineHeight: 18 },
   sheetList: { borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
   sheetRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, paddingHorizontal: 14 },
   sheetIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },

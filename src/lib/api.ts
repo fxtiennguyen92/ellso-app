@@ -29,7 +29,7 @@ const TIMEOUT_MS = 15000;
 const UPLOAD_TIMEOUT_MS = 60000;
 
 export async function apiRequest<T>(
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   opts: { body?: unknown; token?: string | null } = {},
 ): Promise<T> {

@@ -4,6 +4,7 @@ import Svg, { Circle, ClipPath, Defs, G, LinearGradient, Path, RadialGradient, R
 
 import { Icon, type IconName } from '@/components/Icon';
 import { Sparkle } from '@/components/illustrations/Illustrations';
+import { Mascot } from '@/components/mascots/Mascot';
 import { NATIVE_DRIVER, useLoop } from '@/hooks/useLoop';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -52,13 +53,11 @@ function GoldBadge({ size, icon }: { size: number; icon: IconName }) {
 
 // ------------------------------------------------------------------ Đăng nhập
 
-/** Header màn Đăng nhập: quầng sáng + vòng nét đứt xoay chậm + quyển sách 3D nhún + 3 ngôi sao. */
+/** Header màn Đăng nhập: quầng sáng + vòng nét đứt xoay chậm + mascot Thỏ cử động + 3 ngôi sao. */
 export function LoginHeroArt() {
   const { colors } = useTheme();
   const glow = useSvgId('glow');
-  const cover = useSvgId('cover');
   const spin = useSpin(40000);
-  const bob = useLoop(3600);
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <Svg width={360} height={360} style={styles.glow}>
@@ -77,55 +76,9 @@ export function LoginHeroArt() {
         </Svg>
       </Animated.View>
 
-      {/* quyển sách */}
-      <View style={styles.bookBox}>
-        <Animated.View
-          style={[
-            styles.book,
-            {
-              transform: [
-                { translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [0, -10] }) },
-                { rotate: bob.interpolate({ inputRange: [0, 1], outputRange: ['-10deg', '-6deg'] }) },
-              ],
-            },
-          ]}
-        >
-          <Svg width={108} height={92} style={styles.bookCover}>
-            <Defs>
-              <LinearGradient id={cover} x1="0" y1="0" x2="1" y2="1">
-                <Stop offset="0" stopColor={illo.authBookHi} />
-                <Stop offset="1" stopColor={illo.authBookLo} />
-              </LinearGradient>
-            </Defs>
-            <Rect x={0} y={8} width={108} height={74} rx={12} fill={illo.authBookEdge} />
-            <Rect x={0} y={0} width={108} height={74} rx={12} fill={`url(#${cover})`} />
-          </Svg>
-          <View style={styles.page}>
-            <View style={[styles.spine, { backgroundColor: illo.authPageLine }]} />
-            {[
-              [10, 16, 26],
-              [10, 26, 20],
-              [10, 36, 24],
-              [56, 16, 24],
-              [56, 26, 18],
-            ].map(([l, t, w], i) => (
-              <View key={i} style={[styles.pageLine, { left: l, top: t, width: w, backgroundColor: illo.authPageLine }]} />
-            ))}
-          </View>
-          <Svg width={10} height={30} style={styles.ribbon}>
-            <Path d="M0 0H10V30L5 24L0 30Z" fill={illo.goldLo} />
-          </Svg>
-        </Animated.View>
-        <Animated.View
-          style={[
-            styles.blob,
-            {
-              backgroundColor: colors.shadowBlob,
-              opacity: bob.interpolate({ inputRange: [0, 1], outputRange: [1, 0.6] }),
-              transform: [{ scaleX: bob.interpolate({ inputRange: [0, 1], outputRange: [1, 0.8] }) }],
-            },
-          ]}
-        />
+      {/* Thỏ (mascot chính): tai đung đưa, chớp mắt, thỉnh thoảng nhảy 2 nhịp */}
+      <View style={styles.rabbit}>
+        <Mascot name="tho" size={150} actionEvery={6500} accessibilityLabel="Thỏ, mascot của Ellso" />
       </View>
 
       <Sparkle size={14} color={illo.goldLo} style={{ right: 186, top: 92 }} />
@@ -137,42 +90,14 @@ export function LoginHeroArt() {
 
 // ------------------------------------------------------------------ Đăng ký
 
-/** Thẻ học viên 3D nhún nhẹ cạnh tiêu đề "Tạo tài khoản". */
-export function IdCardArt() {
+/** Mascot Mầm cạnh tiêu đề "Tạo tài khoản": lá đung đưa, chớp mắt, thỉnh thoảng bật lên + lá xoay một vòng + vẫy tay. */
+export function SproutArt() {
   const { colors } = useTheme();
-  const id = useSvgId('idc');
-  const bob = useLoop(3200);
   return (
-    <View pointerEvents="none" style={styles.idBox}>
-      <Animated.View
-        style={[
-          styles.idCard,
-          {
-            transform: [
-              { translateY: bob.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) },
-              { rotate: bob.interpolate({ inputRange: [0, 1], outputRange: ['-6deg', '-2deg'] }) },
-            ],
-          },
-        ]}
-      >
-        <Svg width={72} height={60} style={StyleSheet.absoluteFill}>
-          <Defs>
-            <LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor={illo.authIdHi} />
-              <Stop offset="1" stopColor={illo.authIdLo} />
-            </LinearGradient>
-          </Defs>
-          <Rect x={0} y={6} width={72} height={54} rx={12} fill={illo.authIdEdge} />
-          <Rect x={0} y={0} width={72} height={54} rx={12} fill={`url(#${id})`} />
-          <Circle cx={20} cy={23} r={11} fill="#ffffff" />
-          <Circle cx={20} cy={22} r={7} fill={illo.authIdHi} />
-          <Rect x={38} y={14} width={24} height={5} rx={2.5} fill="#ffffff" />
-          <Rect x={38} y={24} width={16} height={5} rx={2.5} fill="#ffffff" opacity={0.7} />
-          <Rect x={9} y={40} width={52} height={4} rx={2} fill="#ffffff" opacity={0.5} />
-        </Svg>
-      </Animated.View>
-      <Sparkle size={14} color={illo.goldLo} style={{ right: 0, top: 0 }} />
-      <Sparkle size={10} color={colors.emerald500} delay={800} style={{ left: 0, bottom: 2 }} />
+    <View pointerEvents="none" style={styles.sproutBox}>
+      <Mascot name="mam" size={100} actionEvery={6000} accessibilityLabel="Mầm, mascot của Ellso" />
+      <Sparkle size={14} color={illo.goldLo} style={{ right: -2, top: 6 }} />
+      <Sparkle size={10} color={colors.emerald500} delay={800} style={{ left: -2, bottom: 18 }} />
     </View>
   );
 }
@@ -218,41 +143,15 @@ export function KeyArt({ hole }: { hole: string }) {
 
 // ------------------------------------------------------------------ Quên mật khẩu
 
-/** Ổ khoá có dấu "?" + huy hiệu chìa khoá, trong 2 vòng tròn tím. */
-export function LockArt() {
+/** Mascot Cú Minh màn Quên mật khẩu: nghiêng đầu, tua mũ lắc; thỉnh thoảng gật đầu 2 lần + nháy mắt. */
+export function OwlArt() {
   const { colors } = useTheme();
-  const id = useSvgId('lock');
-  const float = useLoop(3200);
-  const pop = useLoop(2600, { kind: 'pop' });
   return (
-    <View pointerEvents="none" style={[styles.lockCircle, { backgroundColor: colors.violetTint }]}>
-      <View style={[styles.lockInner, { backgroundColor: colors.violetLine }]} />
-      <Animated.View
-        style={{
-          width: 84,
-          height: 102,
-          transform: [
-            { translateY: float.interpolate({ inputRange: [0, 1], outputRange: [0, -6] }) },
-            { rotate: float.interpolate({ inputRange: [0, 1], outputRange: ['-6deg', '-2deg'] }) },
-          ],
-        }}
-      >
-        <View style={[styles.shackle, { borderColor: illo.authShackle }]} />
-        <Svg width={84} height={68} style={styles.lockBody}>
-          <Defs>
-            <LinearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor={illo.authLockHi} />
-              <Stop offset="1" stopColor={illo.authLockLo} />
-            </LinearGradient>
-          </Defs>
-          <Rect x={0} y={6} width={84} height={62} rx={16} fill={illo.authLockEdge} />
-          <Rect x={0} y={0} width={84} height={62} rx={16} fill={`url(#${id})`} />
-        </Svg>
-        <Text style={styles.lockQ}>?</Text>
-      </Animated.View>
-      <Animated.View style={[styles.lockBadge, { transform: [{ scale: pop.interpolate({ inputRange: [-1, 0, 1], outputRange: [0.95, 1, 1.2] }) }] }]}>
-        <GoldBadge size={34} icon="key" />
-      </Animated.View>
+    <View pointerEvents="none" style={styles.owlBox}>
+      <View style={[styles.owlHalo, { backgroundColor: colors.mint50 }]} />
+      <Mascot name="cuMinh" size={150} actionEvery={6500} accessibilityLabel="Cú Minh, mascot của Ellso" />
+      <Sparkle size={14} color={illo.goldLo} style={{ right: 8, top: 18 }} />
+      <Sparkle size={10} color={colors.emerald500} delay={800} style={{ left: 10, top: 64 }} />
     </View>
   );
 }
@@ -325,47 +224,12 @@ const styles = StyleSheet.create({
 
   glow: { position: 'absolute', right: -120, top: -110 },
   ring: { position: 'absolute', right: -38, top: 2, width: 230, height: 230 },
-  bookBox: { position: 'absolute', right: 52, top: 82, width: 120, height: 120 },
-  book: { position: 'absolute', left: 6, top: 6, width: 108, height: 92 },
-  bookCover: { position: 'absolute', left: 0, top: 10 },
-  page: { position: 'absolute', left: 8, top: 0, width: 92, height: 70, borderRadius: 8, backgroundColor: '#ffffff' },
-  spine: { position: 'absolute', left: 45, top: 0, width: 2, height: 70 },
-  pageLine: { position: 'absolute', height: 4, borderRadius: 2 },
-  ribbon: { position: 'absolute', left: 76, top: -4 },
-  blob: { position: 'absolute', left: 20, bottom: 6, width: 80, height: 10, borderRadius: 40 },
+  rabbit: { position: 'absolute', right: 2, top: 30 },
+  sproutBox: { width: 104, height: 112, alignItems: 'center' },
+  owlBox: { width: 190, height: 172, alignItems: 'center', justifyContent: 'flex-end' },
+  owlHalo: { position: 'absolute', width: 168, height: 168, borderRadius: 84, top: 0 },
 
-  idBox: { width: 84, height: 76 },
-  idCard: { position: 'absolute', left: 6, top: 10, width: 72, height: 60 },
 
-  lockCircle: { width: 168, height: 168, borderRadius: 84, alignItems: 'center', justifyContent: 'center' },
-  lockInner: { position: 'absolute', top: 18, left: 18, right: 18, bottom: 18, borderRadius: 9999 },
-  shackle: {
-    position: 'absolute',
-    left: 16,
-    top: 0,
-    width: 52,
-    height: 52,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    borderWidth: 9,
-    borderBottomWidth: 0,
-  },
-  lockBody: { position: 'absolute', left: 0, top: 34 },
-  lockQ: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 40,
-    textAlign: 'center',
-    color: '#ffffff',
-    fontFamily: fonts.display700,
-    fontSize: 34,
-    lineHeight: 46,
-    textShadowColor: illo.authLockEdge,
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 0,
-  },
-  lockBadge: { position: 'absolute', right: 22, top: 26 },
 
   envCircle: { width: 220, height: 220, borderRadius: 110, alignItems: 'center', justifyContent: 'center' },
   envInner: { position: 'absolute', top: 22, left: 22, right: 22, bottom: 22, borderRadius: 9999 },

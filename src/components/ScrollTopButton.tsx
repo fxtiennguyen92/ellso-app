@@ -68,7 +68,7 @@ export function ScrollTopButton({ visible, onPress, tabBar = true }: { visible: 
         </View>
         {/* Bọc View để icon nằm trên mặt gradient (web: phần tử định vị vẽ đè phần tử thường) */}
         <View>
-          <Icon name="arrowBigUp" color={colors.navOn} duotone />
+          <Icon name="chevronUp" color={colors.navOn} strokeWidth={2.6} />
         </View>
       </Pressable>
     </Animated.View>

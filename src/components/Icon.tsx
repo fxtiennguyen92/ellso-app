@@ -84,6 +84,9 @@ import CirclePlay from 'lucide-react-native/icons/circle-play';
 import RotateCcw from 'lucide-react-native/icons/rotate-ccw';
 import Pause from 'lucide-react-native/icons/pause';
 import LibraryBig from 'lucide-react-native/icons/library-big';
+import ChevronUp from 'lucide-react-native/icons/chevron-up';
+import ScanQrCode from 'lucide-react-native/icons/scan-qr-code';
+import Radio from 'lucide-react-native/icons/radio';
 
 /**
  * Icon dùng trên toàn app — MỘT bộ duy nhất: Lucide (lucide.dev), nét viền 24×24, đầu nét bo tròn.
@@ -184,6 +187,9 @@ const ICONS = {
   retry: RotateCcw,
   pause: Pause,
   library: LibraryBig,
+  chevronUp: ChevronUp,
+  scanQr: ScanQrCode,
+  live: Radio,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

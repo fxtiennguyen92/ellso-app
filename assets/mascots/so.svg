@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 440" width="400" height="440" role="img" aria-label="Sổ, mascot cuốn sổ ghi chú của Ellso">
+  <defs>
+    <radialGradient id="s-hi" cx="0.3" cy="0.22" r="0.6"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"></stop><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"></stop></radialGradient>
+    <radialGradient id="s-sh" cx="0.8" cy="0.98" r="0.8"><stop offset="0.2" stop-color="#0F172A" stop-opacity="0.26"></stop><stop offset="1" stop-color="#0F172A" stop-opacity="0"></stop></radialGradient>
+    <clipPath id="s-clip"><rect x="96" y="100" width="200" height="268" rx="24"></rect></clipPath>
+  </defs>
+  <g id="L-shadow"><ellipse cx="204" cy="412" rx="122" ry="15" fill="#0F172A" opacity="0.12"></ellipse></g>
+  <path d="M164 360 L164 388" stroke="#5B21B6" stroke-width="10" stroke-linecap="round"></path>
+  <path d="M236 360 L236 388" stroke="#5B21B6" stroke-width="10" stroke-linecap="round"></path>
+  <ellipse cx="158" cy="394" rx="20" ry="10" fill="#5B21B6"></ellipse>
+  <ellipse cx="242" cy="394" rx="20" ry="10" fill="#5B21B6"></ellipse>
+  <path d="M276 110 L318 132 L318 374 L276 366 Z" fill="#F5F3FF"></path>
+  <path d="M303 130 L303 368" stroke="#A78BFA" stroke-width="2" opacity="0.6"></path>
+  <path d="M310 134 L310 370" stroke="#A78BFA" stroke-width="2" opacity="0.6"></path>
+  <g id="L-bookmark"><path d="M244 108 L244 66 L256 76 L268 66 L268 108 Z" fill="#A78BFA"></path></g>
+  <path d="M98 250 Q70 264 64 292" stroke="#6D28D9" stroke-width="10" stroke-linecap="round" fill="none"></path>
+  <circle cx="63" cy="300" r="13" fill="#F5F3FF" stroke="#6D28D9" stroke-width="4"></circle>
+  <g id="L-arm-r">
+  <path d="M294 236 Q328 220 334 190" stroke="#6D28D9" stroke-width="10" stroke-linecap="round" fill="none"></path>
+  <circle cx="336" cy="180" r="13" fill="#F5F3FF" stroke="#6D28D9" stroke-width="4"></circle>
+  </g>
+  <rect x="96" y="100" width="200" height="268" rx="24" fill="#8B5CF6"></rect>
+  <g clip-path="url(#s-clip)">
+    <rect x="96" y="100" width="34" height="268" fill="#6D28D9" opacity="0.6"></rect>
+    <rect x="96" y="138" width="34" height="8" fill="#5B21B6" opacity="0.5"></rect>
+    <rect x="96" y="322" width="34" height="8" fill="#5B21B6" opacity="0.5"></rect>
+    <rect x="96" y="100" width="200" height="268" fill="url(#s-sh)"></rect>
+    <rect x="96" y="100" width="200" height="268" fill="url(#s-hi)"></rect>
+  </g>
+  <ellipse cx="168" cy="116" rx="24" ry="7" fill="#FFFFFF" opacity="0.4"></ellipse>
+  <rect x="156" y="132" width="112" height="44" rx="10" fill="#F5F3FF"></rect>
+  <rect x="170" y="146" width="70" height="6" rx="3" fill="#8B5CF6"></rect>
+  <rect x="170" y="158" width="46" height="6" rx="3" fill="#A78BFA"></rect>
+  <ellipse cx="164" cy="268" rx="16" ry="9" fill="#F59E0B" opacity="0.35"></ellipse>
+  <ellipse cx="262" cy="268" rx="16" ry="9" fill="#F59E0B" opacity="0.35"></ellipse>
+  <g id="L-eye-open-l"><ellipse cx="186" cy="238" rx="13" ry="17" fill="#0F172A"></ellipse><circle cx="181" cy="230" r="5" fill="#FFFFFF"></circle><circle cx="191" cy="245" r="2.5" fill="#FFFFFF" opacity="0.8"></circle></g>
+  <g id="L-eye-closed-l"><path d="M172 242 Q186 224 200 242" stroke="#0F172A" stroke-width="5.5" stroke-linecap="round" fill="none"></path></g>
+  <g id="L-eye-open-r"><ellipse cx="240" cy="238" rx="13" ry="17" fill="#0F172A"></ellipse><circle cx="235" cy="230" r="5" fill="#FFFFFF"></circle><circle cx="245" cy="245" r="2.5" fill="#FFFFFF" opacity="0.8"></circle></g>
+  <g id="L-eye-closed-r"><path d="M226 242 Q240 224 254 242" stroke="#0F172A" stroke-width="5.5" stroke-linecap="round" fill="none"></path></g>
+  <g id="L-mouth-smile"><path d="M202 264 Q213 276 224 264" stroke="#0F172A" stroke-width="5" stroke-linecap="round" fill="none"></path></g>
+  <g id="L-mouth-grin"><path d="M198 260 Q213 286 228 260 Z" fill="#0F172A" stroke="#0F172A" stroke-width="3" stroke-linejoin="round"></path></g>
+</svg>

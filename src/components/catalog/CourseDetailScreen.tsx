@@ -128,12 +128,17 @@ export function CourseDetailScreen() {
                 <Rect width="100%" height="100%" fill="url(#courseShade)" />
               </Svg>
               <View style={styles.heroInfo}>
-                {course.category ? (
-                  <View style={styles.heroTag}>
-                    <Icon name="courses" size={12} strokeWidth={2.2} color="#ffffff" />
-                    <Text style={styles.heroTagText} numberOfLines={1}>
-                      {course.category.name}
-                    </Text>
+                {/* Khoá thuộc được nhiều danh mục → mỗi danh mục một nhãn */}
+                {course.categories.length > 0 ? (
+                  <View style={styles.heroTags}>
+                    {course.categories.map((cat) => (
+                      <View key={cat.id} style={styles.heroTag}>
+                        <Icon name="courses" size={12} strokeWidth={2.2} color="#ffffff" />
+                        <Text style={styles.heroTagText} numberOfLines={1}>
+                          {cat.name}
+                        </Text>
+                      </View>
+                    ))}
                   </View>
                 ) : null}
                 <Text accessibilityRole="header" style={styles.heroTitle} numberOfLines={3}>
@@ -308,7 +313,7 @@ const initials = (name: string) =>
 function SizeTile({ value, label }: { value: number; label: string }) {
   const { colors } = useTheme();
   return (
-    <View style={[styles.sizeTile, { backgroundColor: colors.mint50 }]}>
+    <View style={[styles.sizeTile, { backgroundColor: colors.mint50, borderColor: colors.mint100 }]}>
       <Text style={[styles.sizeValue, { color: colors.emerald700 }]}>{value}</Text>
       <Text style={[type.caption, { color: colors.emerald800 }]}>{label}</Text>
     </View>
@@ -368,6 +373,7 @@ const styles = StyleSheet.create({
 
   hero: { overflow: 'hidden', borderBottomLeftRadius: 28, borderBottomRightRadius: 28 },
   heroInfo: { position: 'absolute', left: 20, right: 20, bottom: 22, gap: 8 },
+  heroTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   heroTag: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
@@ -396,7 +402,7 @@ const styles = StyleSheet.create({
   tabLine: { height: 3, borderRadius: 2, alignSelf: 'stretch' },
   tabBody: { paddingHorizontal: 20, paddingTop: 20 },
   sizeRow: { flexDirection: 'row', gap: 10 },
-  sizeTile: { flex: 1, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 12, alignItems: 'center' },
+  sizeTile: { flex: 1, borderRadius: 16, borderWidth: 1, paddingVertical: 14, paddingHorizontal: 12, alignItems: 'center' },
   sizeValue: { fontFamily: fonts.display600, fontSize: 28, lineHeight: 34 },
   card: { borderRadius: 20, borderWidth: 1, paddingHorizontal: 16 },
   cardNote: { paddingVertical: 12 },

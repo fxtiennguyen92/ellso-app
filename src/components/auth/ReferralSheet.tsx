@@ -101,7 +101,7 @@ export function ReferralSheet({ visible, current, onClose, onConfirm, onScanQr }
               autoCapitalize="characters"
               autoCorrect={false}
               autoComplete="off"
-              placeholder="VD: TIEN2026"
+              placeholder="VD: ELLSO"
               placeholderTextColor={colors.ink400}
               accessibilityLabel="Mã giới thiệu"
               maxLength={16}

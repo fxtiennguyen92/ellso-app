@@ -124,3 +124,28 @@ Nếu thấy chỗ nào trong code đang lệch so với branding, báo lại th
 ## Tìm kiếm
 - Một màn `/search` (`components/search/SearchScreen.tsx`) dùng chung: Trang chủ (ô tìm kiếm) → `scope=all` (Khoá học + Tài liệu); tab Khoá học → `scope=courses`; tab Tài liệu → `scope=documents`. Header các tab chỉ có **nút** tìm kiếm (không ô nhập trong tab).
 - Mỗi phần hiện tối đa **7 kết quả**, nút "Xem thêm kết quả" tải tiếp 7 (server: `/courses?q=&page=&per_page=7`, `/documents?q=&page=&per_page=7`). Gõ xong 0,35 giây mới tìm, từ 2 ký tự.
+
+## Chương trình huấn luyện & Workshop (Home)
+- Chương trình hiện tới khi **qua buổi cuối**; `ongoing` (đã qua buổi đầu) → badge "Đang diễn ra" góc trên phải thẻ, cạnh "Đã đăng ký" / "Hết chỗ"; ô trái thẻ thành "Buổi tiếp theo".
+- `TrainingSheet`: đã đăng ký → tab **Thông tin vé** đứng trước Tổng quan, mở mặc định (mã vé + QR `ELLSO-TICKET:` cho app người hướng dẫn / kiểm soát viên quét sau này, điểm danh từng buổi); nút nổi "Quét mã điểm danh" mở `CheckinScanner` (expo-camera, quét QR `ELLSO-CHECKIN:` của chương trình → `POST /v1/trainings/checkin`; có "Nhập mã" khi không có camera). Mã QR chương trình chỉ có hiệu lực trong ngày có buổi (giờ VN).
+- expo-camera cần **development build** (không chạy trong Expo Go); web dùng camera của trình duyệt.
+- `WorkshopSheet`: chọn ngày (bấm thẻ hoặc bấm thẳng ô ngày trên thẻ). Chưa đăng ký: khối ngày (giờ trái, "Còn n chỗ" phải) + nút nổi "Đăng ký buổi này" → **form ngay dưới hàng ngày** (không popup, không tự mở bàn phím): gõ **DANG KY** + "Xác nhận đăng ký" → `POST /v1/workshop-sessions/{id}/register`. Đã đăng ký: badge "Đã đăng ký" ở ô ngày (cả thẻ Home lẫn bảng) + card thông tin đăng ký; buổi chưa bắt đầu → nút nổi "Huỷ đăng ký" → xác nhận ngay trong card → `DELETE …/register`.
+- Không mở popup có ô nhập `autoFocus` (popup và bàn phím bung cùng lúc → vỡ bố cục). Ô nhập trong bottom sheet: bảng thấp lại theo chiều cao bàn phím + `useKeyboardForm` cuộn ô lên.
+- Không lồng `Pressable` trong `Pressable` (web báo lỗi `<button>` trong `<button>`): thẻ có nút con thì lớp bấm cả thẻ đặt `absoluteFill` phía dưới (xem `WorkshopCard`).
+
+## Icon ứng dụng
+- Theo brand guidelines mục 1.5: chữ e (từ `ellso-favicon.svg`) màu trắng trên nền vuông emerald `#10B981`, e rộng ~58% cạnh, căn giữa; không tự bo góc / bóng (hệ điều hành tự bo). Nguồn SVG: `assets/app-icon/icon.svg`.
+- iOS: `ios.icon` light (`assets/icon.png`, 1024, không trong suốt), dark (`icon-ios-dark.png`: e emerald, nền trong suốt — iOS tự phủ nền tối), tinted (`icon-ios-tinted.png`: e trắng, nền trong suốt).
+- Android: adaptive icon nền màu `#10B981` + `android-icon-foreground.png` (e trắng trong vùng an toàn 72/108dp) + `android-icon-monochrome.png` (Android 13+ themed icon); `android.icon` = `assets/icon.png` cho máy cũ. Web: `favicon.png` = e emerald.
+- Đổi icon cần build lại bản cài (EAS / `npx expo run:*`), Expo Go không đổi icon.
+
+## Mascot (`src/components/mascots/`)
+- 5 nhân vật theo tài liệu `claude/ellso-mascots.md`: Thỏ (chính), Mầm, Tia, Cú Minh, Sổ. SVG gốc ở `assets/mascots/*.svg`, nhóm `<g id="L-…">` = lớp động (tai, lá, tay, mắt mở/nhắm, miệng…). Sửa SVG xong chạy `python3 scripts/gen-mascots.py` để sinh lại `mascotArt.generated.tsx` (đừng sửa tay file sinh).
+- `<Mascot name size crop="full|face" motion="lively|subtle|none" actionEvery actionKey pressable>`: mỗi lớp là một `<Svg>` chồng nhau, cử động bằng Animated (native driver). lively = nhún / đung đưa liên tục + chớp mắt + hành động riêng định kỳ; subtle = chỉ chớp mắt và thỉnh thoảng cử động một nhịp (ảnh đại diện). Tự đứng yên khi bật Giảm chuyển động hoặc màn không focus.
+- Màn tài khoản: Đăng nhập = Thỏ (nhảy 2 nhịp), Đăng ký = Mầm (bật lên, lá xoay), Quên mật khẩu = Cú Minh (gật đầu + nháy mắt).
+- Màn Tìm kiếm (chưa gõ): Thỏ cầm kính lúp (`holding="magnifier"`, kính đung đưa / quét qua lại quanh tay phải).
+- Trang chủ tạm ẩn nút Thông báo (chưa có thông báo). Mã QR giới thiệu dùng chung `profile/ReferralQrSheet` (Hồ sơ + Bạn bè khi chưa giới thiệu ai).
+- Ảnh đại diện mascot: `user.avatarMascot` (server lưu `avatar = "mascot:<tên>"`, API `PUT /v1/me/avatar/mascot`); `<UserAvatar mascot>` vẽ mặt mascot trên nền mint, ưu tiên hơn ảnh. Chọn ở Sửa thông tin cá nhân › Đổi ảnh đại diện.
+
+## Điều khoản & Chính sách bảo mật
+- Route `/legal/terms`, `/legal/privacy` (mở được cả khi chưa đăng nhập — link ở màn Đăng ký; Hồ sơ › Hỗ trợ). Nội dung từ `GET /v1/legal/{slug}` (CMS › Hệ thống › Điều khoản & bảo mật), vẽ bằng `StaticBlock` của bài học.

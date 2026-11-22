@@ -275,7 +275,8 @@ export type CatalogCourse = {
   id: number;
   title: string;
   shortDescription: string | null;
-  category: { id: number; name: string } | null;
+  /** Một khoá có thể thuộc nhiều danh mục (thứ tự theo CMS). */
+  categories: { id: number; name: string }[];
   instructor: { id: number; name: string; avatar: string | null } | null;
   coverUrl: string | null;
   /** VND; 0 = miễn phí */
@@ -290,6 +291,12 @@ export type CatalogCourse = {
   started: boolean;
 };
 
+/** Nhãn danh mục gọn cho thẻ / dòng: danh mục đầu + số danh mục còn lại ("Kỹ năng mềm +1"). */
+export function categoryLabel(categories: { name: string }[]): string | null {
+  if (!categories.length) return null;
+  return categories.length > 1 ? `${categories[0].name} +${categories.length - 1}` : categories[0].name;
+}
+
 export type CatalogPage = { items: CatalogCourse[]; page: number; hasMore: boolean; total: number };
 
 type ApiCatalogCourse = {
@@ -297,6 +304,7 @@ type ApiCatalogCourse = {
   title: string;
   short_description: string | null;
   category: { id: number; name: string } | null;
+  categories?: { id: number; name: string }[];
   instructor: { id: number; name: string; avatar: string | null } | null;
   cover_url: string | null;
   price: number;
@@ -327,7 +335,7 @@ export async function apiCatalog(
       id: c.id,
       title: c.title,
       shortDescription: c.short_description,
-      category: c.category,
+      categories: c.categories ?? (c.category ? [c.category] : []),
       instructor: c.instructor,
       coverUrl: c.cover_url,
       price: c.price,
@@ -379,7 +387,7 @@ export async function apiCourseDetail(token: string, id: string | number): Promi
     id: c.id,
     title: c.title,
     shortDescription: c.short_description,
-    category: c.category,
+    categories: c.categories ?? (c.category ? [c.category] : []),
     instructor: c.instructor,
     coverUrl: c.cover_url,
     price: c.price,

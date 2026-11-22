@@ -207,6 +207,7 @@ export function CoursesScreen() {
               <CourseCard
                 key={c.id}
                 course={c}
+                focusCategoryId={category ? Number(category) : null}
                 inCart={cart.has('course', c.id)}
                 busy={busyId === c.id || startingId === c.id}
                 onAddToCart={(e) => addToCart(c, e)}
