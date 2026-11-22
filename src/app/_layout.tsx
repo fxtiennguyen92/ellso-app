@@ -129,6 +129,8 @@ function AppShell() {
             <Stack.Protected guard={status === 'mustChangePassword'}>
               <Stack.Screen name="set-password" options={{ gestureEnabled: false }} />
             </Stack.Protected>
+            {/* Điều khoản / Chính sách bảo mật: mở được ở mọi trạng thái (màn Đăng ký, Hồ sơ) */}
+            <Stack.Screen name="legal/[slug]" />
             {/* Chưa đăng nhập: màn đầu tiên trong nhóm (login) là nơi router chuyển tới */}
             <Stack.Protected guard={status === 'signedOut'}>
               <Stack.Screen name="login" />

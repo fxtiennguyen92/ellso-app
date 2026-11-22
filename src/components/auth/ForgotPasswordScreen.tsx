@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { apiForgotPassword, AuthError, isEmail } from '@/data/auth';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 
-import { LockArt } from './AuthArt';
+import { OwlArt } from './AuthArt';
 import { AuthField, AuthScreen, AuthTitle, BackButton, ErrorText, FooterPrompt, goBackToLogin, PrimaryButton } from './AuthUI';
 
 /** Quên mật khẩu: nhập email → server gửi mật khẩu tạm mới → đăng nhập lại → bắt buộc đặt mật khẩu mới. */
@@ -40,13 +40,13 @@ export function ForgotPasswordScreen() {
         <BackButton />
       </View>
       <View style={styles.art}>
-        <LockArt />
+        <OwlArt />
       </View>
       <View style={styles.form}>
         <AuthTitle
           center
           title="Quên mật khẩu?"
-          subtitle="Nhập email bạn đã đăng ký. Chúng tôi sẽ gửi một mật khẩu tạm mới để bạn đăng nhập và đặt lại mật khẩu."
+          subtitle="Nhập email bạn đã đăng ký. Mật khẩu tạm sẽ được gửi đến email của bạn."
         />
         <View style={styles.field}>
           <AuthField

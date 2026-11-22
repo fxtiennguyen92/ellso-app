@@ -13,6 +13,7 @@ import { Icon } from '@/components/Icon';
 import { QrCode } from '@/components/QrCode';
 import { useToast } from '@/components/Toast';
 import { UserAvatar } from '@/components/UserAvatar';
+import type { MascotName } from '@/components/mascots/Mascot';
 import { daysUntil, displayLink, dmy, getProfile, groupThousands, type ProfileSection } from '@/data/profile';
 import { NATIVE_DRIVER } from '@/hooks/useLoop';
 import { appVersionLabel } from '@/lib/appVersion';
@@ -189,7 +190,7 @@ export function ProfileScreen() {
             ]}
           >
             <Pressable accessibilityRole="link" accessibilityLabel={`${name}. Xem thông tin cá nhân`} onPress={() => go('personal-info')} style={styles.avatarPress}>
-              <BigAvatar initials={initials} uri={user?.avatar} />
+              <BigAvatar initials={initials} uri={user?.avatar} mascot={user?.avatarMascot} />
             </Pressable>
             <Text style={[styles.name, { color: colors.heroOn }]} numberOfLines={1}>
               {name}
@@ -264,7 +265,8 @@ export function ProfileScreen() {
 
         <SettingsGroup title="Hỗ trợ">
           <SettingsRow first icon={<RowIcon name="help" />} label="Trung tâm trợ giúp" onPress={() => go('help')} />
-          <SettingsRow icon={<RowIcon name="shield" />} label="Điều khoản & quyền riêng tư" onPress={() => go('terms')} />
+          <SettingsRow icon={<RowIcon name="documents" />} label="Điều khoản sử dụng" onPress={() => router.push('/legal/terms')} />
+          <SettingsRow icon={<RowIcon name="shield" />} label="Chính sách bảo mật" onPress={() => router.push('/legal/privacy')} />
         </SettingsGroup>
 
         <View style={styles.footer}>
@@ -309,7 +311,7 @@ export function ProfileScreen() {
               { opacity: compactIn, transform: [{ translateY: compactIn.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] },
             ]}
           >
-            <UserAvatar uri={user?.avatar} initials={initials} size={36} bg={colors.mint100} fg={colors.emerald800} borderColor={colors.heroGlassLine} borderWidth={2} />
+            <UserAvatar uri={user?.avatar} mascot={user?.avatarMascot} initials={initials} size={36} bg={colors.mint100} fg={colors.emerald800} borderColor={colors.heroGlassLine} borderWidth={2} />
             <View style={styles.grow}>
               <Text style={[styles.compactName, { color: colors.heroOn }]} numberOfLines={1}>
                 {name}
@@ -422,7 +424,7 @@ export function ProfileScreen() {
 }
 
 /** Avatar lớn trên hero: viền kính mờ + vòng gradient mảnh, chữ viết tắt. */
-function BigAvatar({ initials, uri }: { initials: string; uri?: string | null }) {
+function BigAvatar({ initials, uri, mascot }: { initials: string; uri?: string | null; mascot?: MascotName | null }) {
   const { colors, scheme } = useTheme();
   const id = `avatarRing-${scheme}`;
   return (
@@ -437,7 +439,7 @@ function BigAvatar({ initials, uri }: { initials: string; uri?: string | null })
         </Defs>
         <Circle cx="52" cy="52" r="50" fill="none" stroke={`url(#${id})`} strokeWidth={2.5} />
       </Svg>
-      <UserAvatar uri={uri} initials={initials} size={90} bg={colors.mint100} fg={colors.emerald800} borderColor={colors.heroGlassLine} borderWidth={3} />
+      <UserAvatar uri={uri} mascot={mascot} initials={initials} size={90} bg={colors.mint100} fg={colors.emerald800} borderColor={colors.heroGlassLine} borderWidth={3} />
     </View>
   );
 }

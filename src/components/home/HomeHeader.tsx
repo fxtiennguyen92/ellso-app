@@ -4,6 +4,7 @@ import { Animated, type LayoutChangeEvent, Pressable, StyleSheet, Text, View } f
 import { HeroBackground } from '@/components/HeroBackground';
 import { Icon } from '@/components/Icon';
 import { UserAvatar } from '@/components/UserAvatar';
+import type { MascotName } from '@/components/mascots/Mascot';
 import { useRevealStyle } from '@/components/splash/RevealContext';
 import { DEFAULT_TAGLINE } from '@/data/home';
 import { useLoop } from '@/hooks/useLoop';
@@ -11,7 +12,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { fonts, type } from '@/theme/typography';
 
 type Props = {
-  student: { name: string; initials: string; avatar?: string | null; unreadNotifications: number };
+  student: { name: string; initials: string; avatar?: string | null; avatarMascot?: MascotName | null; unreadNotifications: number };
   /** Câu chào cạnh ngày (CMS); null → DEFAULT_TAGLINE. */
   tagline?: string | null;
   /** Đã cuộn nội dung → ô tìm kiếm đổ bóng đậm hơn (nội dung trượt bên dưới). */
@@ -53,7 +54,7 @@ export function HomeHeader({ student, tagline, scrolled, topInset, onHeroHeight 
             accessibilityRole="button"
             accessibilityLabel={`Ảnh đại diện ${student.name}. Nhấn giữ để đổi giao diện sáng / tối`}
           >
-            <UserAvatar uri={student.avatar} initials={student.initials} size={48} bg={colors.heroGlass} fg={colors.heroOn} borderColor={colors.heroGlassLine} borderWidth={1.5} />
+            <UserAvatar uri={student.avatar} mascot={student.avatarMascot} initials={student.initials} size={48} bg={colors.heroGlass} fg={colors.heroOn} borderColor={colors.heroGlassLine} borderWidth={1.5} />
           </Pressable>
 
           <View style={styles.greeting}>

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 440" width="400" height="440" role="img" aria-label="Tia, mascot tia lửa ý tưởng của Ellso">
+  <defs>
+    <radialGradient id="t-hi" cx="0.32" cy="0.3" r="0.55"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.65"></stop><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"></stop></radialGradient>
+    <radialGradient id="t-sh" cx="0.78" cy="0.95" r="0.8"><stop offset="0.2" stop-color="#0F172A" stop-opacity="0.22"></stop><stop offset="1" stop-color="#0F172A" stop-opacity="0"></stop></radialGradient>
+    <clipPath id="t-clip"><path d="M200 64 C214 104 250 120 280 160 C308 198 314 236 312 268 C308 334 262 382 200 382 C138 382 92 334 88 268 C86 226 104 190 128 164 C134 196 150 210 166 206 C156 160 172 104 200 64 Z"></path></clipPath>
+  </defs>
+  <g id="L-shadow"><ellipse cx="200" cy="410" rx="112" ry="15" fill="#0F172A" opacity="0.12"></ellipse></g>
+  <g id="L-spark-a">
+  <path d="M92 102 Q92 120 110 120 Q92 120 92 138 Q92 120 74 120 Q92 120 92 102 Z" fill="#34D399"></path>
+  <path d="M346 163 Q346 172 355 172 Q346 172 346 181 Q346 172 337 172 Q346 172 346 163 Z" fill="#10B981"></path>
+  </g>
+  <g id="L-spark-b">
+  <path d="M318 82 Q318 96 332 96 Q318 96 318 110 Q318 96 304 96 Q318 96 318 82 Z" fill="#34D399"></path>
+  <path d="M62 202 Q62 212 72 212 Q62 212 62 222 Q62 212 52 212 Q62 212 62 202 Z" fill="#10B981"></path>
+  </g>
+  <ellipse cx="164" cy="388" rx="30" ry="18" fill="#F59E0B"></ellipse>
+  <ellipse cx="236" cy="388" rx="30" ry="18" fill="#F59E0B"></ellipse>
+  <ellipse cx="164" cy="394" rx="30" ry="12" fill="#0F172A" opacity="0.12"></ellipse>
+  <ellipse cx="236" cy="394" rx="30" ry="12" fill="#0F172A" opacity="0.12"></ellipse>
+  <ellipse cx="92" cy="298" rx="20" ry="32" fill="#F59E0B" transform="rotate(30 92 298)"></ellipse>
+  <g id="L-arm-r"><ellipse cx="318" cy="226" rx="20" ry="32" fill="#FBBF24" transform="rotate(-40 318 226)"></ellipse></g>
+  <path d="M200 64 C214 104 250 120 280 160 C308 198 314 236 312 268 C308 334 262 382 200 382 C138 382 92 334 88 268 C86 226 104 190 128 164 C134 196 150 210 166 206 C156 160 172 104 200 64 Z" fill="#F59E0B"></path>
+  <g clip-path="url(#t-clip)">
+    <rect x="80" y="60" width="240" height="330" fill="url(#t-sh)"></rect>
+    <rect x="80" y="60" width="240" height="330" fill="url(#t-hi)"></rect>
+    <path d="M200 196 C232 224 262 252 258 294 C254 336 230 362 200 362 C170 362 146 336 142 294 C140 254 170 224 200 196 Z" fill="#FFFFFF" opacity="0.35"></path>
+  </g>
+  <ellipse cx="150" cy="170" rx="22" ry="12" fill="#FFFFFF" opacity="0.55" transform="rotate(-55 150 170)"></ellipse>
+  <circle cx="184" cy="118" r="5" fill="#FFFFFF" opacity="0.6"></circle>
+  <ellipse cx="140" cy="316" rx="15" ry="9" fill="#FFFFFF" opacity="0.5"></ellipse>
+  <ellipse cx="260" cy="316" rx="15" ry="9" fill="#FFFFFF" opacity="0.5"></ellipse>
+  <g id="L-eye-open-l"><ellipse cx="172" cy="286" rx="13" ry="17" fill="#0F172A"></ellipse><circle cx="167" cy="278" r="5" fill="#FFFFFF"></circle><circle cx="177" cy="293" r="2.5" fill="#FFFFFF" opacity="0.8"></circle></g>
+  <g id="L-eye-closed-l"><path d="M158 290 Q172 272 186 290" stroke="#0F172A" stroke-width="5.5" stroke-linecap="round" fill="none"></path></g>
+  <g id="L-eye-open-r"><ellipse cx="228" cy="286" rx="13" ry="17" fill="#0F172A"></ellipse><circle cx="223" cy="278" r="5" fill="#FFFFFF"></circle><circle cx="233" cy="293" r="2.5" fill="#FFFFFF" opacity="0.8"></circle></g>
+  <g id="L-eye-closed-r"><path d="M214 290 Q228 272 242 290" stroke="#0F172A" stroke-width="5.5" stroke-linecap="round" fill="none"></path></g>
+  <g id="L-mouth-smile"><path d="M189 314 Q200 325 211 314" stroke="#0F172A" stroke-width="5" stroke-linecap="round" fill="none"></path></g>
+  <g id="L-mouth-grin"><path d="M185 310 Q200 336 215 310 Z" fill="#0F172A" stroke="#0F172A" stroke-width="3" stroke-linejoin="round"></path></g>
+</svg>

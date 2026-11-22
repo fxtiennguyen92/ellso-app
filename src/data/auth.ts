@@ -8,6 +8,7 @@
  * - POST /auth/forgot-password · POST /auth/resend-temp-password → luôn trả cùng một câu (không lộ email), kèm resend_after_seconds.
  * - GET /referrals/{code} · GET /me · POST /auth/logout.
  */
+import { MASCOTS, type MascotName } from '@/components/mascots/Mascot';
 import { ApiError, apiRequest } from '@/lib/api';
 
 export type AuthUser = {
@@ -16,6 +17,8 @@ export type AuthUser = {
   email: string;
   initials: string;
   avatar?: string | null;
+  /** Mascot làm ảnh đại diện (app tự vẽ + cử động); có thì avatar = null. */
+  avatarMascot?: MascotName | null;
   phone?: string | null;
   referralCode?: string | null;
   /** Số xu đang có (GET /me → coins). */
@@ -62,6 +65,7 @@ export type ServerUser = {
   name: string;
   email: string;
   avatar?: string | null;
+  avatar_mascot?: string | null;
   phone?: string | null;
   referral_code?: string | null;
   coins?: number;
@@ -74,6 +78,7 @@ export const toUser = (u: ServerUser): AuthUser => ({
   email: u.email,
   initials: initialsOf(u.name),
   avatar: u.avatar ?? null,
+  avatarMascot: MASCOTS.some((m) => m.name === u.avatar_mascot) ? (u.avatar_mascot as MascotName) : null,
   phone: u.phone ?? null,
   referralCode: u.referral_code ?? null,
   coins: u.coins ?? 0,

@@ -138,3 +138,12 @@ Nếu thấy chỗ nào trong code đang lệch so với branding, báo lại th
 - iOS: `ios.icon` light (`assets/icon.png`, 1024, không trong suốt), dark (`icon-ios-dark.png`: e emerald, nền trong suốt — iOS tự phủ nền tối), tinted (`icon-ios-tinted.png`: e trắng, nền trong suốt).
 - Android: adaptive icon nền màu `#10B981` + `android-icon-foreground.png` (e trắng trong vùng an toàn 72/108dp) + `android-icon-monochrome.png` (Android 13+ themed icon); `android.icon` = `assets/icon.png` cho máy cũ. Web: `favicon.png` = e emerald.
 - Đổi icon cần build lại bản cài (EAS / `npx expo run:*`), Expo Go không đổi icon.
+
+## Mascot (`src/components/mascots/`)
+- 5 nhân vật theo tài liệu `claude/ellso-mascots.md`: Thỏ (chính), Mầm, Tia, Cú Minh, Sổ. SVG gốc ở `assets/mascots/*.svg`, nhóm `<g id="L-…">` = lớp động (tai, lá, tay, mắt mở/nhắm, miệng…). Sửa SVG xong chạy `python3 scripts/gen-mascots.py` để sinh lại `mascotArt.generated.tsx` (đừng sửa tay file sinh).
+- `<Mascot name size crop="full|face" motion="lively|subtle|none" actionEvery actionKey pressable>`: mỗi lớp là một `<Svg>` chồng nhau, cử động bằng Animated (native driver). lively = nhún / đung đưa liên tục + chớp mắt + hành động riêng định kỳ; subtle = chỉ chớp mắt và thỉnh thoảng cử động một nhịp (ảnh đại diện). Tự đứng yên khi bật Giảm chuyển động hoặc màn không focus.
+- Màn tài khoản: Đăng nhập = Thỏ (nhảy 2 nhịp), Đăng ký = Mầm (bật lên, lá xoay), Quên mật khẩu = Cú Minh (gật đầu + nháy mắt).
+- Ảnh đại diện mascot: `user.avatarMascot` (server lưu `avatar = "mascot:<tên>"`, API `PUT /v1/me/avatar/mascot`); `<UserAvatar mascot>` vẽ mặt mascot trên nền mint, ưu tiên hơn ảnh. Chọn ở Sửa thông tin cá nhân › Đổi ảnh đại diện.
+
+## Điều khoản & Chính sách bảo mật
+- Route `/legal/terms`, `/legal/privacy` (mở được cả khi chưa đăng nhập — link ở màn Đăng ký; Hồ sơ › Hỗ trợ). Nội dung từ `GET /v1/legal/{slug}` (CMS › Hệ thống › Điều khoản & bảo mật), vẽ bằng `StaticBlock` của bài học.

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 440" width="400" height="440" role="img" aria-label="Mầm, mascot mầm cây của Ellso">
+  <defs>
+    <radialGradient id="m-hi" cx="0.3" cy="0.26" r="0.55"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.6"></stop><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"></stop></radialGradient>
+    <radialGradient id="m-sh" cx="0.75" cy="0.95" r="0.8"><stop offset="0.2" stop-color="#0F172A" stop-opacity="0.3"></stop><stop offset="1" stop-color="#0F172A" stop-opacity="0"></stop></radialGradient>
+    <linearGradient id="m-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6EE7B7"></stop><stop offset="1" stop-color="#10B981"></stop></linearGradient>
+    <clipPath id="m-clip"><ellipse cx="200" cy="268" rx="138" ry="128"></ellipse></clipPath>
+  </defs>
+  <g id="L-shadow"><ellipse cx="200" cy="410" rx="124" ry="16" fill="#0F172A" opacity="0.12"></ellipse></g>
+  <ellipse cx="152" cy="390" rx="36" ry="20" fill="#047857"></ellipse>
+  <ellipse cx="248" cy="390" rx="36" ry="20" fill="#047857"></ellipse>
+  <ellipse cx="144" cy="383" rx="14" ry="6" fill="#FFFFFF" opacity="0.25"></ellipse>
+  <ellipse cx="240" cy="383" rx="14" ry="6" fill="#FFFFFF" opacity="0.25"></ellipse>
+  <ellipse cx="72" cy="292" rx="26" ry="40" fill="#047857" transform="rotate(22 72 292)"></ellipse>
+  <g id="L-arm-r">
+  <ellipse cx="332" cy="250" rx="26" ry="40" fill="#047857" transform="rotate(-40 332 250)"></ellipse>
+  <ellipse cx="324" cy="242" rx="10" ry="16" fill="#FFFFFF" opacity="0.2" transform="rotate(-40 324 242)"></ellipse>
+  </g>
+  <path d="M200 146 C197 126 203 112 200 96" stroke="#047857" stroke-width="9" stroke-linecap="round" fill="none"></path>
+  <g id="L-leaves">
+  <path d="M199 100 C178 62 128 58 104 78 C124 108 172 116 199 100 Z" fill="url(#m-leaf)"></path>
+  <path d="M196 99 C170 90 140 82 116 79" stroke="#047857" stroke-width="3" stroke-linecap="round" opacity="0.45" fill="none"></path>
+  <path d="M201 98 C214 58 262 40 292 54 C280 88 236 106 201 98 Z" fill="url(#m-leaf)"></path>
+  <path d="M204 97 C230 86 258 70 282 58" stroke="#047857" stroke-width="3" stroke-linecap="round" opacity="0.45" fill="none"></path>
+  </g>
+  <ellipse cx="200" cy="268" rx="138" ry="128" fill="#10B981"></ellipse>
+  <g clip-path="url(#m-clip)">
+    <rect x="50" y="130" width="300" height="270" fill="url(#m-sh)"></rect>
+    <rect x="50" y="130" width="300" height="270" fill="url(#m-hi)"></rect>
+    <ellipse cx="200" cy="352" rx="78" ry="44" fill="#ECFDF5" opacity="0.85"></ellipse>
+  </g>
+  <ellipse cx="128" cy="192" rx="34" ry="17" fill="#FFFFFF" opacity="0.5" transform="rotate(-35 128 192)"></ellipse>
+  <circle cx="164" cy="166" r="6" fill="#FFFFFF" opacity="0.6"></circle>
+  <ellipse cx="122" cy="292" rx="20" ry="11" fill="#F59E0B" opacity="0.35"></ellipse>
+  <ellipse cx="278" cy="292" rx="20" ry="11" fill="#F59E0B" opacity="0.35"></ellipse>
+  <g id="L-eye-open-l"><ellipse cx="156" cy="256" rx="17" ry="21" fill="#0F172A"></ellipse><circle cx="150" cy="247" r="6.5" fill="#FFFFFF"></circle><circle cx="162" cy="264" r="3" fill="#FFFFFF" opacity="0.8"></circle></g>
+  <g id="L-eye-closed-l"><path d="M138 262 Q156 240 174 262" stroke="#0F172A" stroke-width="6.5" stroke-linecap="round" fill="none"></path></g>
+  <g id="L-eye-open-r"><ellipse cx="244" cy="256" rx="17" ry="21" fill="#0F172A"></ellipse><circle cx="238" cy="247" r="6.5" fill="#FFFFFF"></circle><circle cx="250" cy="264" r="3" fill="#FFFFFF" opacity="0.8"></circle></g>
+  <g id="L-eye-closed-r"><path d="M226 262 Q244 240 262 262" stroke="#0F172A" stroke-width="6.5" stroke-linecap="round" fill="none"></path></g>
+  <g id="L-mouth-smile"><path d="M186 290 Q200 304 214 290" stroke="#0F172A" stroke-width="5.5" stroke-linecap="round" fill="none"></path></g>
+  <g id="L-mouth-grin"><path d="M181 286 Q200 318 219 286 Z" fill="#0F172A" stroke="#0F172A" stroke-width="3" stroke-linejoin="round"></path><path d="M190 302 Q200 294 210 302 Q200 311 190 302 Z" fill="#F59E0B" opacity="0.6"></path></g>
+</svg>

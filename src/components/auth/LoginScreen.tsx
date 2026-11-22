@@ -1,13 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, type TextInputInstance, View } from 'react-native';
+import { StyleSheet, type TextInputInstance, View } from 'react-native';
 
 import { useAuth } from '@/auth/AuthProvider';
 import { EllsoLogo } from '@/components/EllsoLogo';
 import { AuthError, isEmail, PASSWORD_MAX } from '@/data/auth';
 import { useScreenTopInset } from '@/hooks/useScreenTopInset';
 import { useTheme } from '@/theme/ThemeProvider';
-import { fonts } from '@/theme/typography';
 
 import { LoginHeroArt } from './AuthArt';
 import { AuthField, AuthScreen, AuthTitle, ErrorText, FooterPrompt, PrimaryButton, TextLink } from './AuthUI';
@@ -63,19 +62,18 @@ export function LoginScreen() {
 
   return (
     <AuthScreen footer={<FooterPrompt text="Chưa có tài khoản?" action="Đăng ký" onPress={() => router.push('/register')} />}>
-      {/* Header mở (không phải card): logo + slogan, sách 3D */}
+      {/* Header mở (không phải card): logo + mascot Thỏ */}
       <View style={[styles.hero, { height: 226 + topInset }]}>
         <View style={[StyleSheet.absoluteFill, { top: topInset - 44 }]}>
           <LoginHeroArt />
         </View>
         <View style={[styles.brand, { top: topInset + 28 }]}>
           <EllsoLogo width={118} color={colors.emerald500} />
-          <Text style={[styles.slogan, { color: colors.ink600 }]}>Learn to Lead,{'\n'}Innovate to Succeed.</Text>
         </View>
       </View>
 
       <View style={styles.form}>
-        <AuthTitle title="Chào mừng trở lại" subtitle="Đăng nhập để tiếp tục lộ trình học của bạn." />
+        <AuthTitle title="Học tập với Ellso" subtitle="Đăng nhập để khám phá các năng lực của bạn." />
 
         <AuthField
           label="Email"
@@ -131,7 +129,6 @@ export function LoginScreen() {
 const styles = StyleSheet.create({
   hero: { position: 'relative', overflow: 'hidden' },
   brand: { position: 'absolute', left: 24, gap: 10 },
-  slogan: { maxWidth: 160, fontFamily: fonts.sans500, fontSize: 13, lineHeight: 19 },
   form: { paddingHorizontal: 20, gap: 16 },
   forgot: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: -10, marginBottom: -6 },
 });

@@ -12,6 +12,7 @@
  * - GET    /me/coins?cursor=                          → {balance, earned_month, spent_month, data: CoinTx[], next_cursor}
  * - GET    /me/referrals?cursor=                      → {total, data: Friend[], next_cursor}
  */
+import type { MascotName } from '@/components/mascots/Mascot';
 import { Platform } from 'react-native';
 
 import { type AuthUser, type ServerUser, toUser } from '@/data/auth';
@@ -32,6 +33,12 @@ export async function apiUploadAvatar(token: string, uri: string): Promise<AuthU
     form.append('avatar', { uri, name: 'avatar.jpg', type: 'image/jpeg' } as unknown as Blob);
   }
   const r = await apiRequest<{ data: ServerUser }>('POST', '/me/avatar', { token, body: form });
+  return toUser(r.data);
+}
+
+/** Chọn mascot làm ảnh đại diện (xoá ảnh đã tải lên). */
+export async function apiChooseMascot(token: string, mascot: MascotName): Promise<AuthUser> {
+  const r = await apiRequest<{ data: ServerUser }>('PUT', '/me/avatar/mascot', { token, body: { mascot } });
   return toUser(r.data);
 }
 

@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 440" width="400" height="440" role="img" aria-label="Thỏ, mascot bạn thử thách của Ellso">
+  <defs>
+    <radialGradient id="r-sh" cx="0.75" cy="0.95" r="0.85"><stop offset="0.15" stop-color="#047857" stop-opacity="0.3"></stop><stop offset="1" stop-color="#047857" stop-opacity="0"></stop></radialGradient>
+    <radialGradient id="r-ear" cx="0.7" cy="0.9" r="0.9"><stop offset="0.1" stop-color="#047857" stop-opacity="0.22"></stop><stop offset="1" stop-color="#047857" stop-opacity="0"></stop></radialGradient>
+    <clipPath id="r-head"><ellipse cx="200" cy="238" rx="128" ry="104"></ellipse></clipPath>
+    <clipPath id="r-body"><ellipse cx="200" cy="352" rx="80" ry="52"></ellipse></clipPath>
+  </defs>
+  <g id="L-shadow"><ellipse cx="200" cy="414" rx="118" ry="15" fill="#0F172A" opacity="0.12"></ellipse></g>
+  <circle cx="284" cy="370" r="20" fill="#FFFFFF" stroke="#10B981" stroke-opacity="0.35" stroke-width="3"></circle>
+  <ellipse cx="158" cy="400" rx="34" ry="16" fill="#FFFFFF" stroke="#10B981" stroke-opacity="0.35" stroke-width="3"></ellipse>
+  <ellipse cx="242" cy="400" rx="34" ry="16" fill="#FFFFFF" stroke="#10B981" stroke-opacity="0.35" stroke-width="3"></ellipse>
+  <ellipse cx="200" cy="352" rx="80" ry="52" fill="#FFFFFF" stroke="#10B981" stroke-opacity="0.35" stroke-width="3"></ellipse>
+  <g clip-path="url(#r-body)"><rect x="110" y="296" width="180" height="110" fill="url(#r-sh)"></rect></g>
+  <g id="L-ear-l">
+  <g transform="rotate(-12 150 110)">
+    <ellipse cx="150" cy="110" rx="32" ry="82" fill="#FFFFFF" stroke="#10B981" stroke-opacity="0.35" stroke-width="3"></ellipse>
+    <ellipse cx="150" cy="110" rx="32" ry="82" fill="url(#r-ear)"></ellipse>
+    <ellipse cx="150" cy="116" rx="15" ry="58" fill="#34D399" opacity="0.7"></ellipse>
+  </g>
+  </g>
+  <g id="L-ear-r">
+  <g transform="rotate(16 254 116)">
+    <ellipse cx="254" cy="116" rx="32" ry="80" fill="#FFFFFF" stroke="#10B981" stroke-opacity="0.35" stroke-width="3"></ellipse>
+    <ellipse cx="254" cy="116" rx="32" ry="80" fill="url(#r-ear)"></ellipse>
+    <ellipse cx="254" cy="122" rx="15" ry="56" fill="#34D399" opacity="0.7"></ellipse>
+  </g>
+  </g>
+  <ellipse cx="200" cy="238" rx="128" ry="104" fill="#FFFFFF" stroke="#10B981" stroke-opacity="0.35" stroke-width="3"></ellipse>
+  <g clip-path="url(#r-head)">
+    <rect x="70" y="130" width="260" height="215" fill="url(#r-sh)"></rect>
+    <ellipse cx="160" cy="140" rx="40" ry="16" fill="#047857" opacity="0.08"></ellipse>
+    <ellipse cx="250" cy="140" rx="40" ry="16" fill="#047857" opacity="0.08"></ellipse>
+  </g>
+  <path d="M128 322 Q200 354 272 322 L268 342 Q200 372 132 342 Z" fill="#047857"></path>
+  <path d="M150 330 Q200 350 250 330" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.25"></path>
+  <path d="M232 340 L262 388 L240 384 L216 346 Z" fill="#065F46"></path>
+  <circle cx="150" cy="362" r="20" fill="#FFFFFF" stroke="#10B981" stroke-opacity="0.35" stroke-width="3"></circle>
+  <circle cx="250" cy="362" r="20" fill="#FFFFFF" stroke="#10B981" stroke-opacity="0.35" stroke-width="3"></circle>
+  <ellipse cx="122" cy="278" rx="20" ry="11" fill="#F59E0B" opacity="0.35"></ellipse>
+  <ellipse cx="278" cy="278" rx="20" ry="11" fill="#F59E0B" opacity="0.35"></ellipse>
+  <g id="L-eye-open-l"><ellipse cx="160" cy="242" rx="16" ry="20" fill="#0F172A"></ellipse><circle cx="154" cy="233" r="6" fill="#FFFFFF"></circle><circle cx="166" cy="250" r="3" fill="#FFFFFF" opacity="0.8"></circle></g>
+  <g id="L-eye-closed-l"><path d="M143 247 Q160 226 177 247" stroke="#0F172A" stroke-width="6" stroke-linecap="round" fill="none"></path></g>
+  <g id="L-eye-open-r"><ellipse cx="240" cy="242" rx="16" ry="20" fill="#0F172A"></ellipse><circle cx="234" cy="233" r="6" fill="#FFFFFF"></circle><circle cx="246" cy="250" r="3" fill="#FFFFFF" opacity="0.8"></circle></g>
+  <g id="L-eye-closed-r"><path d="M223 247 Q240 226 257 247" stroke="#0F172A" stroke-width="6" stroke-linecap="round" fill="none"></path></g>
+  <ellipse cx="200" cy="268" rx="9" ry="6.5" fill="#F59E0B"></ellipse>
+  <g id="L-mouth-smile"><path d="M186 280 Q193 289 200 280 Q207 289 214 280" stroke="#0F172A" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></g>
+  <g id="L-mouth-grin"><path d="M184 278 Q200 306 216 278 Z" fill="#0F172A" stroke="#0F172A" stroke-width="3" stroke-linejoin="round"></path><rect x="194" y="278" width="12" height="9" rx="2" fill="#FFFFFF"></rect></g>
+</svg>
