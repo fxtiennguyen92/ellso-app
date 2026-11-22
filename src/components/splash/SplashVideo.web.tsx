@@ -1,7 +1,7 @@
 import { Asset } from 'expo-asset';
 import { createElement, useEffect, useRef } from 'react';
 
-import { SPLASH_VIDEO, type SplashVideoProps } from './SplashVideo.types';
+import { SPLASH_ASPECT, SPLASH_VIDEO, type SplashVideoProps } from './SplashVideo.types';
 
 /**
  * Web: dùng thẻ <video> thật thay vì expo-video, để tự xử lý chính sách tự phát của trình duyệt
@@ -78,12 +78,16 @@ export function SplashVideo({ onPlaying, onTime, onEnd, onFail, stopped }: Splas
     disableRemotePlayback: true,
     controls: false,
     'aria-label': 'Ellso',
+    // Rộng 100% khung, cao theo tỉ lệ video (9:16), căn giữa dọc; phần dư/hụt là nền trắng
     style: {
       position: 'absolute',
-      inset: 0,
+      left: 0,
+      top: '50%',
       width: '100%',
-      height: '100%',
-      objectFit: 'cover',
+      height: 'auto',
+      aspectRatio: `${SPLASH_ASPECT}`,
+      transform: 'translateY(-50%)',
+      objectFit: 'contain',
       pointerEvents: 'none',
       backgroundColor: '#ffffff',
     },

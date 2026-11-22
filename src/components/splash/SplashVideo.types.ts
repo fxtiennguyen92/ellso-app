@@ -13,3 +13,5 @@ export type SplashVideoProps = {
 };
 
 export const SPLASH_VIDEO = require('../../../assets/video/ellso-splash.mp4');
+/** Tỉ lệ khung video splash (1080×1920). Video luôn rộng 100% màn hình, cao theo tỉ lệ này. */
+export const SPLASH_ASPECT = 1080 / 1920;
