@@ -7,14 +7,17 @@ import { NATIVE_DRIVER, useLoop } from '@/hooks/useLoop';
 import { SplashVideo } from './SplashVideo';
 
 /**
- * Logo trong video ghép xong ở giây 6,0 (xem claude/splash-animation-spec.md).
- * Splash không đóng trước mốc này (tính theo thời gian của video, nên máy chậm vẫn thấy đủ logo);
- * sau mốc này, app sẵn sàng lúc nào thì chuyển cảnh lúc đó.
- * Nếu app chưa xong, video chạy tiếp rồi đứng ở frame cuối (logo) cho đến khi xong.
+ * Splash mascot (xem claude/splash-animation-spec.md, v4): 5 nhân vật mang chữ vào ráp thành logo,
+ * rồi đi ra hai bên, khung cuối chỉ còn logo. Video dài 10,3 giây.
+ *
+ * Quy tắc: video LUÔN được chạy hết rồi mới chuyển cảnh, kể cả khi app đã sẵn sàng từ sớm.
+ * App chưa xong khi video hết → video đứng ở khung cuối (logo) + 3 chấm chờ cho đến khi xong.
+ * Chỉ bỏ qua video khi không phát được (lỗi, bị chặn tự phát) hoặc video bị đứng hẳn.
  */
-const LOGO_READY_AT = 6.2; // giây trong video
-/** Dự phòng: video đã chạy nhưng bị khựng (mạng chậm…) thì tối đa chờ chừng này. */
-const MAX_WAIT_MS = 10_500;
+/** Coi như đã hết video khi tới mốc này (phòng khi sự kiện "hết video" không bắn trên vài nền tảng). */
+const VIDEO_END_AT = 10.2; // giây trong video (độ dài 10,3 s)
+/** Video đang chạy mà không nhích thêm chừng này (bị đứng) → thôi chờ, vào app. */
+const STALL_MS = 3000;
 /** Sau chừng này mà video vẫn chưa chạy (chặn tự phát, tải chậm, lỗi) → bỏ qua video. */
 const START_TIMEOUT_MS = 2500;
 /** Video xong mà app chưa sẵn sàng sau chừng này → hiện 3 chấm chờ (tránh chớp lên rồi tắt ngay). */
@@ -42,13 +45,27 @@ export function SplashOverlay({ ready, onExitStart, onFinish }: Props) {
   const loaderShown = useRef(false);
   const [showLoader, setShowLoader] = useState(false);
 
-  /** Video thật sự chạy → ẩn splash gốc (nền trắng, cùng màu frame đầu nên không nháy) và bắt đầu đếm. */
+  const stallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTime = useRef(-1);
+  /** Hẹn giờ "video bị đứng": được đặt lại mỗi khi video nhích thêm. */
+  const armStall = useCallback(() => {
+    if (stallTimer.current) clearTimeout(stallTimer.current);
+    stallTimer.current = setTimeout(() => {
+      if (__DEV__) console.log('[splash] video bị đứng, vào app');
+      setMinDone(true);
+    }, STALL_MS);
+  }, []);
+  useEffect(() => () => {
+    if (stallTimer.current) clearTimeout(stallTimer.current);
+  }, []);
+
+  /** Video thật sự chạy → ẩn splash gốc (nền trắng, cùng màu frame đầu nên không nháy). */
   const handlePlaying = useCallback(() => {
     if (started.current) return;
     started.current = true;
     SplashScreen.hide();
-    setTimeout(() => setMinDone(true), MAX_WAIT_MS);
-  }, []);
+    armStall();
+  }, [armStall]);
 
   /** Không phát được video → bỏ qua phần chờ, vào app ngay khi sẵn sàng. */
   const handleFail = useCallback((reason: string) => {
@@ -58,10 +75,22 @@ export function SplashOverlay({ ready, onExitStart, onFinish }: Props) {
     setMinDone(true);
   }, []);
 
-  const handleTime = useCallback((t: number) => {
-    if (t >= LOGO_READY_AT) setMinDone(true);
+  const finishVideo = useCallback(() => {
+    if (stallTimer.current) clearTimeout(stallTimer.current);
+    stallTimer.current = null;
+    setMinDone(true);
   }, []);
-  const handleEnd = useCallback(() => setMinDone(true), []);
+  const handleTime = useCallback(
+    (t: number) => {
+      if (t >= VIDEO_END_AT) return finishVideo();
+      if (t > lastTime.current) {
+        lastTime.current = t;
+        armStall();
+      }
+    },
+    [armStall, finishVideo],
+  );
+  const handleEnd = finishVideo;
 
   useEffect(() => {
     const t = setTimeout(() => {
