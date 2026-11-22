@@ -19,6 +19,8 @@ export type AuthUser = {
   avatar?: string | null;
   /** Mascot làm ảnh đại diện (app tự vẽ + cử động); có thì avatar = null. */
   avatarMascot?: MascotName | null;
+  /** Hướng dẫn sử dụng đã xem / bỏ qua (welcome, tour-home, hint-…). */
+  tipsSeen?: string[];
   phone?: string | null;
   referralCode?: string | null;
   /** Số xu đang có (GET /me → coins). */
@@ -66,6 +68,7 @@ export type ServerUser = {
   email: string;
   avatar?: string | null;
   avatar_mascot?: string | null;
+  tips_seen?: string[];
   phone?: string | null;
   referral_code?: string | null;
   coins?: number;
@@ -78,6 +81,7 @@ export const toUser = (u: ServerUser): AuthUser => ({
   email: u.email,
   initials: initialsOf(u.name),
   avatar: u.avatar ?? null,
+  tipsSeen: u.tips_seen, // undefined = bản /me cũ chưa có trường này → chưa hiện hướng dẫn
   avatarMascot: MASCOTS.some((m) => m.name === u.avatar_mascot) ? (u.avatar_mascot as MascotName) : null,
   phone: u.phone ?? null,
   referralCode: u.referral_code ?? null,

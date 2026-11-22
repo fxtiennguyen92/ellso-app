@@ -1,3 +1,4 @@
+import { Hint } from '@/components/onboarding/Onboarding';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -147,7 +148,10 @@ export function TrainingSheet({ training, onClose, onChanged }: { training: Home
         <ScrollView style={styles.grow} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {tab === 'ticket' ? (
             detail?.ticket ? (
-              <Ticket t={detail} ticket={detail.ticket} />
+              <View style={styles.ticketTab}>
+                <Hint tip="hint-training" text="Khi đến lớp, đưa mã QR vé cho người hướng dẫn quét, hoặc bấm Quét mã điểm danh để tự điểm danh." />
+                <Ticket t={detail} ticket={detail.ticket} />
+              </View>
             ) : loadError ? (
               <Text style={[type.caption, { color: colors.danger }]}>{loadError}</Text>
             ) : (
@@ -479,6 +483,7 @@ function Schedule({ sessions, selected, onSelect }: { sessions: Session[]; selec
 }
 
 const styles = StyleSheet.create({
+  ticketTab: { gap: 14 },
   grow: { flex: 1 },
   top: { gap: 8 },
   person: { flexDirection: 'row', alignItems: 'center', gap: 8 },

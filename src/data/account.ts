@@ -42,6 +42,18 @@ export async function apiChooseMascot(token: string, mascot: MascotName): Promis
   return toUser(r.data);
 }
 
+/** Đánh dấu đã xem một hướng dẫn (lưu trên server theo tài khoản). */
+export async function apiMarkTip(token: string, key: string): Promise<AuthUser> {
+  const r = await apiRequest<{ data: ServerUser }>('POST', '/me/tips', { token, body: { key } });
+  return toUser(r.data);
+}
+
+/** Xem lại hướng dẫn từ đầu. */
+export async function apiResetTips(token: string): Promise<AuthUser> {
+  const r = await apiRequest<{ data: ServerUser }>('DELETE', '/me/tips', { token });
+  return toUser(r.data);
+}
+
 export async function apiDeleteAvatar(token: string): Promise<AuthUser> {
   const r = await apiRequest<{ data: ServerUser }>('DELETE', '/me/avatar', { token });
   return toUser(r.data);

@@ -1,3 +1,4 @@
+import { Hint } from '@/components/onboarding/Onboarding';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -158,6 +159,11 @@ export function CourseMapScreen({ path }: { path: CoursePath }) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) + SCROLL_TOP_SPACE + 8 }}
         >
+          <Hint
+            tip="hint-course-map"
+            text="Bấm vào bài để học. Học xong bài trước thì bài sau sẽ tự mở; bài kiểm tra mở khi bạn học xong các bài đứng trước."
+            style={styles.hint}
+          />
           {path.chapters.flatMap((ch, ci) => {
             const t = infos[ci].theme;
             const sign = ci % 2 === 0 ? 1 : -1;
@@ -569,6 +575,7 @@ function LessonNode({
 }
 
 const styles = StyleSheet.create({
+  hint: { marginHorizontal: 16, marginTop: 12 },
   screen: { flex: 1 },
   header: {
     paddingHorizontal: 16,

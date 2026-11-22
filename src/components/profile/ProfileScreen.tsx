@@ -1,3 +1,4 @@
+import { useOnboarding } from '@/components/onboarding/Onboarding';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Animated, Easing, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -64,6 +65,7 @@ export function ProfileScreen() {
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [systemNotif, setSystemNotif] = useState(true);
   const [toast, showToast] = useToast();
+  const onboarding = useOnboarding();
 
   // Mỗi lần vào tab: làm mới số xu / gói (lỗi mạng bỏ qua, giữ số cũ)
   useFocusEffect(
@@ -241,6 +243,18 @@ export function ProfileScreen() {
 
         <SettingsGroup title="Hỗ trợ">
           <SettingsRow first icon={<RowIcon name="help" />} label="Trung tâm trợ giúp" onPress={() => go('help')} />
+          <SettingsRow
+            icon={<RowIcon name="help" />}
+            label="Xem lại hướng dẫn"
+            onPress={async () => {
+              try {
+                await onboarding.reset();
+                router.navigate('/');
+              } catch {
+                showToast('Không mở lại được hướng dẫn, thử lại sau');
+              }
+            }}
+          />
           <SettingsRow icon={<RowIcon name="documents" />} label="Điều khoản sử dụng" onPress={() => router.push('/legal/terms')} />
           <SettingsRow icon={<RowIcon name="shield" />} label="Chính sách bảo mật" onPress={() => router.push('/legal/privacy')} />
         </SettingsGroup>
