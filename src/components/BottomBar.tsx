@@ -1,3 +1,4 @@
+import { useTourRegister } from '@/components/onboarding/Onboarding';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Keyboard, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -51,6 +52,7 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
   const reveal = useRevealStyle(4, 40);
 
   const { cart, anchorRef, landTick } = useCart();
+  const tourRegister = useTourRegister(); // tour Trang chủ tô sáng tab Khoá học / Tài liệu / Hồ sơ
   // Icon Giỏ hàng "hứng" chấm xanh: nảy + lắc nhẹ mỗi lần chấm rơi trúng
   const catchAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -216,6 +218,7 @@ export function BottomBar({ state, emitter, navigateToTab, insets }: BottomTabBa
                 }
               >
                 <Pressable
+                  ref={(n) => tourRegister(`tab-${route.name}`, n)}
                   accessibilityRole="tab"
                   accessibilityState={{ selected: active }}
                   accessibilityLabel={route.name === 'cart' && cart.count > 0 ? `${tab.label}, ${cart.count} sản phẩm` : tab.label}

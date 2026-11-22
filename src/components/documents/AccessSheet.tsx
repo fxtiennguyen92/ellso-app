@@ -1,3 +1,4 @@
+import { Hint } from '@/components/onboarding/Onboarding';
 import { router } from 'expo-router';
 import { type GestureResponderEvent, StyleSheet, Text, View } from 'react-native';
 
@@ -78,6 +79,7 @@ export function AccessSheet({ doc, onClose, onNotice }: { doc: Doc | null; onClo
     <BottomSheet visible={!!doc} onClose={onClose} title="Cách mở tài liệu">
       {doc && (
         <View style={styles.wrap}>
+          <Hint tip="hint-locked-doc" text="Tài liệu này đang khoá. Chỉ cần đạt một trong các điều kiện bên dưới là mở được." />
           <View style={[styles.docInfo, { backgroundColor: colors.surfaceAlt }]}>
             <Icon name="lock" size={18} color={colors.ink600} />
             <View style={styles.grow}>

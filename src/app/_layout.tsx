@@ -1,3 +1,4 @@
+import { OnboardingProvider } from '@/components/onboarding/Onboarding';
 import {
   BeVietnamPro_400Regular,
   BeVietnamPro_500Medium,
@@ -103,6 +104,7 @@ function AppShell() {
             }
           >
           {/* Chặn theo trạng thái đăng nhập: đổi status (đăng nhập / đổi mật khẩu / đăng xuất) là router tự chuyển nhóm màn. */}
+          <OnboardingProvider enabled={splashDone}>
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
             <Stack.Protected guard={signedIn}>
               <Stack.Screen name="(tabs)" />
@@ -140,6 +142,7 @@ function AppShell() {
               <Stack.Screen name="forgot-sent" options={{ gestureEnabled: false }} />
             </Stack.Protected>
           </Stack>
+          </OnboardingProvider>
           </DocumentsProvider>
           </CartProvider>
         )}

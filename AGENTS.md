@@ -149,3 +149,7 @@ Nếu thấy chỗ nào trong code đang lệch so với branding, báo lại th
 
 ## Điều khoản & Chính sách bảo mật
 - Route `/legal/terms`, `/legal/privacy` (mở được cả khi chưa đăng nhập — link ở màn Đăng ký; Hồ sơ › Hỗ trợ). Nội dung từ `GET /v1/legal/{slug}` (CMS › Hệ thống › Điều khoản & bảo mật), vẽ bằng `StaticBlock` của bài học.
+
+## Hướng dẫn cho người mới (`src/components/onboarding/Onboarding.tsx`)
+- `OnboardingProvider` (bọc Stack ở `_layout`, chạy sau splash): (1) màn chào mừng `welcome` (Thỏ, "Xem hướng dẫn nhanh" / "Bỏ qua"); (2) tour Trang chủ `tour-home`: tô sáng ô tìm kiếm → tab Khoá học → Tài liệu → Hồ sơ, Thỏ nói trong bong bóng, "Tiếp" / "Bỏ qua"; (3) `<Hint tip="hint-…" text>`: thẻ gợi ý trong màn, lần đầu, "Đã hiểu" là tắt (đang dùng: bản đồ bài học, Workshop, vé chương trình huấn luyện, bảng Cách mở tài liệu).
+- Đã xem lưu trên server theo tài khoản (`user.tipsSeen`, `POST /v1/me/tips {key}`, `DELETE /v1/me/tips` = Hồ sơ › Hỗ trợ › Xem lại hướng dẫn). Thêm chỗ tô sáng: `useTourTarget(id)` (ref callback, không đổi bố cục) rồi thêm bước vào `TOUR`. Gợi ý mới: đặt `<Hint>` với key mới `hint-…` (chữ thường, số, gạch ngang).

@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Animated, type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { HeroBackground } from '@/components/HeroBackground';
+import { useTourTarget } from '@/components/onboarding/Onboarding';
 import { Icon } from '@/components/Icon';
 import { UserAvatar } from '@/components/UserAvatar';
 import type { MascotName } from '@/components/mascots/Mascot';
@@ -34,6 +35,7 @@ const todayLabel = (d = new Date()) => `${WEEKDAYS[d.getDay()]}, ${d.getDate()} 
 export const SEARCH_HEIGHT = 54;
 
 export function HomeHeader({ student, tagline, scrolled, topInset, onHeroHeight }: Props) {
+  const searchRef = useTourTarget('home-search'); // tour Trang chủ: bước 1
   const { colors, toggle } = useTheme();
   const reveal = useRevealStyle(0, 12);
 
@@ -79,6 +81,7 @@ export function HomeHeader({ student, tagline, scrolled, topInset, onHeroHeight 
 
       {/* Ô tìm kiếm nổi đè mép dưới hero. Chỉ là ô giả: bấm vào mở trang tìm kiếm riêng (/search) */}
       <Pressable
+        ref={searchRef}
         accessibilityRole="search"
         accessibilityLabel="Tìm khoá học, tài liệu, sách"
         accessibilityHint="Mở trang tìm kiếm"

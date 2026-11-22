@@ -1,3 +1,4 @@
+import { Hint } from '@/components/onboarding/Onboarding';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -225,6 +226,7 @@ export function WorkshopSheet({
             </View>
           </View>
 
+          <Hint tip="hint-workshop" text="Chọn ngày bạn muốn tham gia rồi bấm Đăng ký buổi này. Link phòng học online sẽ hiện ở đây trước giờ học 30 phút." />
           {detail ? (
             sessions.length ? (
               <ScrollView ref={rowRef} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tiles} style={styles.tilesRow}>
